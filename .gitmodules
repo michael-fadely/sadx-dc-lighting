@@ -1,0 +1,6 @@
+[submodule "sadx-mod-loader"]
+	path = sadx-mod-loader
+	url = https://github.com/sonicretro/sadx-mod-loader.git
+[submodule "d3d8to9"]
+	path = d3d8to9
+	url = https://github.com/crosire/d3d8to9.git
