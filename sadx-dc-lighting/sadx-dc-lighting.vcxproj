@@ -70,11 +70,8 @@
       <AdditionalLibraryDirectories>$(DXSDK_DIR)Lib\x86</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y /D "$(ProjectDir)mod.ini" "$(OutDir)"
-IF NOT EXIST "$(OutDir)system" (
-    mkdir "$(OutDir)system"
-)
-xcopy /Y /D "$(ProjectDir)lantern.fx" "$(OutDir)system\"</Command>
+      <Command>xcopy /C /Y /D "$(ProjectDir)mod.ini" "$(OutDir)"
+xcopy /C /Y /D "$(ProjectDir)lantern.fx" "$(OutDir)system\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -100,11 +97,8 @@ xcopy /Y /D "$(ProjectDir)lantern.fx" "$(OutDir)system\"</Command>
       <AdditionalLibraryDirectories>$(DXSDK_DIR)Lib\x86</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y /D "$(ProjectDir)mod.ini" "$(OutDir)"
-IF NOT EXIST "$(OutDir)system" (
-    mkdir "$(OutDir)system"
-)
-xcopy /Y /D "$(ProjectDir)lantern.fx" "$(OutDir)system\"</Command>
+      <Command>xcopy /C /Y /D "$(ProjectDir)mod.ini" "$(OutDir)"
+xcopy /C /Y /D "$(ProjectDir)lantern.fx" "$(OutDir)system\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

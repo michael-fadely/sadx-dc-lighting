@@ -14,9 +14,6 @@
 
 #define PI 3.141592
 
-// TODO: COMMENTS!
-// TODO: modularize more
-
 struct VS_IN
 {
 	float3 position : POSITION;
@@ -45,34 +42,40 @@ sampler2D baseSampler = sampler_state
 
 sampler2D diffuseSampler = sampler_state
 {
-	Texture = <DiffusePalette>;
+	Texture   = <DiffusePalette>;
 	MinFilter = Linear;
 	MagFilter = Linear;
-	AddressU = Clamp;
-	AddressV = Clamp;
+	AddressU  = Clamp;
+	AddressV  = Clamp;
 };
 
 sampler2D specularSampler = sampler_state
 {
-	Texture = <SpecularPalette>;
+	Texture   = <SpecularPalette>;
 	MinFilter = Linear;
 	MagFilter = Linear;
-	AddressU = Clamp;
-	AddressV = Clamp;
+	AddressU  = Clamp;
+	AddressV  = Clamp;
 };
 
 float4x4 WorldMatrix;
 float4x4 ViewMatrix;
 float4x4 ProjectionMatrix;
+// The inverse transpose of the world view matrix - used for environment mapping.
 float4x4 wvMatrixInvT;
-float4x4 TextureTransform = { -0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.5, 0.5, 0.0, 1.0 };
-float4   CameraPosition;
+// Used primarily for environment mapping.
+// TODO: check if texture transform is enabled for standard textures
+float4x4 TextureTransform = {
+	-0.5, 0.0, 0.0, 0.0,
+	 0.0, 0.5, 0.0, 0.0,
+	 0.0, 0.0, 1.0, 0.0,
+	 0.5, 0.5, 0.0, 1.0
+};
 
 bool TextureEnabled    = true;
 bool UseVertexColor    = true;
 bool EnvironmentMapped = false;
 bool AlphaEnabled      = true;
-bool LightEnabled      = true;
 
 uint   FogMode = (uint)FOGMODE_NONE;
 float  FogStart;
@@ -80,11 +83,11 @@ float  FogEnd;
 float  FogDensity;
 float4 FogColor;
 
-float3 LightDirection   = float3(0.0f, -1.0f, 0.0f);
-float  LightLength      = 1.0f;
-uint   DiffuseSource    = (uint)D3DMCS_COLOR1;
-float4 MaterialDiffuse  = float4(1.0f, 1.0f, 1.0f, 1.0f);
-float  AlphaRef         = 16.0f / 255.0f;
+float3 LightDirection  = float3(0.0f, -1.0f, 0.0f);
+float  LightLength     = 1.0f;
+uint   DiffuseSource   = (uint)D3DMCS_COLOR1;
+float4 MaterialDiffuse = float4(1.0f, 1.0f, 1.0f, 1.0f);
+float  AlphaRef        = 16.0f / 255.0f;
 
 // Helper functions
 
@@ -140,7 +143,6 @@ inline void EnvironmentMap(out float2 tex, in float2 itex, in float3 normal)
 	if (TextureEnabled && EnvironmentMapped)
 	{
 		tex = (float2)mul(float4(normal, 1), wvMatrixInvT);
-		// TODO: check if texture transform is enabled for standard textures
 		tex = (float2)mul(float4(tex, 0, 1), TextureTransform);
 	}
 	else
@@ -168,6 +170,7 @@ inline void DoLighting(in float4 color, in float3 normal, out float4 diffuse, ou
 }
 inline void NoLighting(in float4 color, out float4 diffuse, out float4 specular)
 {
+	// Just spit out the vertex or material color if lighting is off.
 	diffuse = GetDiffuse(color);
 	specular = 0;
 }
@@ -277,6 +280,8 @@ float4 ps_neither(PS_IN input) : COLOR
 }
 
 // Techniques
+
+// TODO: Benchmark these different techniques vs single technique with boolean checks.
 
 technique Standard
 {

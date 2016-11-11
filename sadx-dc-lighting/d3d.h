@@ -8,7 +8,6 @@ namespace d3d
 	extern IDirect3DDevice9* device;
 	extern ID3DXEffect* effect;
 	extern bool do_effect;
-	extern D3DXMATRIX light_view;
 	void LoadShader();
 	void InitTrampolines();
 }

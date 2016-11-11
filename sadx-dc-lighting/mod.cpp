@@ -32,6 +32,7 @@ struct ColorPair
 	NJS_COLOR diffuse, specular;
 };
 
+// TODO: move to mod loader
 struct PaletteLight
 {
 	Uint8 Level;
@@ -63,9 +64,9 @@ struct PaletteLight
 
 struct LanternPalette
 {
-	// The first set of colors
+	// The first set of colors in the pair.
 	IDirect3DTexture9* diffuse;
-	// The second set of colors
+	// The second set of colors in the pair.
 	IDirect3DTexture9* specular;
 };
 
@@ -84,17 +85,17 @@ static_assert(sizeof(PaletteLight) == 0x60, "AGAIN TRY");
 
 #pragma endregion
 
-static Trampoline* Direct3D_ParseMaterial_t      = nullptr;
-static Trampoline* Direct3D_PerformLighting_t    = nullptr;
-static Trampoline* Direct3D_SetWorldTransform_t  = nullptr;
-static Trampoline* DrawLandTable_t               = nullptr;
-static Trampoline* CharSel_LoadA_t               = nullptr;
-static Trampoline* MeshNull_CreateVertexBuffer_t = nullptr;
-static Trampoline* SetLevelAndAct_t              = nullptr;
-static Trampoline* GoToNextLevel_t               = nullptr;
-static Trampoline* IncrementAct_t                = nullptr;
-static Trampoline* SetTimeOfDay_t                = nullptr;
-static Trampoline* LoadLevelFiles_t              = nullptr;
+static Trampoline* Direct3D_ParseMaterial_t     = nullptr;
+static Trampoline* Direct3D_PerformLighting_t   = nullptr;
+static Trampoline* Direct3D_SetWorldTransform_t = nullptr;
+static Trampoline* DrawLandTable_t              = nullptr;
+static Trampoline* CharSel_LoadA_t              = nullptr;
+static Trampoline* MeshSet_CreateVertexBuffer_t = nullptr;
+static Trampoline* SetLevelAndAct_t             = nullptr;
+static Trampoline* GoToNextLevel_t              = nullptr;
+static Trampoline* IncrementAct_t               = nullptr;
+static Trampoline* SetTimeOfDay_t               = nullptr;
+static Trampoline* LoadLevelFiles_t             = nullptr;
 
 static Uint32 last_level    = 0;
 static Uint32 last_act      = 0;
@@ -396,13 +397,9 @@ static bool LoadLanternSource(Uint32 level, Uint32 act)
 /// <returns><c>true</c> on success.</returns>
 static bool LoadLanternPalette(Uint32 level, Uint32 act)
 {
-#if 1
 	stringstream name;
 	name << globals::system << "PL" << LanternPaletteId(level, act) << "B.BIN";
 	auto file = ifstream(name.str(), ios::binary);
-#else
-	auto file = ifstream("C:\\Users\\Michael\\Desktop\\wojnis.bin", ios::binary);
-#endif
 
 	if (!file.is_open())
 	{
@@ -536,9 +533,6 @@ static void SetLightParameters()
 	auto mag = D3DXVec3Length(&dir);
 	effect->SetValue("LightDirection", &dir, sizeof(D3DVECTOR));
 	effect->SetFloat("LightLength", mag);
-	//effect->SetVector("LightAmbient", (D3DXVECTOR4*)&light.Ambient);
-	//effect->SetVector("LightDiffuse", (D3DXVECTOR4*)&light.Diffuse);
-	//effect->SetVector("LightSpecular", (D3DXVECTOR4*)&light.Specular);
 }
 
 static void SetMaterialParameters(const D3DMATERIAL9& material)
@@ -551,15 +545,7 @@ static void SetMaterialParameters(const D3DMATERIAL9& material)
 	D3DMATERIALCOLORSOURCE colorsource;
 	device->GetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, (DWORD*)&colorsource);
 	effect->SetInt("DiffuseSource", colorsource);
-	//device->GetRenderState(D3DRS_SPECULARMATERIALSOURCE, (DWORD*)&colorsource);
-	//effect->SetInt("SpecularSource", colorsource);
-	//device->GetRenderState(D3DRS_AMBIENTMATERIALSOURCE, (DWORD*)&colorsource);
-	//effect->SetInt("AmbientSource", colorsource);
-
-	//effect->SetVector("MaterialAmbient", (D3DXVECTOR4*)&material.Ambient);
 	effect->SetVector("MaterialDiffuse", (D3DXVECTOR4*)&material.Diffuse);
-	//effect->SetVector("MaterialSpecular", (D3DXVECTOR4*)&material.Specular);
-	//effect->SetFloat("MaterialPower", material.Power);
 }
 
 static void __cdecl CorrectMaterial_r()
@@ -738,15 +724,10 @@ static void __cdecl Direct3D_SetWorldTransform_r()
 	effect->SetMatrix("ProjectionMatrix", &_ProjectionMatrix);
 	effect->SetMatrix("WorldMatrix", &WorldTransform);
 
-	if (Camera_Data1 != nullptr)
-	{
-		auto position = D3DXVECTOR4(*(D3DVECTOR*)&Camera_Data1->Position, 1);
-		effect->SetVector("CameraPosition", &position);
-	}
-
 	auto wvMatrix = WorldTransform * _ViewMatrix;
 	D3DXMatrixInverse(&wvMatrix, nullptr, &wvMatrix);
 	D3DXMatrixTranspose(&wvMatrix, &wvMatrix);
+	// The inverse transpose matrix is used for environment mapping.
 	effect->SetMatrix("wvMatrixInvT", &wvMatrix);
 }
 
@@ -767,10 +748,9 @@ static void __cdecl CharSel_LoadA_r()
 	original();
 }
 
-static void MeshNull_CreateVertexBuffer_original(MeshSetBuffer* mesh, int count)
+static void MeshSet_CreateVertexBuffer_original(MeshSetBuffer* mesh, int count)
 {
-	// ReSharper disable once CppEntityNeverUsed
-	auto original = MeshNull_CreateVertexBuffer_t->Target();
+	auto original = MeshSet_CreateVertexBuffer_t->Target();
 	__asm
 	{
 		mov edi, mesh
@@ -781,7 +761,7 @@ static void MeshNull_CreateVertexBuffer_original(MeshSetBuffer* mesh, int count)
 }
 
 // Overrides landtable vertex colors with white (retaining alpha channel)
-static void __cdecl MeshNull_CreateVertexBuffer_c(MeshSetBuffer* mesh, int count)
+static void __cdecl MeshSet_CreateVertexBuffer_c(MeshSetBuffer* mesh, int count)
 {
 	if (mesh->VertexBuffer == nullptr && mesh->Meshset->vertcolor != nullptr)
 	{
@@ -809,15 +789,15 @@ static void __cdecl MeshNull_CreateVertexBuffer_c(MeshSetBuffer* mesh, int count
 		}
 	}
 
-	MeshNull_CreateVertexBuffer_original(mesh, count);
+	MeshSet_CreateVertexBuffer_original(mesh, count);
 }
-static void __declspec(naked) MeshNull_CreateVertexBuffer_r()
+static void __declspec(naked) MeshSet_CreateVertexBuffer_r()
 {
 	__asm
 	{
 		push [esp + 04h] // count
 		push edi         // mesh
-		call MeshNull_CreateVertexBuffer_c
+		call MeshSet_CreateVertexBuffer_c
 		pop edi          // mesh
 		add esp, 4       // count
 		retn
@@ -880,17 +860,17 @@ extern "C"
 		globals::system.append("\\system\\");
 
 		d3d::InitTrampolines();
-		Direct3D_ParseMaterial_t      = new Trampoline(0x00784850, 0x00784858, Direct3D_ParseMaterial_r);
-		Direct3D_PerformLighting_t    = new Trampoline(0x00412420, 0x00412426, Direct3D_PerformLighting_r);
-		Direct3D_SetWorldTransform_t  = new Trampoline(0x00791AB0, 0x00791AB5, Direct3D_SetWorldTransform_r);
-		DrawLandTable_t               = new Trampoline(0x0043A6A0, 0x0043A6A8, DrawLandTable_r);
-		CharSel_LoadA_t               = new Trampoline(0x00512BC0, 0x00512BC6, CharSel_LoadA_r);
-		MeshNull_CreateVertexBuffer_t = new Trampoline(0x007853D0, 0x007853D6, MeshNull_CreateVertexBuffer_r);
-		SetLevelAndAct_t              = new Trampoline(0x00414570, 0x00414576, SetLevelAndAct_r);
-		GoToNextLevel_t               = new Trampoline(0x00414610, 0x00414616, GoToNextLevel_r);
-		IncrementAct_t                = new Trampoline(0x004146E0, 0x004146E5, IncrementAct_r);
-		SetTimeOfDay_t                = new Trampoline(0x00412C00, 0x00412C05, SetTimeOfDay_r);
-		LoadLevelFiles_t              = new Trampoline(0x00422AD0, 0x00422AD8, LoadLevelFiles_r);
+		Direct3D_ParseMaterial_t     = new Trampoline(0x00784850, 0x00784858, Direct3D_ParseMaterial_r);
+		Direct3D_PerformLighting_t   = new Trampoline(0x00412420, 0x00412426, Direct3D_PerformLighting_r);
+		Direct3D_SetWorldTransform_t = new Trampoline(0x00791AB0, 0x00791AB5, Direct3D_SetWorldTransform_r);
+		DrawLandTable_t              = new Trampoline(0x0043A6A0, 0x0043A6A8, DrawLandTable_r);
+		CharSel_LoadA_t              = new Trampoline(0x00512BC0, 0x00512BC6, CharSel_LoadA_r);
+		MeshSet_CreateVertexBuffer_t = new Trampoline(0x007853D0, 0x007853D6, MeshSet_CreateVertexBuffer_r);
+		SetLevelAndAct_t             = new Trampoline(0x00414570, 0x00414576, SetLevelAndAct_r);
+		GoToNextLevel_t              = new Trampoline(0x00414610, 0x00414616, GoToNextLevel_r);
+		IncrementAct_t               = new Trampoline(0x004146E0, 0x004146E5, IncrementAct_r);
+		SetTimeOfDay_t               = new Trampoline(0x00412C00, 0x00412C05, SetTimeOfDay_r);
+		LoadLevelFiles_t             = new Trampoline(0x00422AD0, 0x00422AD8, LoadLevelFiles_r);
 
 		// Correcting a function call since they're relative
 		WriteCall(IncrementAct_t->Target(), (void*)0x00424830);
@@ -909,22 +889,6 @@ extern "C"
 
 		if (d3d::effect == nullptr)
 			return;
-
-#if 0
-		if (pad)
-		{
-			auto pressed = pad->PressedButtons;
-
-			if (pressed & Buttons_Up)
-			{
-				++use_palette %= 8;
-			}
-			else if (pressed & Buttons_Down)
-			{
-				use_palette = !use_palette ? 7 : use_palette - 1;
-			}
-		}
-#endif
 
 		DisplayLightDirection();
 	}
