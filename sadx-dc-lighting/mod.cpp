@@ -21,7 +21,6 @@
 using namespace std;
 
 // TODO: split this file; it's way too huge.
-// TODO: load resources from SYSTEM folder
 // TODO: figure out why occasional flickering happens
 
 #pragma region Types
@@ -30,36 +29,6 @@ using namespace std;
 struct ColorPair
 {
 	NJS_COLOR diffuse, specular;
-};
-
-// TODO: move to mod loader
-struct PaletteLight
-{
-	Uint8 Level;
-	Uint8 Act;
-	Uint8 Flags;
-	Uint8 Type;
-	NJS_VECTOR Direction;
-	float DIF;     // (0~4 ) Diffuse
-	float AMB_R;   // (0~4 ) Ambient R
-	float AMB_G;   // (0~4 ) Ambient G
-	float AMB_B;   // (0~4 ) Ambient B
-	float CO_pow;  // (0~99) Upper Color Power (higher is less visible)
-	float CO_R;    // (0~4 ) Upper Color R
-	float CO_G;    // (0~4 ) Upper Color G
-	float CO_B;    // (0~4 ) Upper Color B
-	float SP_pow;  // (0~99) Upper Specular Power (higher is less visible)
-	float SP_R;    // (0~4 ) Upper Specular R
-	float SP_G;    // (0~4 ) Upper Specular G
-	float SP_B;    // (0~4 ) Upper Specular B
-	float CO2_pow; // (0~99) Lower Color Power (higher is less visible)
-	int CO2_R;     // (0~4 ) Lower Color R
-	int CO2_G;     // (0~4 ) Lower Color G
-	int CO2_B;     // (0~4 ) Lower Color B
-	float SP2_pow; // (0~99) Lower Specular Power (higher is less visible)
-	float SP2_R;   // (0~4 ) Lower Specular R
-	float SP2_G;   // (0~4 ) Lower Specular G
-	float SP2_B;   // (0~4 ) Lower Specular B
 };
 
 struct LanternPalette
@@ -120,11 +89,6 @@ DataPointer(Uint32, _nj_constant_or_attr, 0x03D0F9C4);
 DataPointer(Uint32, _nj_constant_and_attr, 0x03D0F840);
 DataPointer(Uint32, _nj_control_3d, 0x03D0F9C8);
 DataArray(StageLightData, CurrentStageLights, 0x03ABD9F8, 4);
-
-FunctionPointer(Bool, njPushMatrixEx, (void), 0x00781C80);
-FastcallFunctionPointer(void, njUnitMatrix, (NJS_MATRIX* m), 0x007875F0);
-FastcallFunctionPointer(void, njCalcVector, (NJS_MATRIX* m, NJS_VECTOR* vs, NJS_VECTOR* vd), 0x00784D60);
-FunctionPointer(Bool, njPopMatrixEx, (void), 0x007816E0);
 
 #pragma region Palette loading
 /// <summary>
@@ -334,7 +298,7 @@ static void UpdateLightDirections(const NJS_VECTOR& dir)
 {
 	int level = CurrentLevel;
 	int act = CurrentAct;
-	DoTimeOfDayLighting(&level, &act);
+	GetTimeOfDayLevelAndAct(&level, &act);
 
 	int n = 0;
 	for (StageLightData* i = GetStageLight(level, act, n); i != nullptr; i = GetStageLight(level, act, ++n))
@@ -458,7 +422,7 @@ void LoadLanternFiles()
 		int level = CurrentLevel;
 		int act = i;
 
-		DoTimeOfDayLighting(&level, &act);
+		GetTimeOfDayLevelAndAct(&level, &act);
 
 		if (level == last_level && act == last_act && time == last_time)
 			break;
