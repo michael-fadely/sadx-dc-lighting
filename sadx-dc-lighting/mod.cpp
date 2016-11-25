@@ -57,7 +57,6 @@ static_assert(sizeof(PaletteLight) == 0x60, "AGAIN TRY");
 static Trampoline* Direct3D_ParseMaterial_t     = nullptr;
 static Trampoline* Direct3D_PerformLighting_t   = nullptr;
 static Trampoline* Direct3D_SetWorldTransform_t = nullptr;
-static Trampoline* DrawLandTable_t              = nullptr;
 static Trampoline* CharSel_LoadA_t              = nullptr;
 static Trampoline* MeshSet_CreateVertexBuffer_t = nullptr;
 static Trampoline* SetLevelAndAct_t             = nullptr;
@@ -65,18 +64,20 @@ static Trampoline* GoToNextLevel_t              = nullptr;
 static Trampoline* IncrementAct_t               = nullptr;
 static Trampoline* SetTimeOfDay_t               = nullptr;
 static Trampoline* LoadLevelFiles_t             = nullptr;
+static Trampoline* Direct3D_SetTexList_t        = nullptr;
 
 static Uint32 last_level    = 0;
 static Uint32 last_act      = 0;
+static Sint32 last_type     = 0;
 static Sint8 last_time      = 0;
 static bool use_palette     = false;
-static bool is_landtable    = false;
 static NJS_VECTOR light_dir = {};
 
 static LanternPalette palettes[8] = {};
 
 static D3DXMATRIX _ViewMatrix, _ProjectionMatrix;
 
+DataArray(StageLightData, CurrentStageLights, 0x03ABD9F8, 4);
 //DataArray(PaletteLight, LightPaletteData, 0x00903E88, 256);
 DataPointer(PaletteLight, LSPalette, 0x03ABDAF0);
 DataPointer(EntityData1*, Camera_Data1, 0x03B2CBB0);
@@ -88,7 +89,8 @@ DataPointer(NJS_COLOR, EntityVertexColor, 0x03D0848C);
 DataPointer(Uint32, _nj_constant_or_attr, 0x03D0F9C4);
 DataPointer(Uint32, _nj_constant_and_attr, 0x03D0F840);
 DataPointer(Uint32, _nj_control_3d, 0x03D0F9C8);
-DataArray(StageLightData, CurrentStageLights, 0x03ABD9F8, 4);
+DataPointer(NJS_TEXLIST*, CommonTextures, 0x03B290B0);
+DataPointer(NJS_TEXLIST*, Direct3D_CurrentTexList, 0x03D0FA24);
 
 #pragma region Palette loading
 /// <summary>
@@ -583,8 +585,9 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 	do_effect = true;
 }
 
-static void SetPaletteLights(int type)
+static void SetPaletteLights(int type, bool common_object = false)
 {
+	last_type = type;
 	auto pad = ControllerPointers[0];
 	if (d3d::effect == nullptr || pad && pad->HeldButtons & Buttons_Z)
 	{
@@ -614,7 +617,7 @@ static void SetPaletteLights(int type)
 	{
 		case 0:
 			diffuse = 0;
-			specular = is_landtable ? 0 : 1;
+			specular = common_object ? 1 : 0;
 			light_dir = *(NJS_VECTOR*)&Direct3D_CurrentLight.Direction;
 			break;
 
@@ -657,18 +660,6 @@ static void __cdecl Direct3D_PerformLighting_r(int type)
 		return;
 
 	SetPaletteLights(type);
-}
-
-static void __cdecl DrawLandTable_r()
-{
-	is_landtable = true;
-	SetPaletteLights(0);
-
-	auto original = (decltype(DrawLandTable_r)*)DrawLandTable_t->Target();
-	original();
-
-	is_landtable = false;
-	SetPaletteLights(0);
 }
 
 static void __cdecl Direct3D_SetWorldTransform_r()
@@ -714,6 +705,7 @@ static void __cdecl CharSel_LoadA_r()
 
 static void MeshSet_CreateVertexBuffer_original(MeshSetBuffer* mesh, int count)
 {
+	// ReSharper disable once CppEntityNeverUsed
 	auto original = MeshSet_CreateVertexBuffer_t->Target();
 	__asm
 	{
@@ -768,21 +760,21 @@ static void __declspec(naked) MeshSet_CreateVertexBuffer_r()
 	}
 }
 
-void __cdecl SetLevelAndAct_r(Uint8 level, Uint8 act)
+static void __cdecl SetLevelAndAct_r(Uint8 level, Uint8 act)
 {
 	auto original = (decltype(SetLevelAndAct_r)*)SetLevelAndAct_t->Target();
 	original(level, act);
 	LoadLanternFiles();
 }
 
-void __cdecl GoToNextLevel_r()
+static void __cdecl GoToNextLevel_r()
 {
 	auto original = (decltype(GoToNextLevel_r)*)GoToNextLevel_t->Target();
 	original();
 	LoadLanternFiles();
 }
 
-void __cdecl IncrementAct_r(int amount)
+static void __cdecl IncrementAct_r(int amount)
 {
 	auto original = (decltype(IncrementAct_r)*)IncrementAct_t->Target();
 	original(amount);
@@ -793,7 +785,7 @@ void __cdecl IncrementAct_r(int amount)
 	}
 }
 
-void __cdecl SetTimeOfDay_r(Sint8 time)
+static void __cdecl SetTimeOfDay_r(Sint8 time)
 {
 	auto original = (decltype(SetTimeOfDay_r)*)SetTimeOfDay_t->Target();
 	original(time);
@@ -805,6 +797,23 @@ static void __cdecl LoadLevelFiles_r()
 	auto original = (decltype(LoadLevelFiles_r)*)LoadLevelFiles_t->Target();
 	original();
 	LoadLanternFiles();
+}
+
+static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
+{
+	auto original = (decltype(Direct3D_SetTexList_r)*)Direct3D_SetTexList_t->Target();
+
+	if (texlist != Direct3D_CurrentTexList)
+	{
+		bool common = texlist == CommonTextures;
+
+		if (common || last_type == 0)
+		{
+			SetPaletteLights(0, common);
+		}
+	}
+
+	return original(texlist);
 }
 
 extern "C"
@@ -827,7 +836,6 @@ extern "C"
 		Direct3D_ParseMaterial_t     = new Trampoline(0x00784850, 0x00784858, Direct3D_ParseMaterial_r);
 		Direct3D_PerformLighting_t   = new Trampoline(0x00412420, 0x00412426, Direct3D_PerformLighting_r);
 		Direct3D_SetWorldTransform_t = new Trampoline(0x00791AB0, 0x00791AB5, Direct3D_SetWorldTransform_r);
-		DrawLandTable_t              = new Trampoline(0x0043A6A0, 0x0043A6A8, DrawLandTable_r);
 		CharSel_LoadA_t              = new Trampoline(0x00512BC0, 0x00512BC6, CharSel_LoadA_r);
 		MeshSet_CreateVertexBuffer_t = new Trampoline(0x007853D0, 0x007853D6, MeshSet_CreateVertexBuffer_r);
 		SetLevelAndAct_t             = new Trampoline(0x00414570, 0x00414576, SetLevelAndAct_r);
@@ -835,6 +843,7 @@ extern "C"
 		IncrementAct_t               = new Trampoline(0x004146E0, 0x004146E5, IncrementAct_r);
 		SetTimeOfDay_t               = new Trampoline(0x00412C00, 0x00412C05, SetTimeOfDay_r);
 		LoadLevelFiles_t             = new Trampoline(0x00422AD0, 0x00422AD8, LoadLevelFiles_r);
+		Direct3D_SetTexList_t        = new Trampoline(0x0077F3D0, 0x0077F3D8, Direct3D_SetTexList_r);
 
 		// Correcting a function call since they're relative
 		WriteCall(IncrementAct_t->Target(), (void*)0x00424830);
