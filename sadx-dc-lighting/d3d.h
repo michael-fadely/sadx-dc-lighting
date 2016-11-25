@@ -12,6 +12,7 @@ namespace d3d
 	void InitTrampolines();
 }
 
+// Same as in the mod loader except with d3d8to9 types.
 #pragma pack(push, 1)
 struct MeshSetBuffer
 {
