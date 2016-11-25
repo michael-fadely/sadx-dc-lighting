@@ -21,7 +21,6 @@
 using namespace std;
 
 // TODO: split this file; it's way too huge.
-// TODO: figure out why occasional flickering happens
 
 #pragma region Types
 
