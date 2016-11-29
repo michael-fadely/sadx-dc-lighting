@@ -569,9 +569,17 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 
 	if (use_texture)
 	{
-		IDirect3DBaseTexture9* texture;
-		device->GetTexture(0, &texture);
-		effect->SetTexture("BaseTexture", texture);
+		auto texid = material->attr_texId & 0x3FFF;
+		auto textures = Direct3D_CurrentTexList->textures;
+		NJS_TEXMEMLIST* texmem = textures ? (NJS_TEXMEMLIST*)textures[texid].texaddr : nullptr;
+		if (texmem != nullptr)
+		{
+			auto texture = (Direct3DTexture8*)texmem->texinfo.texsurface.pSurface;
+			if (texture)
+			{
+				effect->SetTexture("BaseTexture", texture->GetProxyInterface());
+			}
+		}
 	}
 
 	effect->SetBool("TextureEnabled", use_texture);
