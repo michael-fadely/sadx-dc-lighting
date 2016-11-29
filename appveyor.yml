@@ -1,0 +1,15 @@
+version: 1.0.{build}
+image: Visual Studio 2015
+install:
+- cmd: git submodule update --init --recursive
+build:
+  project: sadx-dc-lighting.sln
+  verbosity: minimal
+artifacts:
+- path: bin
+only_commits:
+  files:
+    - sadx-mod-loader/
+    - d3d8to9/
+    - sadx-dc-lighting/
+    - sadx-dc-lighting.sln
