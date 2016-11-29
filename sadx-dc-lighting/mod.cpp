@@ -566,8 +566,6 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 	}
 
 	globals::light = (flags & NJD_FLAG_IGNORE_LIGHT) == 0;
-	SetLightParameters();
-
 	effect->SetBool("AlphaEnabled", (flags & NJD_FLAG_USE_ALPHA) != 0);
 
 	bool use_texture = (flags & NJD_FLAG_USE_TEXTURE) != 0;
@@ -580,7 +578,7 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 		if (texmem != nullptr)
 		{
 			auto texture = (Direct3DTexture8*)texmem->texinfo.texsurface.pSurface;
-			if (texture)
+			if (texture != nullptr)
 			{
 				effect->SetTexture("BaseTexture", texture->GetProxyInterface());
 			}
