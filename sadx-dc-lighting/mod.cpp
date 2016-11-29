@@ -53,19 +53,19 @@ static_assert(sizeof(PaletteLight) == 0x60, "AGAIN TRY");
 
 #pragma endregion
 
+static Trampoline* CharSel_LoadA_t                    = nullptr;
 static Trampoline* Direct3D_ParseMaterial_t           = nullptr;
 static Trampoline* Direct3D_PerformLighting_t         = nullptr;
+static Trampoline* Direct3D_SetProjectionMatrix_t     = nullptr;
+static Trampoline* Direct3D_SetTexList_t              = nullptr;
+static Trampoline* Direct3D_SetViewportAndTransform_t = nullptr;
 static Trampoline* Direct3D_SetWorldTransform_t       = nullptr;
-static Trampoline* CharSel_LoadA_t                    = nullptr;
-static Trampoline* MeshSet_CreateVertexBuffer_t       = nullptr;
-static Trampoline* SetLevelAndAct_t                   = nullptr;
 static Trampoline* GoToNextLevel_t                    = nullptr;
 static Trampoline* IncrementAct_t                     = nullptr;
-static Trampoline* SetTimeOfDay_t                     = nullptr;
 static Trampoline* LoadLevelFiles_t                   = nullptr;
-static Trampoline* Direct3D_SetTexList_t              = nullptr;
-static Trampoline* Direct3D_SetProjectionMatrix_t     = nullptr;
-static Trampoline* Direct3D_SetViewportAndTransform_t = nullptr;
+static Trampoline* MeshSet_CreateVertexBuffer_t       = nullptr;
+static Trampoline* SetLevelAndAct_t                   = nullptr;
+static Trampoline* SetTimeOfDay_t                     = nullptr;
 
 static Uint32 last_level    = 0;
 static Uint32 last_act      = 0;
@@ -76,24 +76,25 @@ static NJS_VECTOR light_dir = {};
 
 static LanternPalette palettes[8] = {};
 
+DataArray(PaletteLight,   LightPaletteData,   0x00903E88, 256);
 DataArray(StageLightData, CurrentStageLights, 0x03ABD9F8, 4);
-//DataArray(PaletteLight, LightPaletteData, 0x00903E88, 256);
-DataPointer(PaletteLight, LSPalette, 0x03ABDAF0);
-DataPointer(EntityData1*, Camera_Data1, 0x03B2CBB0);
-DataPointer(Uint32, LastRenderFlags, 0x03D08498);
-DataPointer(D3DLIGHT8, Direct3D_CurrentLight, 0x03ABDB50);
-DataPointer(D3DXMATRIX, WorldMatrix, 0x03D12900);
-DataPointer(D3DXMATRIX, InverseViewMatrix, 0x0389D358);
-DataPointer(D3DXMATRIX, ViewMatrix, 0x0389D398);
-DataPointer(D3DXMATRIX, _ProjectionMatrix, 0x03D129C0);
-DataPointer(NJS_COLOR, LandTableVertexColor, 0x03D08494);
-DataPointer(NJS_COLOR, EntityVertexColor, 0x03D0848C);
-DataPointer(Uint32, _nj_constant_or_attr, 0x03D0F9C4);
-DataPointer(Uint32, _nj_constant_and_attr, 0x03D0F840);
-DataPointer(Uint32, _nj_control_3d, 0x03D0F9C8);
-DataPointer(NJS_TEXLIST*, CommonTextures, 0x03B290B0);
-DataPointer(NJS_TEXLIST*, Direct3D_CurrentTexList, 0x03D0FA24);
-DataPointer(int, TransformAndViewportInvalid, 0x03D0FD1C);
+
+DataPointer(D3DLIGHT8,    Direct3D_CurrentLight,       0x03ABDB50);
+DataPointer(D3DXMATRIX,   InverseViewMatrix,           0x0389D358);
+DataPointer(D3DXMATRIX,   ViewMatrix,                  0x0389D398);
+DataPointer(D3DXMATRIX,   WorldMatrix,                 0x03D12900);
+DataPointer(D3DXMATRIX,   _ProjectionMatrix,           0x03D129C0);
+DataPointer(EntityData1*, Camera_Data1,                0x03B2CBB0);
+DataPointer(NJS_COLOR,    EntityVertexColor,           0x03D0848C);
+DataPointer(NJS_COLOR,    LandTableVertexColor,        0x03D08494);
+DataPointer(NJS_TEXLIST*, CommonTextures,              0x03B290B0);
+DataPointer(NJS_TEXLIST*, Direct3D_CurrentTexList,     0x03D0FA24);
+DataPointer(PaletteLight, LSPalette,                   0x03ABDAF0);
+DataPointer(Uint32,       LastRenderFlags,             0x03D08498);
+DataPointer(Uint32,       _nj_constant_and_attr,       0x03D0F840);
+DataPointer(Uint32,       _nj_constant_or_attr,        0x03D0F9C4);
+DataPointer(Uint32,       _nj_control_3d,              0x03D0F9C8);
+DataPointer(int,          TransformAndViewportInvalid, 0x03D0FD1C);
 
 #pragma region Palette loading
 /// <summary>
@@ -874,20 +875,20 @@ extern "C"
 		globals::system.append("\\system\\");
 
 		d3d::InitTrampolines();
+		CharSel_LoadA_t                    = new Trampoline(0x00512BC0, 0x00512BC6, CharSel_LoadA_r);
 		Direct3D_ParseMaterial_t           = new Trampoline(0x00784850, 0x00784858, Direct3D_ParseMaterial_r);
 		Direct3D_PerformLighting_t         = new Trampoline(0x00412420, 0x00412426, Direct3D_PerformLighting_r);
+		Direct3D_SetProjectionMatrix_t     = new Trampoline(0x00791170, 0x00791175, Direct3D_SetProjectionMatrix_r);
+		Direct3D_SetTexList_t              = new Trampoline(0x0077F3D0, 0x0077F3D8, Direct3D_SetTexList_r);
+		Direct3D_SetViewportAndTransform_t = new Trampoline(0x007912E0, 0x007912E8, Direct3D_SetViewportAndTransform_r);
 		Direct3D_SetWorldTransform_t       = new Trampoline(0x00791AB0, 0x00791AB5, Direct3D_SetWorldTransform_r);
-		CharSel_LoadA_t                    = new Trampoline(0x00512BC0, 0x00512BC6, CharSel_LoadA_r);
-		MeshSet_CreateVertexBuffer_t       = new Trampoline(0x007853D0, 0x007853D6, MeshSet_CreateVertexBuffer_r);
-		SetLevelAndAct_t                   = new Trampoline(0x00414570, 0x00414576, SetLevelAndAct_r);
 		GoToNextLevel_t                    = new Trampoline(0x00414610, 0x00414616, GoToNextLevel_r);
 		IncrementAct_t                     = new Trampoline(0x004146E0, 0x004146E5, IncrementAct_r);
-		SetTimeOfDay_t                     = new Trampoline(0x00412C00, 0x00412C05, SetTimeOfDay_r);
 		LoadLevelFiles_t                   = new Trampoline(0x00422AD0, 0x00422AD8, LoadLevelFiles_r);
-		Direct3D_SetTexList_t              = new Trampoline(0x0077F3D0, 0x0077F3D8, Direct3D_SetTexList_r);
-		Direct3D_SetProjectionMatrix_t     = new Trampoline(0x00791170, 0x00791175, Direct3D_SetProjectionMatrix_r);
-		Direct3D_SetViewportAndTransform_t = new Trampoline(0x007912E0, 0x007912E8, Direct3D_SetViewportAndTransform_r);
-
+		MeshSet_CreateVertexBuffer_t       = new Trampoline(0x007853D0, 0x007853D6, MeshSet_CreateVertexBuffer_r);
+		SetLevelAndAct_t                   = new Trampoline(0x00414570, 0x00414576, SetLevelAndAct_r);
+		SetTimeOfDay_t                     = new Trampoline(0x00412C00, 0x00412C05, SetTimeOfDay_r);
+		
 		// Correcting a function call since they're relative
 		WriteCall(IncrementAct_t->Target(), (void*)0x00424830);
 
