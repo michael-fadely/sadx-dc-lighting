@@ -176,7 +176,7 @@ inline void NoLighting(in float4 color, out float4 diffuse, out float4 specular)
 }
 inline void ApplyFog(float factor, inout float4 result)
 {
-	result = factor * result + (1.0 - factor) * FogColor;
+	result.rgb = (float3)(factor * result + (1.0 - factor) * FogColor);
 }
 inline void CheckAlpha(in float4 color)
 {
@@ -239,31 +239,16 @@ PS_IN vs_neither(VS_IN input)
 
 float4 ps_main(PS_IN input) : COLOR
 {
-	float fog = CalcFogFactor(input.fogDist);
-
-	if (fog == 0)
-	{
-		return FogColor;
-	}
-
 	float4 result = Blend(input.tex, input.diffuse, input.specular);
-
 	CheckAlpha(result);
-	ApplyFog(fog, result);
+	ApplyFog(CalcFogFactor(input.fogDist), result);
 	return result;
 }
 float4 ps_nolight(PS_IN input) : COLOR
 {
-	float fog = CalcFogFactor(input.fogDist);
-
-	if (fog == 0)
-	{
-		return FogColor;
-	}
-
 	float4 result = Blend(input.tex, input.diffuse, input.specular);
 	CheckAlpha(result);
-	ApplyFog(fog, result);
+	ApplyFog(CalcFogFactor(input.fogDist), result);
 	return result;
 }
 float4 ps_nofog(PS_IN input) : COLOR
