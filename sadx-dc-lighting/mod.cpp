@@ -81,6 +81,7 @@ DataArray(StageLightData, CurrentStageLights, 0x03ABD9F8, 4);
 
 DataPointer(D3DLIGHT8,    Direct3D_CurrentLight,       0x03ABDB50);
 DataPointer(D3DXMATRIX,   InverseViewMatrix,           0x0389D358);
+DataPointer(D3DXMATRIX,   TransformationMatrix,        0x03D0FD80);
 DataPointer(D3DXMATRIX,   ViewMatrix,                  0x0389D398);
 DataPointer(D3DXMATRIX,   WorldMatrix,                 0x03D12900);
 DataPointer(D3DXMATRIX,   _ProjectionMatrix,           0x03D129C0);
@@ -830,7 +831,9 @@ static void __stdcall Direct3D_SetProjectionMatrix_r(float hfov, float nearPlane
 		return;
 
 	d3d::effect->SetMatrix("ViewMatrix", &ViewMatrix);
-	d3d::effect->SetMatrix("ProjectionMatrix", &_ProjectionMatrix);
+
+	auto m = _ProjectionMatrix * TransformationMatrix;
+	d3d::effect->SetMatrix("ProjectionMatrix", &m);
 }
 
 static void __cdecl Direct3D_SetViewportAndTransform_r()
@@ -841,11 +844,7 @@ static void __cdecl Direct3D_SetViewportAndTransform_r()
 
 	if (d3d::effect != nullptr && invalid)
 	{
-		// GetTransform is being used because the projection matrix
-		// is multiplied by the newly updated transformation matrix
-		// using device->MultiplyTransform.
-		D3DXMATRIX m;
-		d3d::device->GetTransform(D3DTS_PROJECTION, &m);
+		auto m = _ProjectionMatrix * TransformationMatrix;
 		d3d::effect->SetMatrix("ProjectionMatrix", &m);
 	}
 }
