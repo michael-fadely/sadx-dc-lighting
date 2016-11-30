@@ -84,19 +84,25 @@ using namespace d3d;
 enum TechniqueIndex : Uint32
 {
 	Standard = 0,
-	NoLight = 1 << 0,
-	NoFog = 1 << 1,
-	Neither = NoFog | NoLight
+	NoLight  = 1 << 0,
+	NoFog    = 1 << 1,
+	Neither  = NoFog | NoLight
 };
+
+TechniqueIndex last_technique = Standard;
 
 static void begin()
 {
 	if (!do_effect || began_effect || effect == nullptr)
 		return;
 
-	TechniqueIndex t = (TechniqueIndex)((char)!globals::light | (char)!globals::fog << 1 & 2);
+	TechniqueIndex technique = (TechniqueIndex)((char)!globals::light | (char)!globals::fog << 1 & 2);
+	if (technique != last_technique)
+	{
+		effect->SetTechnique(techniques[technique]);
+		last_technique = technique;
+	}
 
-	effect->SetTechnique(techniques[t]);
 	effect->Begin(&passes, 0);
 
 	if (passes > 1)
@@ -455,6 +461,7 @@ void d3d::LoadShader()
 		techniques[1] = effect->GetTechniqueByName("NoLight");
 		techniques[2] = effect->GetTechniqueByName("NoFog");
 		techniques[3] = effect->GetTechniqueByName("Neither");
+		effect->SetTechnique(techniques[0]);
 	}
 	catch (std::exception& ex)
 	{
