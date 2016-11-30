@@ -165,7 +165,21 @@ static void DrawPolyBuff(PolyBuff* _this, D3DPRIMITIVETYPE type)
 	_this->LockCount = 0;
 }
 
+static void SetLightParameters()
+{
+	using namespace d3d;
+
+	if (!UsePalette() || effect == nullptr)
+		return;
+
+	auto dir = -*(D3DXVECTOR3*)&Direct3D_CurrentLight.Direction;
+	auto mag = D3DXVec3Length(&dir);
+	effect->SetValue("LightDirection", &dir, sizeof(D3DVECTOR));
+	effect->SetFloat("LightLength", mag);
+}
+
 #pragma region Trampolines
+
 static void __cdecl sub_77EAD0_r(void* a1, int a2, int a3)
 {
 	begin();
@@ -204,8 +218,6 @@ static void __fastcall PolyBuff_DrawTriangleList_r(PolyBuff* _this)
 	end();
 }
 
-#pragma endregion
-
 static void __fastcall CreateDirect3DDevice_r(int a1, int behavior, int type)
 {
 	ORIGINAL(CreateDirect3DDevice)(a1, behavior, type);
@@ -216,6 +228,84 @@ static void __fastcall CreateDirect3DDevice_r(int a1, int behavior, int type)
 		LoadShader();
 	}
 }
+
+static void __cdecl Direct3D_PerformLighting_r(int type)
+{
+	FunctionPointer(void, original, (int), Direct3D_PerformLighting_t->Target());
+	original(0);
+
+	if (effect == nullptr)
+		return;
+
+	SetPaletteLights(type);
+	SetLightParameters();
+}
+
+static void __cdecl Direct3D_SetWorldTransform_r()
+{
+	VoidFunc(original, Direct3D_SetWorldTransform_t->Target());
+	original();
+
+	using namespace d3d;
+
+	if (!UsePalette() || effect == nullptr)
+		return;
+
+	effect->SetMatrix("WorldMatrix", &WorldMatrix);
+
+	auto wvMatrix = WorldMatrix * ViewMatrix;
+	D3DXMatrixInverse(&wvMatrix, nullptr, &wvMatrix);
+	D3DXMatrixTranspose(&wvMatrix, &wvMatrix);
+	// The inverse transpose matrix is used for environment mapping.
+	effect->SetMatrix("wvMatrixInvT", &wvMatrix);
+}
+
+static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
+{
+	auto original = (decltype(Direct3D_SetTexList_r)*)Direct3D_SetTexList_t->Target();
+
+	if (texlist != Direct3D_CurrentTexList)
+	{
+		bool common = texlist == CommonTextures;
+
+		if (common || globals::last_type == 0)
+		{
+			SetPaletteLights(0, common);
+			SetLightParameters();
+		}
+	}
+
+	return original(texlist);
+}
+
+static void __stdcall Direct3D_SetProjectionMatrix_r(float hfov, float nearPlane, float farPlane)
+{
+	auto original = (decltype(Direct3D_SetProjectionMatrix_r)*)Direct3D_SetProjectionMatrix_t->Target();
+	original(hfov, nearPlane, farPlane);
+
+	if (effect == nullptr)
+		return;
+
+	effect->SetMatrix("ViewMatrix", &ViewMatrix);
+
+	auto m = _ProjectionMatrix * TransformationMatrix;
+	effect->SetMatrix("ProjectionMatrix", &m);
+}
+
+static void __cdecl Direct3D_SetViewportAndTransform_r()
+{
+	auto original = (decltype(Direct3D_SetViewportAndTransform_r)*)Direct3D_SetViewportAndTransform_t->Target();
+	bool invalid = TransformAndViewportInvalid != 0;
+	original();
+
+	if (effect != nullptr && invalid)
+	{
+		auto m = _ProjectionMatrix * TransformationMatrix;
+		effect->SetMatrix("ProjectionMatrix", &m);
+	}
+}
+
+#pragma endregion
 
 static void __cdecl DrawMeshSetBuffer_c(MeshSetBuffer* buffer)
 {
@@ -261,50 +351,6 @@ static void __declspec(naked) DrawMeshSetBuffer_asm()
 		pop esi
 		jmp loc_77EF09
 	}
-}
-
-static void SetLightParameters()
-{
-	using namespace d3d;
-
-	if (!UsePalette() || effect == nullptr)
-		return;
-
-	auto dir = -*(D3DXVECTOR3*)&Direct3D_CurrentLight.Direction;
-	auto mag = D3DXVec3Length(&dir);
-	effect->SetValue("LightDirection", &dir, sizeof(D3DVECTOR));
-	effect->SetFloat("LightLength", mag);
-}
-
-static void __cdecl Direct3D_PerformLighting_r(int type)
-{
-	FunctionPointer(void, original, (int), Direct3D_PerformLighting_t->Target());
-	original(0);
-
-	if (effect == nullptr)
-		return;
-
-	SetPaletteLights(type);
-	SetLightParameters();
-}
-
-static void __cdecl Direct3D_SetWorldTransform_r()
-{
-	VoidFunc(original, Direct3D_SetWorldTransform_t->Target());
-	original();
-
-	using namespace d3d;
-
-	if (!UsePalette() || effect == nullptr)
-		return;
-
-	effect->SetMatrix("WorldMatrix", &WorldMatrix);
-
-	auto wvMatrix = WorldMatrix * ViewMatrix;
-	D3DXMatrixInverse(&wvMatrix, nullptr, &wvMatrix);
-	D3DXMatrixTranspose(&wvMatrix, &wvMatrix);
-	// The inverse transpose matrix is used for environment mapping.
-	effect->SetMatrix("wvMatrixInvT", &wvMatrix);
 }
 
 static void MeshSet_CreateVertexBuffer_original(MeshSetBuffer* mesh, int count)
@@ -361,51 +407,6 @@ static void __declspec(naked) MeshSet_CreateVertexBuffer_r()
 		pop edi          // mesh
 		add esp, 4       // count
 		retn
-	}
-}
-
-static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
-{
-	auto original = (decltype(Direct3D_SetTexList_r)*)Direct3D_SetTexList_t->Target();
-
-	if (texlist != Direct3D_CurrentTexList)
-	{
-		bool common = texlist == CommonTextures;
-
-		if (common || globals::last_type == 0)
-		{
-			SetPaletteLights(0, common);
-			SetLightParameters();
-		}
-	}
-
-	return original(texlist);
-}
-
-static void __stdcall Direct3D_SetProjectionMatrix_r(float hfov, float nearPlane, float farPlane)
-{
-	auto original = (decltype(Direct3D_SetProjectionMatrix_r)*)Direct3D_SetProjectionMatrix_t->Target();
-	original(hfov, nearPlane, farPlane);
-
-	if (effect == nullptr)
-		return;
-
-	effect->SetMatrix("ViewMatrix", &ViewMatrix);
-
-	auto m = _ProjectionMatrix * TransformationMatrix;
-	effect->SetMatrix("ProjectionMatrix", &m);
-}
-
-static void __cdecl Direct3D_SetViewportAndTransform_r()
-{
-	auto original = (decltype(Direct3D_SetViewportAndTransform_r)*)Direct3D_SetViewportAndTransform_t->Target();
-	bool invalid = TransformAndViewportInvalid != 0;
-	original();
-
-	if (effect != nullptr && invalid)
-	{
-		auto m = _ProjectionMatrix * TransformationMatrix;
-		effect->SetMatrix("ProjectionMatrix", &m);
 	}
 }
 
