@@ -15,12 +15,19 @@ build:
 after_build:
 - ps: >-
     Write-Host "Packaging"
+    
     $source = "http://sf94.reimuhakurei.net/share/lantern.7z"
+    
     $destination = "lantern.7z"
+    
     Invoke-WebRequest $source -OutFile $destination
+    
     & 7z e $destination -o"bin\system"
+    
     Write-Host "Creating artifact..."
+    
     & 7z a sadx-dc-lighting.7z bin\*
+    
     & 7z rn sadx-dc-lighting.7z bin sadx-dc-lighting
 
 artifacts:
