@@ -155,7 +155,15 @@ static void DrawPolyBuff(PolyBuff* _this, D3DPRIMITIVETYPE type)
 		{
 			device->SetRenderState(D3DRS_CULLMODE, args->CullMode);
 			cullmode = args->CullMode;
-			effect->CommitChanges();
+
+			if (i == _this->LockCount)
+			{
+				begin();
+			}
+			else
+			{
+				effect->CommitChanges();
+			}
 		}
 
 		device->DrawPrimitive(type, args->StartVertex, args->PrimitiveCount);
@@ -163,6 +171,7 @@ static void DrawPolyBuff(PolyBuff* _this, D3DPRIMITIVETYPE type)
 	}
 
 	_this->LockCount = 0;
+	end();
 }
 
 static void SetLightParameters()
@@ -206,16 +215,12 @@ static void __cdecl njDrawModel_SADX_B_r(NJS_MODEL_SADX* a1)
 
 static void __fastcall PolyBuff_DrawTriangleStrip_r(PolyBuff* _this)
 {
-	begin();
 	DrawPolyBuff(_this, D3DPT_TRIANGLESTRIP);
-	end();
 }
 
 static void __fastcall PolyBuff_DrawTriangleList_r(PolyBuff* _this)
 {
-	begin();
 	DrawPolyBuff(_this, D3DPT_TRIANGLELIST);
-	end();
 }
 
 static void __fastcall CreateDirect3DDevice_r(int a1, int behavior, int type)
