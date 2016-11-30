@@ -12,3 +12,4 @@ only_commits:
     - d3d8to9/
     - sadx-dc-lighting/
     - sadx-dc-lighting.sln
+    - appveyor.yml
