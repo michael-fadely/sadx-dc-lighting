@@ -1,15 +1,35 @@
 version: 1.0.{build}
+
+pull_requests:
+  do_not_increment_build_number: true
+ 
 image: Visual Studio 2015
+configuration: Release
+
 install:
 - cmd: git submodule update --init --recursive
+
 build:
   project: sadx-dc-lighting.sln
+  
+after_build:
+- ps: >-
+    Write-Host "Packaging"
+    $source = "http://sf94.reimuhakurei.net/share/lantern.7z"
+    $destination = "lantern.7z"
+    Invoke-WebRequest $source -OutFile $destination
+    & 7z e $destination -o"bin\system"
+    Write-Host "Creating artifact..."
+    & 7z a sadx-dc-lighting.7z bin\*
+    & 7z rn sadx-dc-lighting.7z bin sadx-dc-lighting
+
 artifacts:
-- path: bin
+- path: sadx-dc-lighting.7z
+
 only_commits:
   files:
-    - sadx-mod-loader/
-    - d3d8to9/
-    - sadx-dc-lighting/
-    - sadx-dc-lighting.sln
     - appveyor.yml
+    - d3d8to9/
+    - sadx-dc-lighting.sln
+    - sadx-dc-lighting/
+    - sadx-mod-loader/
