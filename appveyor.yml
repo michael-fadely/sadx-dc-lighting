@@ -4,7 +4,6 @@ install:
 - cmd: git submodule update --init --recursive
 build:
   project: sadx-dc-lighting.sln
-  verbosity: minimal
 artifacts:
 - path: bin
 only_commits:
