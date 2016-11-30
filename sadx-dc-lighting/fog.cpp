@@ -4,7 +4,6 @@
 #include <d3d9.h>
 
 // Mod loader
-#include <SADXModLoader.h>
 #include <Trampoline.h>
 
 // Local

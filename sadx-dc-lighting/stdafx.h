@@ -16,18 +16,22 @@
 #include <d3d8to9.hpp>
 
 // Mod loader
+#include <ModLoader/MemAccess.h>
 #include <SADXModLoader.h>
 #include <Trampoline.h>
 
 // Standard library
-#include <fstream>
-#include <vector>
 #include <exception>
-#include <string>
+#include <fstream>
+#include <ninja.h>
 #include <sstream>
+#include <string>
+#include <vector>
 
 // Local
+#include "Trampoline.h"
 #include "d3d.h"
 #include "datapointers.h"
 #include "fog.h"
 #include "globals.h"
+#include "lantern.h"

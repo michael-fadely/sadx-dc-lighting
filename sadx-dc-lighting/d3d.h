@@ -2,6 +2,8 @@
 
 #include <d3d9.h>
 #include <d3dx9effect.h>
+#include <d3d8to9.hpp>
+#include <ninja.h>
 
 namespace d3d
 {
