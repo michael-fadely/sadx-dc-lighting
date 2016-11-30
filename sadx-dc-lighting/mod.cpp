@@ -95,9 +95,10 @@ static void SetMaterialParameters(const D3DMATERIAL9& material)
 	if (!UsePalette() || effect == nullptr)
 		return;
 
-	D3DMATERIALCOLORSOURCE colorsource;
-	device->GetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, (DWORD*)&colorsource);
-	effect->SetInt("DiffuseSource", colorsource);
+	// This will need to be re-evaluated for chunk models.
+	//D3DMATERIALCOLORSOURCE colorsource;
+	//device->GetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, (DWORD*)&colorsource);
+	//effect->SetInt("DiffuseSource", colorsource);
 	effect->SetVector("MaterialDiffuse", (D3DXVECTOR4*)&material.Diffuse);
 }
 
