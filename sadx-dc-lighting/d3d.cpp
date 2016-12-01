@@ -179,7 +179,9 @@ static void SetLightParameters()
 	if (!UsePalette() || effect == nullptr)
 		return;
 
-	auto dir = -*(D3DXVECTOR3*)&Direct3D_CurrentLight.Direction;
+	D3DLIGHT9 light;
+	device->GetLight(0, &light);
+	auto dir = -*(D3DXVECTOR3*)&light.Direction;
 	auto mag = D3DXVec3Length(&dir);
 	effect->SetValue("LightDirection", &dir, sizeof(D3DVECTOR));
 	effect->SetFloat("LightLength", mag);
@@ -268,7 +270,6 @@ static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
 		if (common || globals::last_type == 0)
 		{
 			SetPaletteLights(0, common);
-			SetLightParameters();
 		}
 	}
 
