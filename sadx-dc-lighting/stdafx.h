@@ -1,7 +1,10 @@
 #pragma once
 
 #define _D3D8TYPES_H_
+
 #define EXPORT __declspec(dllexport)
+#define TARGET_DYNAMIC(name) ((decltype(name##_r)*)name##_t->Target())
+#define TARGET_STATIC(name) ((decltype(name##_r)*)name##_t.Target())
 
 #define WIN32_LEAN_AND_MEAN
 

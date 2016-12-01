@@ -131,8 +131,7 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 {
 	using namespace d3d;
 
-	auto original = (decltype(Direct3D_ParseMaterial_r)*)Direct3D_ParseMaterial_t->Target();
-	original(material);
+	TARGET_DYNAMIC(Direct3D_ParseMaterial)(material);
 
 	if (effect == nullptr)
 		return;
@@ -181,7 +180,7 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 
 static void __cdecl CharSel_LoadA_r()
 {
-	auto original = (decltype(CharSel_LoadA_r)*)CharSel_LoadA_t->Target();
+	auto original = TARGET_DYNAMIC(CharSel_LoadA);
 
 	NJS_VECTOR dir = { 1.0f, -1.0f, -1.0f };
 
@@ -198,22 +197,19 @@ static void __cdecl CharSel_LoadA_r()
 
 static void __cdecl SetLevelAndAct_r(Uint8 level, Uint8 act)
 {
-	auto original = (decltype(SetLevelAndAct_r)*)SetLevelAndAct_t->Target();
-	original(level, act);
+	TARGET_DYNAMIC(SetLevelAndAct)(level, act);
 	LoadLanternFiles();
 }
 
 static void __cdecl GoToNextLevel_r()
 {
-	auto original = (decltype(GoToNextLevel_r)*)GoToNextLevel_t->Target();
-	original();
+	TARGET_DYNAMIC(GoToNextLevel)();
 	LoadLanternFiles();
 }
 
 static void __cdecl IncrementAct_r(int amount)
 {
-	auto original = (decltype(IncrementAct_r)*)IncrementAct_t->Target();
-	original(amount);
+	TARGET_DYNAMIC(IncrementAct)(amount);
 
 	if (amount != 0)
 	{
@@ -223,15 +219,13 @@ static void __cdecl IncrementAct_r(int amount)
 
 static void __cdecl SetTimeOfDay_r(Sint8 time)
 {
-	auto original = (decltype(SetTimeOfDay_r)*)SetTimeOfDay_t->Target();
-	original(time);
+	TARGET_DYNAMIC(SetTimeOfDay)(time);
 	LoadLanternFiles();
 }
 
 static void __cdecl LoadLevelFiles_r()
 {
-	auto original = (decltype(LoadLevelFiles_r)*)LoadLevelFiles_t->Target();
-	original();
+	TARGET_DYNAMIC(LoadLevelFiles)();
 	LoadLanternFiles();
 }
 

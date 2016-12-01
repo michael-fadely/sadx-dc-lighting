@@ -10,8 +10,6 @@
 #include "d3d.h"
 #include "globals.h"
 
-#define AUTOFUNC(name) ((decltype(name##_r)*)name##_t.Target())
-
 static D3DFOGMODE fog_mode = D3DFOG_NONE;
 
 static void __cdecl njDisableFog_r();
@@ -28,7 +26,7 @@ using namespace d3d;
 
 static void __cdecl njDisableFog_r()
 {
-	AUTOFUNC(njDisableFog)();
+	TARGET_STATIC(njDisableFog)();
 
 	if (effect == nullptr)
 		return;
@@ -42,7 +40,7 @@ static void __cdecl njDisableFog_r()
 
 static void __cdecl njEnableFog_r()
 {
-	AUTOFUNC(njEnableFog)();
+	TARGET_STATIC(njEnableFog)();
 
 	if (effect == nullptr)
 		return;
@@ -56,7 +54,7 @@ static void __cdecl njEnableFog_r()
 
 static void __cdecl njSetFogColor_r(Uint32 c)
 {
-	AUTOFUNC(njSetFogColor)(c);
+	TARGET_STATIC(njSetFogColor)(c);
 
 	if (effect == nullptr)
 		return;
@@ -94,6 +92,6 @@ void SetFogParameters()
 
 static void __cdecl njSetFogTable_r(NJS_FOG_TABLE fogtable)
 {
-	AUTOFUNC(njSetFogTable)(fogtable);
+	TARGET_STATIC(njSetFogTable)(fogtable);
 	SetFogParameters();
 }

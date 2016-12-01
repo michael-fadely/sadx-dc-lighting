@@ -16,8 +16,6 @@
 #include "globals.h"
 #include "lantern.h"
 
-#define ORIGINAL(name) ((decltype(name##_r)*)name##_t->Target())
-
 #pragma pack(push, 1)
 struct __declspec(align(2)) PolyBuff_RenderArgs
 {
@@ -192,25 +190,25 @@ static void SetLightParameters()
 static void __cdecl sub_77EAD0_r(void* a1, int a2, int a3)
 {
 	begin();
-	RunTrampoline(ORIGINAL(sub_77EAD0), a1, a2, a3);
+	RunTrampoline(TARGET_DYNAMIC(sub_77EAD0), a1, a2, a3);
 	end();
 }
 
 static void __cdecl sub_77EBA0_r(void* a1, int a2, int a3)
 {
 	begin();
-	RunTrampoline(ORIGINAL(sub_77EBA0), a1, a2, a3);
+	RunTrampoline(TARGET_DYNAMIC(sub_77EBA0), a1, a2, a3);
 	end();
 }
 
 static void __cdecl njDrawModel_SADX_r(NJS_MODEL_SADX* a1)
 {
-	RunTrampoline(ORIGINAL(njDrawModel_SADX), a1);
+	RunTrampoline(TARGET_DYNAMIC(njDrawModel_SADX), a1);
 }
 
 static void __cdecl njDrawModel_SADX_B_r(NJS_MODEL_SADX* a1)
 {
-	RunTrampoline(ORIGINAL(njDrawModel_SADX_B), a1);
+	RunTrampoline(TARGET_DYNAMIC(njDrawModel_SADX_B), a1);
 }
 
 static void __fastcall PolyBuff_DrawTriangleStrip_r(PolyBuff* _this)
@@ -225,7 +223,7 @@ static void __fastcall PolyBuff_DrawTriangleList_r(PolyBuff* _this)
 
 static void __fastcall CreateDirect3DDevice_r(int a1, int behavior, int type)
 {
-	ORIGINAL(CreateDirect3DDevice)(a1, behavior, type);
+	TARGET_DYNAMIC(CreateDirect3DDevice)(a1, behavior, type);
 	if (Direct3D_Device != nullptr && !initialized)
 	{
 		device = Direct3D_Device->GetProxyInterface();
@@ -236,8 +234,7 @@ static void __fastcall CreateDirect3DDevice_r(int a1, int behavior, int type)
 
 static void __cdecl Direct3D_PerformLighting_r(int type)
 {
-	FunctionPointer(void, original, (int), Direct3D_PerformLighting_t->Target());
-	original(0);
+	TARGET_DYNAMIC(Direct3D_PerformLighting)(0);
 
 	if (effect == nullptr)
 		return;
@@ -248,10 +245,7 @@ static void __cdecl Direct3D_PerformLighting_r(int type)
 
 static void __cdecl Direct3D_SetWorldTransform_r()
 {
-	VoidFunc(original, Direct3D_SetWorldTransform_t->Target());
-	original();
-
-	using namespace d3d;
+	TARGET_DYNAMIC(Direct3D_SetWorldTransform)();
 
 	if (!UsePalette() || effect == nullptr)
 		return;
@@ -267,8 +261,6 @@ static void __cdecl Direct3D_SetWorldTransform_r()
 
 static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
 {
-	auto original = (decltype(Direct3D_SetTexList_r)*)Direct3D_SetTexList_t->Target();
-
 	if (texlist != Direct3D_CurrentTexList)
 	{
 		bool common = texlist == CommonTextures;
@@ -280,13 +272,12 @@ static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
 		}
 	}
 
-	return original(texlist);
+	return TARGET_DYNAMIC(Direct3D_SetTexList)(texlist);
 }
 
 static void __stdcall Direct3D_SetProjectionMatrix_r(float hfov, float nearPlane, float farPlane)
 {
-	auto original = (decltype(Direct3D_SetProjectionMatrix_r)*)Direct3D_SetProjectionMatrix_t->Target();
-	original(hfov, nearPlane, farPlane);
+	TARGET_DYNAMIC(Direct3D_SetProjectionMatrix)(hfov, nearPlane, farPlane);
 
 	if (effect == nullptr)
 		return;
@@ -299,7 +290,7 @@ static void __stdcall Direct3D_SetProjectionMatrix_r(float hfov, float nearPlane
 
 static void __cdecl Direct3D_SetViewportAndTransform_r()
 {
-	auto original = (decltype(Direct3D_SetViewportAndTransform_r)*)Direct3D_SetViewportAndTransform_t->Target();
+	auto original = TARGET_DYNAMIC(Direct3D_SetViewportAndTransform);
 	bool invalid = TransformAndViewportInvalid != 0;
 	original();
 
