@@ -279,8 +279,6 @@ bool LoadLanternSource(const std::string& path)
 /// <returns><c>true</c> on success.</returns>
 bool LoadLanternSource(Uint32 level, Uint32 act)
 {
-	bool result = true;
-
 	std::stringstream name;
 	name << globals::system << "SL" << LanternPaletteId(level, act) << "B.BIN";
 	return LoadLanternSource(name.str());
