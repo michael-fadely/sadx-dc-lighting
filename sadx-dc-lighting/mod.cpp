@@ -143,13 +143,20 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 		return;
 
 	auto flags = material->attrflags;
-	if (_nj_control_3d & NJD_CONTROL_3D_CONSTANT_ATTR)
+#if 1
+	if (_nj_control_3d_flag_ & NJD_CONTROL_3D_CONSTANT_ATTR)
 	{
-		flags = _nj_constant_or_attr | _nj_constant_and_attr & flags;
+		flags = _nj_constant_attr_or_ | _nj_constant_attr_and_ & flags;
 	}
+#endif
 
 	globals::light = (flags & NJD_FLAG_IGNORE_LIGHT) == 0;
 	effect->SetBool("AlphaEnabled", (flags & NJD_FLAG_USE_ALPHA) != 0);
+
+	if (globals::light)
+	{
+		SetPaletteLights(globals::last_type, flags);
+	}
 
 	bool use_texture = (flags & NJD_FLAG_USE_TEXTURE) != 0;
 
@@ -257,16 +264,30 @@ extern "C"
 		// Correcting a function call since they're relative
 		WriteCall(IncrementAct_t->Target(), (void*)0x00424830);
 
+		// Material callback hijack
 		WriteJump((void*)0x0040A340, CorrectMaterial_r);
 	}
 
 	EXPORT void __cdecl OnFrame()
 	{
 		auto pad = ControllerPointers[0];
-		if (pad && pad->PressedButtons & Buttons_C)
+		if (pad)
 		{
-			d3d::LoadShader();
-			SetFogParameters();
+			auto pressed = pad->PressedButtons;
+			if (pressed & Buttons_C)
+			{
+				d3d::LoadShader();
+				SetFogParameters();
+			}
+
+			if (pressed & Buttons_Left)
+			{
+				LoadLanternPalette(globals::system + "diffuse test.bin");
+			}
+			else if (pressed & Buttons_Right)
+			{
+				LoadLanternPalette(globals::system + "specular test.bin");
+			}
 		}
 
 		if (d3d::effect == nullptr)

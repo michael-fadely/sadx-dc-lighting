@@ -234,19 +234,10 @@ void UpdateLightDirections(const NJS_VECTOR& dir)
 	}
 }
 
-/// <summary>
-/// Loads palette parameter data (light direction) for the specified stage/act.
-/// </summary>
-/// <param name="level">Current level/stage.</param>
-/// <param name="act">Current act.</param>
-/// <returns><c>true</c> on success.</returns>
-bool LoadLanternSource(Uint32 level, Uint32 act)
+bool LoadLanternSource(const std::string& path)
 {
 	bool result = true;
-
-	std::stringstream name;
-	name << globals::system << "SL" << LanternPaletteId(level, act) << "B.BIN";
-	auto file = std::ifstream(name.str(), std::ios::binary);
+	auto file = std::ifstream(path, std::ios::binary);
 
 	NJS_VECTOR dir;
 
@@ -281,16 +272,23 @@ bool LoadLanternSource(Uint32 level, Uint32 act)
 }
 
 /// <summary>
-/// Loads palette data for the specified stage and act.
+/// Loads palette parameter data (light direction) for the specified stage/act.
 /// </summary>
 /// <param name="level">Current level/stage.</param>
 /// <param name="act">Current act.</param>
 /// <returns><c>true</c> on success.</returns>
-bool LoadLanternPalette(Uint32 level, Uint32 act)
+bool LoadLanternSource(Uint32 level, Uint32 act)
 {
+	bool result = true;
+
 	std::stringstream name;
-	name << globals::system << "PL" << LanternPaletteId(level, act) << "B.BIN";
-	auto file = std::ifstream(name.str(), std::ios::binary);
+	name << globals::system << "SL" << LanternPaletteId(level, act) << "B.BIN";
+	return LoadLanternSource(name.str());
+}
+
+bool LoadLanternPalette(const std::string& path)
+{
+	auto file = std::ifstream(path, std::ios::binary);
 
 	if (!file.is_open())
 	{
@@ -338,6 +336,19 @@ bool LoadLanternPalette(Uint32 level, Uint32 act)
 }
 
 /// <summary>
+/// Loads palette data for the specified stage and act.
+/// </summary>
+/// <param name="level">Current level/stage.</param>
+/// <param name="act">Current act.</param>
+/// <returns><c>true</c> on success.</returns>
+bool LoadLanternPalette(Uint32 level, Uint32 act)
+{
+	std::stringstream name;
+	name << globals::system << "PL" << LanternPaletteId(level, act) << "B.BIN";
+	return LoadLanternPalette(name.str());
+}
+
+/// <summary>
 /// Loads the lantern palette and source files for the current level if it (or the time of day) has changed.
 /// </summary>
 void LoadLanternFiles()
@@ -369,7 +380,10 @@ void LoadLanternFiles()
 	}
 }
 
-void SetPaletteLights(int type, bool common_object)
+static Sint32 last_diffuse = -1;
+static Sint32 last_specular = -1;
+
+void SetPaletteLights(int type, int flags)
 {
 	globals::last_type = type;
 	auto pad = ControllerPointers[0];
@@ -395,41 +409,45 @@ void SetPaletteLights(int type, bool common_object)
 
 	Sint32 diffuse = -1;
 	Sint32 specular = -1;
+	bool no_specular = (flags & NJD_FLAG_IGNORE_SPECULAR) != 0;
 
 	switch (type)
 	{
 		case 0:
 			diffuse = 0;
-			specular = common_object ? 1 : 0;
+			specular = no_specular ? 0 : 1;
 			globals::light_dir = *(NJS_VECTOR*)&Direct3D_CurrentLight.Direction;
 			break;
 
 		case 2:
-			diffuse = 2;
-			specular = 2;
+			diffuse = no_specular ? 2 : 3;
+			specular = no_specular ? 2 : 3;
 			break;
 
 		case 4:
 			diffuse = 2;
-			specular = 3;
+			specular = no_specular ? 3 : 2;
 			break;
 
 		case 6:
 			diffuse = 0;
-			specular = 1;
+			specular = no_specular ? 0 : 1;
 
 		default:
 			break;
 	}
 
-	if (diffuse < 0 || specular < 0)
+	if (diffuse > -1 && diffuse != last_diffuse)
 	{
-		use_palette = false;
-		d3d::do_effect = false;
-		return;
+		d3d::effect->SetTexture("DiffusePalette", palettes[diffuse].diffuse);
+		last_diffuse = diffuse;
 	}
 
-	d3d::effect->SetTexture("DiffusePalette", palettes[diffuse].diffuse);
-	d3d::effect->SetTexture("SpecularPalette", palettes[specular].specular);
-	use_palette = true;
+	if (specular > -1 && specular != last_specular)
+	{
+		d3d::effect->SetTexture("SpecularPalette", palettes[specular].specular);
+		last_specular = specular;
+	}
+
+	d3d::do_effect = use_palette = diffuse > -1 && specular > -1;
 }
