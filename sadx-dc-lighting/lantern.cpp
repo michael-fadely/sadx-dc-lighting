@@ -392,8 +392,6 @@ void SetPaletteLights(int type, int flags)
 		return;
 	}
 
-	globals::light = true;
-
 	// [0] 1-2 level geometry
 	// [1] 3-4 objects (springs etc.)
 	// [2] 5-6 player models & misc objects
@@ -407,29 +405,30 @@ void SetPaletteLights(int type, int flags)
 
 	Sint32 diffuse = -1;
 	Sint32 specular = -1;
-	bool no_specular = (flags & NJD_FLAG_IGNORE_SPECULAR) != 0;
+	
+	// hold on I've got this
 
 	switch (type)
 	{
 		case 0:
 			diffuse = 0;
-			specular = no_specular ? 0 : 1;
+			specular = 0;
 			globals::light_dir = *(NJS_VECTOR*)&Direct3D_CurrentLight.Direction;
 			break;
 
 		case 2:
-			diffuse = no_specular ? 2 : 3;
-			specular = no_specular ? 2 : 3;
+			diffuse = 2;
+			specular = 2;
 			break;
 
 		case 4:
 			diffuse = 2;
-			specular = no_specular ? 3 : 2;
+			specular = 3;
 			break;
 
 		case 6:
 			diffuse = 0;
-			specular = no_specular ? 0 : 1;
+			specular = 1;
 
 		default:
 			break;
@@ -438,14 +437,14 @@ void SetPaletteLights(int type, int flags)
 	if (diffuse > -1 && diffuse != last_diffuse)
 	{
 		d3d::effect->SetTexture(param::DiffusePalette, palettes[diffuse].diffuse);
-		last_diffuse = diffuse;
 	}
 
 	if (specular > -1 && specular != last_specular)
 	{
 		d3d::effect->SetTexture(param::SpecularPalette, palettes[specular].specular);
-		last_specular = specular;
 	}
 
+	last_diffuse = diffuse;
+	last_specular = specular;
 	d3d::do_effect = use_palette = diffuse > -1 && specular > -1;
 }

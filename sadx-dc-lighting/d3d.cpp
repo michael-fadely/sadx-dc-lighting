@@ -67,7 +67,7 @@ static Trampoline* ProcessModelNode_C_t               = nullptr;
 static Trampoline* ProcessModelNode_D_t               = nullptr;
 static Trampoline* Direct3D_PerformLighting_t         = nullptr;
 static Trampoline* Direct3D_SetProjectionMatrix_t     = nullptr;
-static Trampoline* Direct3D_SetTexList_t              = nullptr;
+static Trampoline* Direct3D_SetTexList_t = nullptr;
 static Trampoline* Direct3D_SetViewportAndTransform_t = nullptr;
 static Trampoline* Direct3D_SetWorldTransform_t       = nullptr;
 static Trampoline* MeshSet_CreateVertexBuffer_t       = nullptr;
@@ -268,7 +268,8 @@ static void __cdecl Direct3D_PerformLighting_r(int type)
 	if (effect == nullptr)
 		return;
 
-	SetPaletteLights(type);
+	globals::light = true;
+	SetPaletteLights(type, 0);
 	SetLightParameters();
 }
 
@@ -296,7 +297,7 @@ static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
 
 		if (common || globals::last_type == 0)
 		{
-			SetPaletteLights(0, common);
+			SetPaletteLights(0, 0);
 		}
 	}
 

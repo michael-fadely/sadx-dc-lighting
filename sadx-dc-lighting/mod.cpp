@@ -122,7 +122,7 @@ static void __cdecl CorrectMaterial_r()
 }
 
 static Uint32 last_flags = 0;
-static Uint32 last_texid = 0;
+static Uint32 last_texid = 0xFFFFFFFF;
 static Uint32 last_render = 0;
 static NJS_TEXLIST* last_texlist = nullptr;
 
@@ -141,7 +141,8 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 	if (!UsePalette() || pad && pad->HeldButtons & Buttons_Z)
 		return;
 
-	auto flags = material->attrflags;
+	Uint32 flags = material->attrflags;
+
 #if 1
 	if (_nj_control_3d_flag_ & NJD_CONTROL_3D_CONSTANT_ATTR)
 	{
@@ -149,7 +150,7 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 	}
 #endif
 
-	auto texid = material->attr_texId & 0x3FFF;
+	Uint32 texid = material->attr_texId & 0x3FFF;
 	bool new_texture = Direct3D_CurrentTexList != last_texlist || texid != last_texid;
 
 	if (flags != last_flags || new_texture)
@@ -174,6 +175,7 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 		if (use_texture && new_texture)
 		{
 			last_texid = texid;
+
 			auto textures = Direct3D_CurrentTexList->textures;
 			NJS_TEXMEMLIST* texmem = textures ? (NJS_TEXMEMLIST*)textures[texid].texaddr : nullptr;
 			if (texmem != nullptr)
