@@ -31,10 +31,6 @@ static void __cdecl njDisableFog_r()
 	if (effect == nullptr)
 		return;
 
-	if (globals::fog)
-	{
-		effect->SetInt("FogMode", D3DFOG_NONE);
-	}
 	globals::fog = false;
 }
 
@@ -49,6 +45,7 @@ static void __cdecl njEnableFog_r()
 	{
 		effect->SetInt("FogMode", fog_mode);
 	}
+
 	globals::fog = true;
 }
 

@@ -89,13 +89,10 @@ uint   DiffuseSource   = (uint)D3DMCS_COLOR1;
 float4 MaterialDiffuse = float4(1.0f, 1.0f, 1.0f, 1.0f);
 float  AlphaRef        = 16.0f / 255.0f;
 
-// Helper functions
+// Vertex shader helpers:
 
 float CalcFogFactor(float d)
 {
-	if (FogMode == FOGMODE_NONE)
-		return 1;
-
 	float fogCoeff;
 
 	switch (FogMode)
@@ -117,28 +114,25 @@ float CalcFogFactor(float d)
 
 	return clamp(fogCoeff, 0, 1);
 }
-inline float4 GetDiffuse(in float4 vcolor)
+float4 GetDiffuse(in float4 vcolor)
 {
-	if (DiffuseSource == D3DMCS_MATERIAL)
+	/*if (DiffuseSource == D3DMCS_MATERIAL)
 	{
 		return MaterialDiffuse;
-	}
+	}*/
 
 	return any(vcolor) && UseVertexColor ? vcolor : MaterialDiffuse;
 }
-inline void TransformF(out float4 output, in float3 input, out float fogDist)
-{
-	float4 wvPos = mul(mul(float4(input, 1), WorldMatrix), ViewMatrix);
-	output = mul(wvPos, ProjectionMatrix);
-	fogDist = wvPos.z;
-}
-inline void Transform(out float4 output, in float3 input)
+void Transform(out float4 output, in float3 input, out float fogDist)
 {
 	output = mul(float4(input, 1), WorldMatrix);
 	output = mul(output, ViewMatrix);
+
+	fogDist = output.z;
+
 	output = mul(output, ProjectionMatrix);
 }
-inline void EnvironmentMap(out float2 tex, in float2 itex, in float3 normal)
+void EnvironmentMap(out float2 tex, in float2 itex, in float3 normal)
 {
 	if (TextureEnabled && EnvironmentMapped)
 	{
@@ -150,7 +144,7 @@ inline void EnvironmentMap(out float2 tex, in float2 itex, in float3 normal)
 		tex = itex;
 	}
 }
-inline void DoLighting(in float4 color, in float3 normal, out float4 diffuse, out float4 specular)
+void DoLighting(in float4 color, in float3 normal, out float4 diffuse, out float4 specular)
 {
 	float3 worldNormal = normalize(mul(normal, (float3x3)WorldMatrix));
 
@@ -168,24 +162,44 @@ inline void DoLighting(in float4 color, in float3 normal, out float4 diffuse, ou
 	specular = tex2Dlod(specularSampler, float4(0, pow(i, 1.5), 0, 0));
 	specular.a = 0;
 }
-inline void NoLighting(in float4 color, out float4 diffuse, out float4 specular)
-{
-	// Just spit out the vertex or material color if lighting is off.
-	diffuse = GetDiffuse(color);
-	specular = 0;
-}
-inline void ApplyFog(float factor, inout float4 result)
-{
-	result.rgb = (float3)(factor * result + (1.0 - factor) * FogColor);
-}
-inline void CheckAlpha(in float4 color)
-{
-	if (!AlphaEnabled)
-		return;
 
-	clip(color.a < AlphaRef ? -1 : 1);
+// Vertex shaders:
+
+PS_IN vs_main(VS_IN input)
+{
+	PS_IN output;
+	Transform(output.position, input.position, output.fogDist);
+	EnvironmentMap(output.tex, input.tex, input.normal);
+	DoLighting(input.color, input.normal, output.diffuse, output.specular);
+	return output;
 }
-inline float4 Blend(in float2 uv, in float4 diffuse, in float4 specular)
+PS_IN vs_nolight(VS_IN input)
+{
+	PS_IN output;
+	Transform(output.position, input.position, output.fogDist);
+	EnvironmentMap(output.tex, input.tex, input.normal);
+
+	// Just spit out the vertex or material color if lighting is off.
+	output.diffuse = GetDiffuse(input.color);
+	output.specular = 0;
+
+	return output;
+}
+
+// Pixel shader helpers:
+
+void ApplyFog(float factor, inout float4 result)
+{
+	if (factor == 0.0f)
+	{
+		result.rgb = FogColor.rgb;
+	}
+	else
+	{
+		result.rgb = (float3)(factor * result + (1.0 - factor) * FogColor);
+	}
+}
+float4 Blend(in float2 uv, in float4 diffuse, in float4 specular)
 {
 	if (TextureEnabled)
 	{
@@ -197,54 +211,17 @@ inline float4 Blend(in float2 uv, in float4 diffuse, in float4 specular)
 		return diffuse + specular;
 	}
 }
+void CheckAlpha(in float4 color)
+{
+	if (!AlphaEnabled)
+		return;
 
-// Vertex shaders
-
-PS_IN vs_main(VS_IN input)
-{
-	PS_IN output;
-	TransformF(output.position, input.position, output.fogDist);
-	EnvironmentMap(output.tex, input.tex, input.normal);
-	DoLighting(input.color, input.normal, output.diffuse, output.specular);
-	return output;
-}
-PS_IN vs_nolight(VS_IN input)
-{
-	PS_IN output;
-	TransformF(output.position, input.position, output.fogDist);
-	EnvironmentMap(output.tex, input.tex, input.normal);
-	NoLighting(input.color, output.diffuse, output.specular);
-	return output;
-}
-PS_IN vs_nofog(VS_IN input)
-{
-	PS_IN output;
-	output.fogDist = 0;
-	Transform(output.position, input.position);
-	EnvironmentMap(output.tex, input.tex, input.normal);
-	DoLighting(input.color, input.normal, output.diffuse, output.specular);
-	return output;
-}
-PS_IN vs_neither(VS_IN input)
-{
-	PS_IN output;
-	output.fogDist = 0;
-	Transform(output.position, input.position);
-	EnvironmentMap(output.tex, input.tex, input.normal);
-	NoLighting(input.color, output.diffuse, output.specular);
-	return output;
+	clip(color.a < AlphaRef ? -1 : 1);
 }
 
-// Pixel shaders
+// Pixel shaders:
 
 float4 ps_main(PS_IN input) : COLOR
-{
-	float4 result = Blend(input.tex, input.diffuse, input.specular);
-	CheckAlpha(result);
-	ApplyFog(CalcFogFactor(input.fogDist), result);
-	return result;
-}
-float4 ps_nolight(PS_IN input) : COLOR
 {
 	float4 result = Blend(input.tex, input.diffuse, input.specular);
 	CheckAlpha(result);
@@ -257,23 +234,15 @@ float4 ps_nofog(PS_IN input) : COLOR
 	CheckAlpha(result);
 	return result;
 }
-float4 ps_neither(PS_IN input) : COLOR
-{
-	float4 result = Blend(input.tex, input.diffuse, input.specular);
-	CheckAlpha(result);
-	return result;
-}
 
 // Techniques
-
-// TODO: Benchmark these different techniques vs single technique with boolean checks.
 
 technique Standard
 {
 	pass
 	{
 		VertexShader = compile vs_3_0 vs_main();
-		PixelShader = compile ps_3_0 ps_main();
+		PixelShader  = compile ps_3_0 ps_main();
 	}
 }
 
@@ -282,7 +251,7 @@ technique NoLight
 	pass
 	{
 		VertexShader = compile vs_3_0 vs_nolight();
-		PixelShader = compile ps_3_0 ps_nolight();
+		PixelShader  = compile ps_3_0 ps_main();
 	}
 }
 
@@ -290,8 +259,8 @@ technique NoFog
 {
 	pass
 	{
-		VertexShader = compile vs_3_0 vs_nofog();
-		PixelShader = compile ps_3_0 ps_nofog();
+		VertexShader = compile vs_3_0 vs_main();
+		PixelShader  = compile ps_3_0 ps_nofog();
 	}
 }
 
@@ -299,7 +268,7 @@ technique Neither
 {
 	pass
 	{
-		VertexShader = compile vs_3_0 vs_neither();
-		PixelShader = compile ps_3_0 ps_neither();
+		VertexShader = compile vs_3_0 vs_nolight();
+		PixelShader  = compile ps_3_0 ps_nofog();
 	}
 }

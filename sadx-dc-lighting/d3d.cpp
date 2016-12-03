@@ -38,16 +38,20 @@ struct PolyBuff
 };
 #pragma pack(pop)
 
-
-IDirect3DDevice9* d3d::device = nullptr;
-ID3DXEffect* d3d::effect = nullptr;
-bool d3d::do_effect = false;
+enum TechniqueIndex : Uint32
+{
+	Standard = 0,
+	NoLight  = 1 << 0,
+	NoFog    = 1 << 1,
+	Neither  = NoFog | NoLight
+};
 
 static UINT passes       = 0;
 static bool initialized  = false;
 static bool began_effect = false;
 static Uint32 drawing    = 0;
 
+static TechniqueIndex last_technique = Standard;
 static D3DXHANDLE techniques[4] = {};
 
 static Trampoline* CreateDirect3DDevice_t             = nullptr;
@@ -77,17 +81,14 @@ DataPointer(D3DXMATRIX, _ProjectionMatrix, 0x03D129C0);
 DataPointer(NJS_TEXLIST*, CommonTextures, 0x03B290B0);
 DataPointer(int, TransformAndViewportInvalid, 0x03D0FD1C);
 
-using namespace d3d;
-
-enum TechniqueIndex : Uint32
+namespace d3d
 {
-	Standard = 0,
-	NoLight  = 1 << 0,
-	NoFog    = 1 << 1,
-	Neither  = NoFog | NoLight
-};
+	IDirect3DDevice9* device = nullptr;
+	ID3DXEffect* effect      = nullptr;
+	bool do_effect           = false;
+}
 
-TechniqueIndex last_technique = Standard;
+using namespace d3d;
 
 static void begin()
 {
@@ -304,23 +305,23 @@ static void __cdecl Direct3D_SetViewportAndTransform_r()
 
 #pragma endregion
 
-static void __cdecl DrawMeshSetBuffer_c(MeshSetBuffer* buffer)
+static void __stdcall DrawMeshSetBuffer_c(MeshSetBuffer* buffer)
 {
 	if (!buffer->FVF)
 		return;
 
-	Direct3D_Device->SetVertexShader(buffer->FVF);
-	Direct3D_Device->SetStreamSource(0, buffer->VertexBuffer, buffer->Size);
+	device->SetFVF(buffer->FVF);
+	device->SetStreamSource(0, buffer->VertexBuffer->GetProxyInterface(), 0, buffer->Size);
 
 	auto indexBuffer = buffer->IndexBuffer;
 	if (indexBuffer)
 	{
-		Direct3D_Device->SetIndices(indexBuffer, 0);
+		device->SetIndices(indexBuffer->GetProxyInterface());
 
 		begin();
 
-		Direct3D_Device->DrawIndexedPrimitive(
-			buffer->PrimitiveType,
+		device->DrawIndexedPrimitive(
+			buffer->PrimitiveType, 0,
 			buffer->MinIndex,
 			buffer->NumVertecies,
 			buffer->StartIndex,
@@ -329,7 +330,7 @@ static void __cdecl DrawMeshSetBuffer_c(MeshSetBuffer* buffer)
 	else
 	{
 		begin();
-		Direct3D_Device->DrawPrimitive(
+		device->DrawPrimitive(
 			buffer->PrimitiveType,
 			buffer->StartIndex,
 			buffer->PrimitiveCount);
@@ -345,8 +346,7 @@ static void __declspec(naked) DrawMeshSetBuffer_asm()
 	{
 		push esi
 		call DrawMeshSetBuffer_c
-		pop esi
-		jmp loc_77EF09
+		jmp  loc_77EF09
 	}
 }
 
@@ -356,10 +356,10 @@ static void MeshSet_CreateVertexBuffer_original(MeshSetBuffer* mesh, int count)
 	auto original = MeshSet_CreateVertexBuffer_t->Target();
 	__asm
 	{
-		mov edi, mesh
+		mov  edi, mesh
 		push count
 		call original
-		add esp, 4
+		add  esp, 4
 	}
 }
 
@@ -398,19 +398,23 @@ static void __declspec(naked) MeshSet_CreateVertexBuffer_r()
 {
 	__asm
 	{
-		push[esp + 04h] // count
-		push edi         // mesh
+		push [esp + 04h]  // count
+		push edi          // mesh
 		call MeshSet_CreateVertexBuffer_c
-		pop edi          // mesh
-		add esp, 4       // count
+		pop  edi          // mesh
+		add  esp, 4       // count
 		retn
 	}
 }
 
 static auto __stdcall SetTransformHijack(Direct3DDevice8* _device, D3DTRANSFORMSTATETYPE type, D3DXMATRIX* matrix)
 {
-	effect->SetMatrix("ProjectionMatrix", matrix);
-	return _device->SetTransform(type, matrix);
+	if (effect != nullptr)
+	{
+		effect->SetMatrix("ProjectionMatrix", matrix);
+	}
+
+	return device->SetTransform(type, matrix);
 }
 
 void d3d::LoadShader()
