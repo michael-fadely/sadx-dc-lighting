@@ -163,10 +163,10 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 		}
 
 		bool use_texture = (flags & NJD_FLAG_USE_TEXTURE) != 0;
+		effect->SetBool("TextureEnabled", use_texture);
 
 		if (last_render != LastRenderFlags)
 		{
-			effect->SetBool("TextureEnabled", use_texture);
 			effect->SetBool("EnvironmentMapped", (LastRenderFlags & EnvironmentMap) != 0);
 			last_render = LastRenderFlags;
 		}
