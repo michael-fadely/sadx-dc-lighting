@@ -92,8 +92,8 @@ static void SetMaterialParameters(const D3DMATERIAL9& material)
 	// This will need to be re-evaluated for chunk models.
 	//D3DMATERIALCOLORSOURCE colorsource;
 	//device->GetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, (DWORD*)&colorsource);
-	//effect->SetInt("DiffuseSource", colorsource);
-	effect->SetVector("MaterialDiffuse", (D3DXVECTOR4*)&material.Diffuse);
+	//effect->SetInt(param::DiffuseSource, colorsource);
+	effect->SetVector(param::MaterialDiffuse, (D3DXVECTOR4*)&material.Diffuse);
 }
 
 static void __cdecl CorrectMaterial_r()
@@ -155,7 +155,7 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 	if (flags != last_flags || new_texture)
 	{
 		globals::light = (flags & NJD_FLAG_IGNORE_LIGHT) == 0;
-		effect->SetBool("AlphaEnabled", (flags & NJD_FLAG_USE_ALPHA) != 0);
+		effect->SetBool(param::AlphaEnabled, (flags & NJD_FLAG_USE_ALPHA) != 0);
 
 		if (globals::light)
 		{
@@ -163,11 +163,11 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 		}
 
 		bool use_texture = (flags & NJD_FLAG_USE_TEXTURE) != 0;
-		effect->SetBool("TextureEnabled", use_texture);
+		effect->SetBool(param::TextureEnabled, use_texture);
 
 		if (last_render != LastRenderFlags)
 		{
-			effect->SetBool("EnvironmentMapped", (LastRenderFlags & EnvironmentMap) != 0);
+			effect->SetBool(param::EnvironmentMapped, (LastRenderFlags & EnvironmentMap) != 0);
 			last_render = LastRenderFlags;
 		}
 
@@ -181,7 +181,7 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 				auto texture = (Direct3DTexture8*)texmem->texinfo.texsurface.pSurface;
 				if (texture != nullptr)
 				{
-					effect->SetTexture("BaseTexture", texture->GetProxyInterface());
+					effect->SetTexture(param::BaseTexture, texture->GetProxyInterface());
 				}
 			}
 		}
@@ -311,7 +311,10 @@ extern "C"
 	EXPORT void __cdecl OnRenderDeviceLost()
 	{
 		if (d3d::effect != nullptr)
+		{
 			d3d::effect->OnLostDevice();
+			d3d::UpdateParameterHandles();
+		}
 	}
 
 	EXPORT void __cdecl OnRenderDeviceReset()
@@ -319,6 +322,7 @@ extern "C"
 		if (d3d::effect != nullptr)
 		{
 			d3d::effect->OnResetDevice();
+			d3d::UpdateParameterHandles();
 			SetFogParameters();
 		}
 	}

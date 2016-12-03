@@ -43,7 +43,7 @@ static void __cdecl njEnableFog_r()
 
 	if (!globals::fog)
 	{
-		effect->SetInt("FogMode", fog_mode);
+		effect->SetInt(param::FogMode, fog_mode);
 	}
 
 	globals::fog = true;
@@ -61,7 +61,7 @@ static void __cdecl njSetFogColor_r(Uint32 c)
 	static_assert(sizeof(D3DXCOLOR) == sizeof(D3DXVECTOR4),
 		"D3DXCOLOR and D3DXVECTOR4 size mismatch in fog setup.");
 
-	effect->SetVector("FogColor", (D3DXVECTOR4*)&color);
+	effect->SetVector(param::FogColor, (D3DXVECTOR4*)&color);
 }
 
 void SetFogParameters()
@@ -70,20 +70,20 @@ void SetFogParameters()
 		return;
 
 	device->GetRenderState(D3DRS_FOGTABLEMODE, (DWORD*)&fog_mode);
-	effect->SetInt("FogMode", fog_mode);
+	effect->SetInt(param::FogMode, fog_mode);
 	globals::fog = true;
 
 	float start, end, density;
 	device->GetRenderState(D3DRS_FOGSTART, (DWORD*)&start);
 	device->GetRenderState(D3DRS_FOGEND, (DWORD*)&end);
 
-	effect->SetFloat("FogStart", start);
-	effect->SetFloat("FogEnd", end);
+	effect->SetFloat(param::FogStart, start);
+	effect->SetFloat(param::FogEnd, end);
 
 	if (fog_mode != D3DFOG_LINEAR)
 	{
 		device->GetRenderState(D3DRS_FOGDENSITY, (DWORD*)&density);
-		effect->SetFloat("FogDensity", density);
+		effect->SetFloat(param::FogDensity, density);
 	}
 }
 

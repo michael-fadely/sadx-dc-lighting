@@ -12,6 +12,33 @@ namespace d3d
 	extern bool do_effect;
 	void LoadShader();
 	void InitTrampolines();
+	void UpdateParameterHandles();
+}
+
+namespace param
+{
+	extern D3DXHANDLE BaseTexture;
+	extern D3DXHANDLE DiffusePalette;
+	extern D3DXHANDLE SpecularPalette;
+	extern D3DXHANDLE WorldMatrix;
+	extern D3DXHANDLE ViewMatrix;
+	extern D3DXHANDLE ProjectionMatrix;
+	extern D3DXHANDLE wvMatrixInvT;
+	extern D3DXHANDLE TextureTransform;
+	extern D3DXHANDLE TextureEnabled;
+	extern D3DXHANDLE UseVertexColor;
+	extern D3DXHANDLE EnvironmentMapped;
+	extern D3DXHANDLE AlphaEnabled;
+	extern D3DXHANDLE FogMode;
+	extern D3DXHANDLE FogStart;
+	extern D3DXHANDLE FogEnd;
+	extern D3DXHANDLE FogDensity;
+	extern D3DXHANDLE FogColor;
+	extern D3DXHANDLE LightDirection;
+	extern D3DXHANDLE LightLength;
+	extern D3DXHANDLE DiffuseSource;
+	extern D3DXHANDLE MaterialDiffuse;
+	extern D3DXHANDLE AlphaRef;
 }
 
 // Same as in the mod loader except with d3d8to9 types.

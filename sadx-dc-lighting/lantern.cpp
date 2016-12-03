@@ -437,13 +437,13 @@ void SetPaletteLights(int type, int flags)
 
 	if (diffuse > -1 && diffuse != last_diffuse)
 	{
-		d3d::effect->SetTexture("DiffusePalette", palettes[diffuse].diffuse);
+		d3d::effect->SetTexture(param::DiffusePalette, palettes[diffuse].diffuse);
 		last_diffuse = diffuse;
 	}
 
 	if (specular > -1 && specular != last_specular)
 	{
-		d3d::effect->SetTexture("SpecularPalette", palettes[specular].specular);
+		d3d::effect->SetTexture(param::SpecularPalette, palettes[specular].specular);
 		last_specular = specular;
 	}
 

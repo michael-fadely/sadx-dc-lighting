@@ -88,6 +88,32 @@ namespace d3d
 	bool do_effect           = false;
 }
 
+namespace param
+{
+	D3DXHANDLE BaseTexture       = nullptr;
+	D3DXHANDLE DiffusePalette    = nullptr;
+	D3DXHANDLE SpecularPalette   = nullptr;
+	D3DXHANDLE WorldMatrix       = nullptr;
+	D3DXHANDLE ViewMatrix        = nullptr;
+	D3DXHANDLE ProjectionMatrix  = nullptr;
+	D3DXHANDLE wvMatrixInvT      = nullptr;
+	D3DXHANDLE TextureTransform  = nullptr;
+	D3DXHANDLE TextureEnabled    = nullptr;
+	D3DXHANDLE UseVertexColor    = nullptr;
+	D3DXHANDLE EnvironmentMapped = nullptr;
+	D3DXHANDLE AlphaEnabled      = nullptr;
+	D3DXHANDLE FogMode           = nullptr;
+	D3DXHANDLE FogStart          = nullptr;
+	D3DXHANDLE FogEnd            = nullptr;
+	D3DXHANDLE FogDensity        = nullptr;
+	D3DXHANDLE FogColor          = nullptr;
+	D3DXHANDLE LightDirection    = nullptr;
+	D3DXHANDLE LightLength       = nullptr;
+	D3DXHANDLE DiffuseSource     = nullptr;
+	D3DXHANDLE MaterialDiffuse   = nullptr;
+	D3DXHANDLE AlphaRef          = nullptr;
+}
+
 using namespace d3d;
 
 static void begin()
@@ -184,8 +210,8 @@ static void SetLightParameters()
 	device->GetLight(0, &light);
 	auto dir = -*(D3DXVECTOR3*)&light.Direction;
 	auto mag = D3DXVec3Length(&dir);
-	effect->SetValue("LightDirection", &dir, sizeof(D3DVECTOR));
-	effect->SetFloat("LightLength", mag);
+	effect->SetValue(param::LightDirection, &dir, sizeof(D3DVECTOR));
+	effect->SetFloat(param::LightLength, mag);
 }
 
 #pragma region Trampolines
@@ -253,13 +279,13 @@ static void __cdecl Direct3D_SetWorldTransform_r()
 	if (!UsePalette() || effect == nullptr)
 		return;
 
-	effect->SetMatrix("WorldMatrix", &WorldMatrix);
+	effect->SetMatrix(param::WorldMatrix, &WorldMatrix);
 
 	auto wvMatrix = WorldMatrix * ViewMatrix;
 	D3DXMatrixInverse(&wvMatrix, nullptr, &wvMatrix);
 	D3DXMatrixTranspose(&wvMatrix, &wvMatrix);
 	// The inverse transpose matrix is used for environment mapping.
-	effect->SetMatrix("wvMatrixInvT", &wvMatrix);
+	effect->SetMatrix(param::wvMatrixInvT, &wvMatrix);
 }
 
 static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
@@ -284,10 +310,10 @@ static void __stdcall Direct3D_SetProjectionMatrix_r(float hfov, float nearPlane
 	if (effect == nullptr)
 		return;
 
-	effect->SetMatrix("ViewMatrix", &ViewMatrix);
+	effect->SetMatrix(param::ViewMatrix, &ViewMatrix);
 
 	auto m = _ProjectionMatrix * TransformationMatrix;
-	effect->SetMatrix("ProjectionMatrix", &m);
+	effect->SetMatrix(param::ProjectionMatrix, &m);
 }
 
 static void __cdecl Direct3D_SetViewportAndTransform_r()
@@ -299,7 +325,7 @@ static void __cdecl Direct3D_SetViewportAndTransform_r()
 	if (effect != nullptr && invalid)
 	{
 		auto m = _ProjectionMatrix * TransformationMatrix;
-		effect->SetMatrix("ProjectionMatrix", &m);
+		effect->SetMatrix(param::ProjectionMatrix, &m);
 	}
 }
 
@@ -411,10 +437,39 @@ static auto __stdcall SetTransformHijack(Direct3DDevice8* _device, D3DTRANSFORMS
 {
 	if (effect != nullptr)
 	{
-		effect->SetMatrix("ProjectionMatrix", matrix);
+		effect->SetMatrix(param::ProjectionMatrix, matrix);
 	}
 
 	return device->SetTransform(type, matrix);
+}
+
+void d3d::UpdateParameterHandles()
+{
+#define DOTHINGPLS(name) \
+	::param::##name = effect->GetParameterByName(nullptr, #name);
+
+	DOTHINGPLS(BaseTexture);
+	DOTHINGPLS(DiffusePalette);
+	DOTHINGPLS(SpecularPalette);
+	DOTHINGPLS(WorldMatrix);
+	DOTHINGPLS(ViewMatrix);
+	DOTHINGPLS(ProjectionMatrix);
+	DOTHINGPLS(wvMatrixInvT);
+	DOTHINGPLS(TextureTransform);
+	DOTHINGPLS(TextureEnabled);
+	DOTHINGPLS(UseVertexColor);
+	DOTHINGPLS(EnvironmentMapped);
+	DOTHINGPLS(AlphaEnabled);
+	DOTHINGPLS(FogMode);
+	DOTHINGPLS(FogStart);
+	DOTHINGPLS(FogEnd);
+	DOTHINGPLS(FogDensity);
+	DOTHINGPLS(FogColor);
+	DOTHINGPLS(LightDirection);
+	DOTHINGPLS(LightLength);
+	DOTHINGPLS(DiffuseSource);
+	DOTHINGPLS(MaterialDiffuse);
+	DOTHINGPLS(AlphaRef);
 }
 
 void d3d::LoadShader()
@@ -458,6 +513,8 @@ void d3d::LoadShader()
 		{
 			throw std::runtime_error("Shader creation failed with an unknown error. (Does " + path + " exist?)");
 		}
+
+		UpdateParameterHandles();
 
 		techniques[0] = effect->GetTechniqueByName("Standard");
 		techniques[1] = effect->GetTechniqueByName("NoLight");
