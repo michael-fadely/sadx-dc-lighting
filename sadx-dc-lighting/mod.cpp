@@ -169,11 +169,15 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 	bool new_texture = Direct3D_CurrentTexList != last_texlist || texid != last_texid;
 	if (new_texture)
 	{
+		last_texlist = Direct3D_CurrentTexList;
+
 		bool use_texture = (flags & NJD_FLAG_USE_TEXTURE) != 0;
 		effect->SetBool(param::TextureEnabled, use_texture);
 
 		if (use_texture)
 		{
+			last_texid = texid;
+
 			auto textures = Direct3D_CurrentTexList->textures;
 			NJS_TEXMEMLIST* texmem = textures ? (NJS_TEXMEMLIST*)textures[texid].texaddr : nullptr;
 			if (texmem != nullptr)
@@ -195,8 +199,6 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 		SetMaterialParameters(mat);
 	}
 
-	last_texlist = Direct3D_CurrentTexList;
-	last_texid = texid;
 	last_flags = flags;
 	
 	do_effect = true;
