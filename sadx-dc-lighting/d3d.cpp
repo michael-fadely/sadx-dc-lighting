@@ -67,7 +67,7 @@ static Trampoline* ProcessModelNode_C_t               = nullptr;
 static Trampoline* ProcessModelNode_D_t               = nullptr;
 static Trampoline* Direct3D_PerformLighting_t         = nullptr;
 static Trampoline* Direct3D_SetProjectionMatrix_t     = nullptr;
-static Trampoline* Direct3D_SetTexList_t = nullptr;
+static Trampoline* Direct3D_SetTexList_t              = nullptr;
 static Trampoline* Direct3D_SetViewportAndTransform_t = nullptr;
 static Trampoline* Direct3D_SetWorldTransform_t       = nullptr;
 static Trampoline* MeshSet_CreateVertexBuffer_t       = nullptr;
@@ -79,6 +79,7 @@ DataPointer(D3DXMATRIX, ViewMatrix, 0x0389D398);
 DataPointer(D3DXMATRIX, WorldMatrix, 0x03D12900);
 DataPointer(D3DXMATRIX, _ProjectionMatrix, 0x03D129C0);
 DataPointer(NJS_TEXLIST*, CommonTextures, 0x03B290B0);
+DataArray(NJS_TEXLIST*, LevelObjTexlists, 0x03B290B4, 4);
 DataPointer(int, TransformAndViewportInvalid, 0x03D0FD1C);
 
 namespace d3d
@@ -269,8 +270,13 @@ static void __cdecl Direct3D_PerformLighting_r(int type)
 		return;
 
 	globals::light = true;
-	SetPaletteLights(type, 0);
-	SetLightParameters();
+
+	if (type != globals::light_type)
+	{
+		SetLightParameters();
+	}
+
+	SetPaletteLights(type, globals::no_specular ? NJD_FLAG_IGNORE_SPECULAR : 0);
 }
 
 static void __cdecl Direct3D_SetWorldTransform_r()
@@ -293,11 +299,26 @@ static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
 {
 	if (texlist != Direct3D_CurrentTexList)
 	{
-		bool common = texlist == CommonTextures;
+		globals::no_specular = false;
 
-		if (common || globals::last_type == 0)
+		if (!globals::light_type)
 		{
-			SetPaletteLights(0, 0);
+			if (texlist == CommonTextures)
+			{
+				SetPaletteLights(0, 0);
+			}
+			else
+			{
+				for (int i = 0; i < 4; i++)
+				{
+					if (LevelObjTexlists[i] != texlist)
+						continue;
+
+					SetPaletteLights(0, NJD_FLAG_IGNORE_SPECULAR);
+					globals::no_specular = true;
+					break;
+				}
+			}
 		}
 	}
 
@@ -521,6 +542,7 @@ void d3d::LoadShader()
 		techniques[1] = effect->GetTechniqueByName("NoLight");
 		techniques[2] = effect->GetTechniqueByName("NoFog");
 		techniques[3] = effect->GetTechniqueByName("Neither");
+
 		effect->SetTechnique(techniques[0]);
 	}
 	catch (std::exception& ex)
@@ -541,7 +563,7 @@ void d3d::InitTrampolines()
 	PolyBuff_DrawTriangleList_t        = new Trampoline(0x007947B0, 0x007947B7, PolyBuff_DrawTriangleList_r);
 	Direct3D_PerformLighting_t         = new Trampoline(0x00412420, 0x00412426, Direct3D_PerformLighting_r);
 	Direct3D_SetProjectionMatrix_t     = new Trampoline(0x00791170, 0x00791175, Direct3D_SetProjectionMatrix_r);
-	//Direct3D_SetTexList_t              = new Trampoline(0x0077F3D0, 0x0077F3D8, Direct3D_SetTexList_r);
+	Direct3D_SetTexList_t              = new Trampoline(0x0077F3D0, 0x0077F3D8, Direct3D_SetTexList_r);
 	Direct3D_SetViewportAndTransform_t = new Trampoline(0x007912E0, 0x007912E8, Direct3D_SetViewportAndTransform_r);
 	Direct3D_SetWorldTransform_t       = new Trampoline(0x00791AB0, 0x00791AB5, Direct3D_SetWorldTransform_r);
 	MeshSet_CreateVertexBuffer_t       = new Trampoline(0x007853D0, 0x007853D6, MeshSet_CreateVertexBuffer_r);

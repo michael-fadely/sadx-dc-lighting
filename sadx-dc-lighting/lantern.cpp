@@ -383,7 +383,6 @@ static Sint32 last_specular = -1;
 
 void SetPaletteLights(int type, int flags)
 {
-	globals::last_type = type;
 	auto pad = ControllerPointers[0];
 	if (d3d::effect == nullptr || pad && pad->HeldButtons & Buttons_Z)
 	{
@@ -406,13 +405,14 @@ void SetPaletteLights(int type, int flags)
 	Sint32 diffuse = -1;
 	Sint32 specular = -1;
 	
-	// hold on I've got this
+	globals::light_type = type;
+	bool ignore_specular = (flags & NJD_FLAG_IGNORE_SPECULAR) != 0;
 
 	switch (type)
 	{
 		case 0:
 			diffuse = 0;
-			specular = 0;
+			specular = ignore_specular ? 0 : 1;
 			globals::light_dir = *(NJS_VECTOR*)&Direct3D_CurrentLight.Direction;
 			break;
 

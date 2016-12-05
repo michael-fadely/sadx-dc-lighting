@@ -28,6 +28,7 @@ static Trampoline* IncrementAct_t           = nullptr;
 static Trampoline* LoadLevelFiles_t         = nullptr;
 static Trampoline* SetLevelAndAct_t         = nullptr;
 static Trampoline* SetTimeOfDay_t           = nullptr;
+static Trampoline* DrawLandTable_t          = nullptr;
 
 DataArray(PaletteLight, LightPaletteData, 0x00903E88, 256);
 DataArray(StageLightData, CurrentStageLights, 0x03ABD9F8, 4);
@@ -123,7 +124,6 @@ static void __cdecl CorrectMaterial_r()
 
 static Uint32 last_flags = 0;
 static Uint32 last_texid = 0xFFFFFFFF;
-static Uint32 last_render = 0;
 static NJS_TEXLIST* last_texlist = nullptr;
 
 static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
@@ -142,40 +142,38 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 		return;
 
 	Uint32 flags = material->attrflags;
+	Uint32 texid = material->attr_texId & 0xFFFF;
 
-#if 1
 	if (_nj_control_3d_flag_ & NJD_CONTROL_3D_CONSTANT_ATTR)
 	{
 		flags = _nj_constant_attr_or_ | _nj_constant_attr_and_ & flags;
 	}
-#endif
 
-	Uint32 texid = material->attr_texId & 0x3FFF;
-	bool new_texture = Direct3D_CurrentTexList != last_texlist || texid != last_texid;
-
-	if (flags != last_flags || new_texture)
+	globals::light = (flags & NJD_FLAG_IGNORE_LIGHT) == 0;
+	
+	if ((last_flags & NJD_FLAG_USE_ENV) != (flags & NJD_FLAG_USE_ENV))
 	{
-		globals::light = (flags & NJD_FLAG_IGNORE_LIGHT) == 0;
+		effect->SetBool(param::EnvironmentMapped, (flags & NJD_FLAG_USE_ENV) != 0);
+	}
+
+	if ((last_flags & NJD_FLAG_USE_ALPHA) != (flags & NJD_FLAG_USE_ALPHA))
+	{
 		effect->SetBool(param::AlphaEnabled, (flags & NJD_FLAG_USE_ALPHA) != 0);
+	}
 
-		if (globals::light)
-		{
-			SetPaletteLights(globals::last_type, flags);
-		}
+	if (!globals::no_specular)
+	{
+		SetPaletteLights(globals::light_type, flags);
+	}
 
+	bool new_texture = Direct3D_CurrentTexList != last_texlist || texid != last_texid;
+	if (new_texture)
+	{
 		bool use_texture = (flags & NJD_FLAG_USE_TEXTURE) != 0;
 		effect->SetBool(param::TextureEnabled, use_texture);
 
-		if (last_render != LastRenderFlags)
+		if (use_texture)
 		{
-			effect->SetBool(param::EnvironmentMapped, (LastRenderFlags & EnvironmentMap) != 0);
-			last_render = LastRenderFlags;
-		}
-
-		if (use_texture && new_texture)
-		{
-			last_texid = texid;
-
 			auto textures = Direct3D_CurrentTexList->textures;
 			NJS_TEXMEMLIST* texmem = textures ? (NJS_TEXMEMLIST*)textures[texid].texaddr : nullptr;
 			if (texmem != nullptr)
@@ -187,15 +185,20 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 				}
 			}
 		}
+		else if ((last_flags & NJD_FLAG_USE_TEXTURE) != (flags & NJD_FLAG_USE_TEXTURE))
+		{
+			effect->SetTexture(param::BaseTexture, nullptr);
+		}
 
 		D3DMATERIAL9 mat;
 		device->GetMaterial(&mat);
 		SetMaterialParameters(mat);
-
-		last_flags = flags;
-		last_texlist = Direct3D_CurrentTexList;
 	}
 
+	last_texlist = Direct3D_CurrentTexList;
+	last_texid = texid;
+	last_flags = flags;
+	
 	do_effect = true;
 }
 
@@ -250,6 +253,20 @@ static void __cdecl LoadLevelFiles_r()
 	LoadLanternFiles();
 }
 
+static void __cdecl DrawLandTable_r()
+{
+	auto flag = _nj_control_3d_flag_;
+	auto or = _nj_constant_attr_or_;
+
+	_nj_control_3d_flag_ |= NJD_CONTROL_3D_CONSTANT_ATTR;
+	_nj_constant_attr_or_ |= NJD_FLAG_IGNORE_SPECULAR;
+
+	TARGET_DYNAMIC(DrawLandTable)();
+
+	_nj_control_3d_flag_ = flag;
+	_nj_constant_attr_or_ = or;
+}
+
 extern "C"
 {
 	EXPORT ModInfo SADXModInfo = { ModLoaderVer };
@@ -274,6 +291,7 @@ extern "C"
 		LoadLevelFiles_t         = new Trampoline(0x00422AD0, 0x00422AD8, LoadLevelFiles_r);
 		SetLevelAndAct_t         = new Trampoline(0x00414570, 0x00414576, SetLevelAndAct_r);
 		SetTimeOfDay_t           = new Trampoline(0x00412C00, 0x00412C05, SetTimeOfDay_r);
+		DrawLandTable_t          = new Trampoline(0x0043A6A0, 0x0043A6A8, DrawLandTable_r);
 
 		// Correcting a function call since they're relative
 		WriteCall(IncrementAct_t->Target(), (void*)0x00424830);
