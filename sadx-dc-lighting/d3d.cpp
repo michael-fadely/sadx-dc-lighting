@@ -433,10 +433,14 @@ static void __cdecl MeshSet_CreateVertexBuffer_c(MeshSetBuffer* mesh, int count)
 				break;
 		}
 
-		// TODO: consider checking for 0x**B2B2B2
 		for (int i = 0; i < n; i++)
 		{
-			mesh->Meshset->vertcolor[i].color |= 0x00FFFFFF;
+			auto& color = mesh->Meshset->vertcolor[i].color;
+
+			if ((color & 0x00FFFFFF) == 0x00B2B2B2)
+			{
+				color |= 0x00FFFFFF;
+			}
 		}
 	}
 
