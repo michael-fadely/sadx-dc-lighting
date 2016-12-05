@@ -143,6 +143,7 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 
 	Uint32 flags = material->attrflags;
 	Uint32 texid = material->attr_texId & 0xFFFF;
+	bool use_texture = (flags & NJD_FLAG_USE_TEXTURE) != 0;
 
 	if (_nj_control_3d_flag_ & NJD_CONTROL_3D_CONSTANT_ATTR)
 	{
@@ -150,7 +151,12 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 	}
 
 	globals::light = (flags & NJD_FLAG_IGNORE_LIGHT) == 0;
-	
+
+	if (!globals::no_specular)
+	{
+		SetPaletteLights(globals::light_type, flags);
+	}
+
 	if ((last_flags & NJD_FLAG_USE_ENV) != (flags & NJD_FLAG_USE_ENV))
 	{
 		effect->SetBool(param::EnvironmentMapped, (flags & NJD_FLAG_USE_ENV) != 0);
@@ -161,46 +167,32 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 		effect->SetBool(param::AlphaEnabled, (flags & NJD_FLAG_USE_ALPHA) != 0);
 	}
 
-	if (!globals::no_specular)
+	if ((last_flags & NJD_FLAG_USE_TEXTURE) != (flags & NJD_FLAG_USE_TEXTURE))
 	{
-		SetPaletteLights(globals::light_type, flags);
+		effect->SetBool(param::TextureEnabled, use_texture);
 	}
 
-	bool new_texture = Direct3D_CurrentTexList != last_texlist || texid != last_texid;
-	if (new_texture)
+	if (use_texture && (Direct3D_CurrentTexList != last_texlist || texid != last_texid))
 	{
-		last_texlist = Direct3D_CurrentTexList;
-
-		bool use_texture = (flags & NJD_FLAG_USE_TEXTURE) != 0;
-		effect->SetBool(param::TextureEnabled, use_texture);
-
-		if (use_texture)
+		auto textures = Direct3D_CurrentTexList->textures;
+		NJS_TEXMEMLIST* texmem = textures ? (NJS_TEXMEMLIST*)textures[texid].texaddr : nullptr;
+		if (texmem != nullptr)
 		{
-			last_texid = texid;
-
-			auto textures = Direct3D_CurrentTexList->textures;
-			NJS_TEXMEMLIST* texmem = textures ? (NJS_TEXMEMLIST*)textures[texid].texaddr : nullptr;
-			if (texmem != nullptr)
+			auto texture = (Direct3DTexture8*)texmem->texinfo.texsurface.pSurface;
+			if (texture != nullptr)
 			{
-				auto texture = (Direct3DTexture8*)texmem->texinfo.texsurface.pSurface;
-				if (texture != nullptr)
-				{
-					effect->SetTexture(param::BaseTexture, texture->GetProxyInterface());
-				}
+				last_texlist = Direct3D_CurrentTexList;
+				last_texid = texid;
+				effect->SetTexture(param::BaseTexture, texture->GetProxyInterface());
 			}
 		}
-		else if ((last_flags & NJD_FLAG_USE_TEXTURE) != (flags & NJD_FLAG_USE_TEXTURE))
-		{
-			effect->SetTexture(param::BaseTexture, nullptr);
-		}
-
-		D3DMATERIAL9 mat;
-		device->GetMaterial(&mat);
-		SetMaterialParameters(mat);
 	}
 
+	D3DMATERIAL9 mat;
+	device->GetMaterial(&mat);
+	SetMaterialParameters(mat);
+
 	last_flags = flags;
-	
 	do_effect = true;
 }
 
