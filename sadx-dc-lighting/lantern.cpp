@@ -243,11 +243,14 @@ bool LoadLanternSource(const std::string& path)
 
 	if (!file.is_open())
 	{
+		PrintDebug("[lantern] Lantern source not found: %s\n", path.c_str());
 		dir = { 0.0f, -1.0f, 0.0f };
 		result = false;
 	}
 	else
 	{
+		PrintDebug("[lantern] Loading lantern source: %s\n", path.c_str());
+
 		Angle yaw, roll;
 
 		file.seekg(0x5A0);
@@ -290,8 +293,11 @@ bool LoadLanternPalette(const std::string& path)
 
 	if (!file.is_open())
 	{
+		PrintDebug("[lantern] Lantern palette not found: %s\n", path.c_str());
 		return false;
 	}
+
+	PrintDebug("[lantern] Loading lantern palette: %s\n", path.c_str());
 
 	std::vector<ColorPair> colorData;
 

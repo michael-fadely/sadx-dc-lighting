@@ -314,6 +314,10 @@ extern "C"
 			{
 				LoadLanternPalette(globals::system + "specular test.bin");
 			}
+			else if (pressed & Buttons_Down)
+			{
+				LoadLanternPalette(CurrentLevel, CurrentAct);
+			}
 		}
 
 		if (d3d::effect == nullptr)
