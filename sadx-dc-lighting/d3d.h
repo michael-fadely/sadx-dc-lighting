@@ -21,12 +21,11 @@ namespace param
 	extern D3DXHANDLE DiffusePalette;
 	extern D3DXHANDLE SpecularPalette;
 	extern D3DXHANDLE WorldMatrix;
-	extern D3DXHANDLE ViewMatrix;
+	extern D3DXHANDLE wvMatrix;
 	extern D3DXHANDLE ProjectionMatrix;
 	extern D3DXHANDLE wvMatrixInvT;
 	extern D3DXHANDLE TextureTransform;
 	extern D3DXHANDLE TextureEnabled;
-	extern D3DXHANDLE UseVertexColor;
 	extern D3DXHANDLE EnvironmentMapped;
 	extern D3DXHANDLE AlphaEnabled;
 	extern D3DXHANDLE FogMode;

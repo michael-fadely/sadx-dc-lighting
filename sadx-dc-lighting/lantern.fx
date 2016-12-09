@@ -39,7 +39,6 @@ sampler2D baseSampler = sampler_state
 {
 	Texture = <BaseTexture>;
 };
-
 sampler2D diffuseSampler = sampler_state
 {
 	Texture   = <DiffusePalette>;
@@ -48,7 +47,6 @@ sampler2D diffuseSampler = sampler_state
 	AddressU  = Clamp;
 	AddressV  = Clamp;
 };
-
 sampler2D specularSampler = sampler_state
 {
 	Texture   = <SpecularPalette>;
@@ -59,21 +57,25 @@ sampler2D specularSampler = sampler_state
 };
 
 float4x4 WorldMatrix;
-float4x4 ViewMatrix;
+float4x4 wvMatrix;
 float4x4 ProjectionMatrix;
 // The inverse transpose of the world view matrix - used for environment mapping.
 float4x4 wvMatrixInvT;
 // Used primarily for environment mapping.
 // TODO: check if texture transform is enabled for standard textures
-float4x4 TextureTransform = {
+static float4x4 TextureTransform = {
 	-0.5, 0.0, 0.0, 0.0,
 	 0.0, 0.5, 0.0, 0.0,
 	 0.0, 0.0, 1.0, 0.0,
 	 0.5, 0.5, 0.0, 1.0
 };
 
+// This will need to be non-static for chunk models.
+static uint DiffuseSource = (uint)D3DMCS_COLOR1;
+// This never changes
+static float  AlphaRef = 16.0f / 255.0f;
+
 bool TextureEnabled    = true;
-bool UseVertexColor    = true;
 bool EnvironmentMapped = false;
 bool AlphaEnabled      = true;
 
@@ -85,15 +87,13 @@ float4 FogColor;
 
 float3 LightDirection  = float3(0.0f, -1.0f, 0.0f);
 float  LightLength     = 1.0f;
-uint   DiffuseSource   = (uint)D3DMCS_COLOR1;
 float4 MaterialDiffuse = float4(1.0f, 1.0f, 1.0f, 1.0f);
-float  AlphaRef        = 16.0f / 255.0f;
 
 // Helpers
 
 float4 GetDiffuse(in float4 vcolor)
 {
-	return any(vcolor) && UseVertexColor ? vcolor : MaterialDiffuse;
+	return any(vcolor) ? vcolor : MaterialDiffuse;
 }
 float CalcFogFactor(float d)
 {
@@ -127,8 +127,7 @@ PS_IN vs_main(VS_IN input, uniform bool lightEnabled)
 
 	float4 position;
 
-	position = mul(float4(input.position, 1), WorldMatrix);
-	position = mul(position, ViewMatrix);
+	position = mul(float4(input.position, 1), wvMatrix);
 	output.fogDist = position.z;
 	position = mul(position, ProjectionMatrix);
 
@@ -233,7 +232,6 @@ float4 ps_nofog(PS_IN input) : COLOR
 }
 
 // Techniques
-// TODO: consider separate techniques for no textures and/or no alpha for compile-time optimization
 
 technique Standard
 {

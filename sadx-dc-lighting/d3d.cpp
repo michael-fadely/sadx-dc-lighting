@@ -95,12 +95,11 @@ namespace param
 	D3DXHANDLE DiffusePalette    = nullptr;
 	D3DXHANDLE SpecularPalette   = nullptr;
 	D3DXHANDLE WorldMatrix       = nullptr;
-	D3DXHANDLE ViewMatrix        = nullptr;
+	D3DXHANDLE wvMatrix        = nullptr;
 	D3DXHANDLE ProjectionMatrix  = nullptr;
 	D3DXHANDLE wvMatrixInvT      = nullptr;
 	D3DXHANDLE TextureTransform  = nullptr;
 	D3DXHANDLE TextureEnabled    = nullptr;
-	D3DXHANDLE UseVertexColor    = nullptr;
 	D3DXHANDLE EnvironmentMapped = nullptr;
 	D3DXHANDLE AlphaEnabled      = nullptr;
 	D3DXHANDLE FogMode           = nullptr;
@@ -289,6 +288,8 @@ static void __cdecl Direct3D_SetWorldTransform_r()
 	effect->SetMatrix(param::WorldMatrix, &WorldMatrix);
 
 	auto wvMatrix = WorldMatrix * ViewMatrix;
+	effect->SetMatrix(param::wvMatrix, &wvMatrix);
+
 	D3DXMatrixInverse(&wvMatrix, nullptr, &wvMatrix);
 	D3DXMatrixTranspose(&wvMatrix, &wvMatrix);
 	// The inverse transpose matrix is used for environment mapping.
@@ -332,8 +333,7 @@ static void __stdcall Direct3D_SetProjectionMatrix_r(float hfov, float nearPlane
 	if (effect == nullptr)
 		return;
 
-	effect->SetMatrix(param::ViewMatrix, &ViewMatrix);
-
+	// The view matrix can also be set here if necessary.
 	auto m = _ProjectionMatrix * TransformationMatrix;
 	effect->SetMatrix(param::ProjectionMatrix, &m);
 }
@@ -478,12 +478,11 @@ void d3d::UpdateParameterHandles()
 	DOTHINGPLS(DiffusePalette);
 	DOTHINGPLS(SpecularPalette);
 	DOTHINGPLS(WorldMatrix);
-	DOTHINGPLS(ViewMatrix);
+	DOTHINGPLS(wvMatrix);
 	DOTHINGPLS(ProjectionMatrix);
 	DOTHINGPLS(wvMatrixInvT);
 	DOTHINGPLS(TextureTransform);
 	DOTHINGPLS(TextureEnabled);
-	DOTHINGPLS(UseVertexColor);
 	DOTHINGPLS(EnvironmentMapped);
 	DOTHINGPLS(AlphaEnabled);
 	DOTHINGPLS(FogMode);
