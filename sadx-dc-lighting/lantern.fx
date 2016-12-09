@@ -89,8 +89,12 @@ uint   DiffuseSource   = (uint)D3DMCS_COLOR1;
 float4 MaterialDiffuse = float4(1.0f, 1.0f, 1.0f, 1.0f);
 float  AlphaRef        = 16.0f / 255.0f;
 
-// Vertex shader helpers:
+// Helpers
 
+float4 GetDiffuse(in float4 vcolor)
+{
+	return any(vcolor) && UseVertexColor ? vcolor : MaterialDiffuse;
+}
 float CalcFogFactor(float d)
 {
 	float fogCoeff;
@@ -114,135 +118,129 @@ float CalcFogFactor(float d)
 
 	return clamp(fogCoeff, 0, 1);
 }
-float4 GetDiffuse(in float4 vcolor)
-{
-	/*if (DiffuseSource == D3DMCS_MATERIAL)
-	{
-		return MaterialDiffuse;
-	}*/
 
-	return any(vcolor) && UseVertexColor ? vcolor : MaterialDiffuse;
-}
-void Transform(out float4 output, in float3 input, out float fogDist)
-{
-	output = mul(float4(input, 1), WorldMatrix);
-	output = mul(output, ViewMatrix);
+// Vertex shaders
 
-	fogDist = output.z;
-
-	output = mul(output, ProjectionMatrix);
-}
-void EnvironmentMap(out float2 tex, in float2 itex, in float3 normal)
+PS_IN vs_main(VS_IN input, uniform bool lightEnabled)
 {
+	PS_IN output;
+
+	float4 position;
+
+	position = mul(float4(input.position, 1), WorldMatrix);
+	position = mul(position, ViewMatrix);
+	output.fogDist = position.z;
+	position = mul(position, ProjectionMatrix);
+
+	output.position = position;
+
 	if (TextureEnabled && EnvironmentMapped)
 	{
-		tex = (float2)mul(float4(normal, 1), wvMatrixInvT);
-		tex = (float2)mul(float4(tex, 0, 1), TextureTransform);
+		output.tex = (float2)mul(float4(input.normal, 1), wvMatrixInvT);
+		output.tex = (float2)mul(float4(output.tex, 0, 1), TextureTransform);
 	}
 	else
 	{
-		tex = itex;
+		output.tex = input.tex;
 	}
-}
-void DoLighting(in float4 color, in float3 normal, out float4 diffuse, out float4 specular)
-{
-	float3 worldNormal = normalize(mul(normal, (float3x3)WorldMatrix));
 
-	// This is the brightness index of the current vertex's normal.
-	// It's calculated the same way one would calculate diffuse brightness, except it's then
-	// converted to an angle, and then to an index from there. 0 is brightest, 1 is darkest.
-	float i = +acos(dot(LightDirection, worldNormal) / (LightLength * length(worldNormal))) / PI;
+	if (lightEnabled == true)
+	{
+		float3 worldNormal = normalize(mul(input.normal, (float3x3)WorldMatrix));
 
-	// Specifically avoiding the alpha component here. Palettes don't seem to do anything
-	// useful with their alpha channels.
-	diffuse = GetDiffuse(color);
-	diffuse.rgb = saturate(diffuse + 0.3) * tex2Dlod(diffuseSampler, float4(0, i, 0, 0));
+		// This is the brightness index of the current vertex's normal.
+		// It's calculated the same way one would calculate diffuse brightness, except it's then
+		// converted to an angle, and then to an index from there. 0 is brightest, 1 is darkest.
+		float i = +acos(dot(LightDirection, worldNormal) / (LightLength * length(worldNormal))) / PI;
 
-	// Ditto. You wouldn't want to add to the alpha channel.
-	specular = tex2Dlod(specularSampler, float4(0, pow(i, 1.5), 0, 0));
-	specular.a = 0;
-}
+		// Specifically avoiding the alpha component here. Palettes don't seem to do anything
+		// useful with their alpha channels.
+		float4 diffuse = GetDiffuse(input.color);
+		diffuse.rgb = saturate(diffuse + 0.3) * tex2Dlod(diffuseSampler, float4(0, i, 0, 0));
 
-// Vertex shaders:
+		output.diffuse = diffuse;
 
-PS_IN vs_main(VS_IN input)
-{
-	PS_IN output;
-	Transform(output.position, input.position, output.fogDist);
-	EnvironmentMap(output.tex, input.tex, input.normal);
-	DoLighting(input.color, input.normal, output.diffuse, output.specular);
+		// Ditto. You wouldn't want to add to the alpha channel.
+		float4 specular = tex2Dlod(specularSampler, float4(0, pow(i, 1.5), 0, 0));
+		specular.a = 0;
+
+		output.specular = specular;
+	}
+	else
+	{
+		// Just spit out the vertex or material color if lighting is off.
+		output.diffuse = GetDiffuse(input.color);
+		output.specular = 0;
+	}
+
 	return output;
+}
+
+PS_IN vs_light(VS_IN input)
+{
+	return vs_main(input, true);
 }
 PS_IN vs_nolight(VS_IN input)
 {
-	PS_IN output;
-	Transform(output.position, input.position, output.fogDist);
-	EnvironmentMap(output.tex, input.tex, input.normal);
-
-	// Just spit out the vertex or material color if lighting is off.
-	output.diffuse = GetDiffuse(input.color);
-	output.specular = 0;
-
-	return output;
+	return vs_main(input, false);
 }
 
-// Pixel shader helpers:
+// Pixel shaders
 
-void ApplyFog(float factor, inout float4 result)
+float4 ps_main(PS_IN input, uniform bool useFog)
 {
-	if (factor == 0.0f)
-	{
-		result.rgb = FogColor.rgb;
-	}
-	else
-	{
-		result.rgb = (float3)(factor * result + (1.0 - factor) * FogColor);
-	}
-}
-float4 Blend(in float2 uv, in float4 diffuse, in float4 specular)
-{
+	float4 result;
+
 	if (TextureEnabled)
 	{
-		float4 base = tex2D(baseSampler, uv);
-		return base * diffuse + specular;
+		result = tex2D(baseSampler, input.tex);
+		result = result * input.diffuse + input.specular;
 	}
 	else
 	{
-		return diffuse + specular;
+		result = input.diffuse + input.specular;
 	}
-}
-void CheckAlpha(in float4 color)
-{
-	if (!AlphaEnabled)
-		return;
 
-	clip(color.a < AlphaRef ? -1 : 1);
-}
+	if (AlphaEnabled)
+	{
+		clip(result.a < AlphaRef ? -1 : 1);
+	}
 
-// Pixel shaders:
+	if (useFog)
+	{
+		float factor = CalcFogFactor(input.fogDist);
 
-float4 ps_main(PS_IN input) : COLOR
-{
-	float4 result = Blend(input.tex, input.diffuse, input.specular);
-	CheckAlpha(result);
-	ApplyFog(CalcFogFactor(input.fogDist), result);
+		if (factor == 0.0f)
+		{
+			result.rgb = FogColor.rgb;
+		}
+		else
+		{
+			result.rgb = (float3)(factor * result + (1.0 - factor) * FogColor);
+		}
+	}
+
 	return result;
+}
+
+float4 ps_fog(PS_IN input) : COLOR
+{
+	return ps_main(input, true);
 }
 float4 ps_nofog(PS_IN input) : COLOR
 {
-	float4 result = Blend(input.tex, input.diffuse, input.specular);
-	CheckAlpha(result);
-	return result;
+	return ps_main(input, false);
 }
 
 // Techniques
+// TODO: consider separate techniques for no textures and/or no alpha for compile-time optimization
 
 technique Standard
 {
 	pass
 	{
-		VertexShader = compile vs_3_0 vs_main();
-		PixelShader  = compile ps_3_0 ps_main();
+		VertexShader = compile vs_3_0 vs_light();
+		PixelShader  = compile ps_3_0 ps_fog();
 	}
 }
 
@@ -251,7 +249,7 @@ technique NoLight
 	pass
 	{
 		VertexShader = compile vs_3_0 vs_nolight();
-		PixelShader  = compile ps_3_0 ps_main();
+		PixelShader  = compile ps_3_0 ps_fog();
 	}
 }
 
@@ -259,7 +257,7 @@ technique NoFog
 {
 	pass
 	{
-		VertexShader = compile vs_3_0 vs_main();
+		VertexShader = compile vs_3_0 vs_light();
 		PixelShader  = compile ps_3_0 ps_nofog();
 	}
 }
