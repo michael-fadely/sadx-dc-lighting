@@ -95,7 +95,7 @@ namespace param
 	D3DXHANDLE DiffusePalette    = nullptr;
 	D3DXHANDLE SpecularPalette   = nullptr;
 	D3DXHANDLE WorldMatrix       = nullptr;
-	D3DXHANDLE wvMatrix        = nullptr;
+	D3DXHANDLE wvMatrix          = nullptr;
 	D3DXHANDLE ProjectionMatrix  = nullptr;
 	D3DXHANDLE wvMatrixInvT      = nullptr;
 	D3DXHANDLE TextureTransform  = nullptr;
@@ -573,7 +573,8 @@ void d3d::InitTrampolines()
 
 	WriteJump((void*)0x0077EE45, DrawMeshSetBuffer_asm);
 
-	// Hijacking a IDirect3DDevice8::SetTransform call to update the projection matrix
+	// Hijacking a IDirect3DDevice8::SetTransform call in Direct3D_SetNearFarPlanes
+	// to update the projection matrix.
 	// This nops:
 	// mov ecx, [eax] (device)
 	// call dword ptr [ecx+94h] (device->SetTransform)
