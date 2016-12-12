@@ -412,7 +412,7 @@ void SetPaletteLights(int type, int flags)
 	Sint32 specular = -1;
 	
 	globals::light_type = type;
-	bool ignore_specular = (flags & NJD_FLAG_IGNORE_SPECULAR) != 0;
+	bool ignore_specular = (flags & NJD_FLAG_IGNORE_SPECULAR) && !(flags & NJD_FLAG_USE_ENV);
 
 	switch (type)
 	{

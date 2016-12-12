@@ -151,11 +151,7 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 	}
 
 	globals::light = (flags & NJD_FLAG_IGNORE_LIGHT) == 0;
-
-	if (!globals::no_specular)
-	{
-		SetPaletteLights(globals::light_type, flags);
-	}
+	SetPaletteLights(globals::light_type, globals::no_specular ? flags | NJD_FLAG_IGNORE_SPECULAR : flags);
 
 	if ((last_flags & NJD_FLAG_USE_ENV) != (flags & NJD_FLAG_USE_ENV))
 	{
