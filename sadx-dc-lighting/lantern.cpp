@@ -424,7 +424,7 @@ void SetPaletteLights(int type, int flags)
 
 		case 2:
 			diffuse = 2;
-			specular = 2;
+			specular = ignore_specular ? 2 : 3;
 			break;
 
 		case 4:
