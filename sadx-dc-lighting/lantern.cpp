@@ -34,9 +34,15 @@ inline D3DLOCKED_RECT GetTextureRect(IDirect3DTexture9* texture)
 /// Creates a 1x256 image to be used as a palette.
 /// </summary>
 /// <param name="texture">Destination texture.</param>
-inline void CreateTexture(IDirect3DTexture9** texture)
+inline void CreateTexture(IDirect3DTexture9*& texture)
 {
-	if (FAILED(d3d::device->CreateTexture(1, 256, 1, 0, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, texture, nullptr)))
+	if (texture)
+	{
+		texture->Release();
+		texture = nullptr;
+	}
+
+	if (FAILED(d3d::device->CreateTexture(1, 256, 1, 0, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, &texture, nullptr)))
 	{
 		throw std::exception("Failed to create palette texture!");
 	}
@@ -51,24 +57,12 @@ static void CreatePaletteTexturePair(LanternPalette& palette, ColorPair* pairs)
 {
 	using namespace d3d;
 	if (device == nullptr)
+	{
 		throw std::exception("Device is null.");
-
-	if (palette.diffuse)
-	{
-		palette.diffuse->Release();
-		palette.diffuse = nullptr;
 	}
 
-	if (palette.specular)
-	{
-		palette.specular->Release();
-		palette.specular = nullptr;
-	}
-
-	if (!palette.diffuse)
-		CreateTexture(&palette.diffuse);
-	if (!palette.specular)
-		CreateTexture(&palette.specular);
+	CreateTexture(palette.diffuse);
+	CreateTexture(palette.specular);
 
 	auto diffuse_rect = GetTextureRect(palette.diffuse);
 	auto diffuse_data = (NJS_COLOR*)diffuse_rect.pBits;
@@ -95,6 +89,58 @@ bool UsePalette()
 	return use_palette;
 }
 
+/*
+ * I'm explicitly using brackets in these switch statements
+ * to make the code formatter happy. Otherwise it indents
+ * comments and it looks really weird.
+ */
+
+static bool UseTimeOfDay(Uint32 level, Uint32 act)
+{
+	if (level < LevelIDs_StationSquare || level >= LevelIDs_Past && level <= LevelIDs_SandHill)
+	{
+		return false;
+	}
+
+	switch (level)
+	{
+		default:
+		{
+			return true;
+		}
+
+		// Time of day shouldn't be adjusted for
+		// the entrance to Final Egg.
+		case LevelIDs_MysticRuins:
+		{
+			return act != 3;
+		}
+
+		// Egg Carrier is not affected by time of day.
+		case LevelIDs_EggCarrierInside:
+		case LevelIDs_EggCarrierOutside:
+		{
+			return false;
+		}
+
+		// Egg Walker takes place in Station Square at night,
+		// so it shouldn't be adjusted for time of day.
+		case LevelIDs_EggWalker:
+		{
+			return false;
+		}
+
+		// These two Chao Gardens don't adjust for time of day
+		// on the Dreamcast, and it doesn't work well with the
+		// vanilla SADX landtables.
+		case LevelIDs_SSGarden:
+		case LevelIDs_ECGarden:
+		{
+			return false;
+		}
+	}
+}
+
 /// <summary>
 /// Returns a string in the format "_[0-9]", "1[A-Z]", "2[A-Z]", etc.
 /// </summary>
@@ -103,53 +149,53 @@ bool UsePalette()
 /// <returns>A string containing the properly formatted PL level ID.</returns>
 std::string LanternPaletteId(Uint32 level, Uint32 act)
 {
-	// Special cases because sonic adventure:
-	// Egg Walker specifically loads the night time Station Square palette.
-	if (level == LevelIDs_EggWalker)
+	// TODO: Provide a method for other mods to handle this to allow for custom palettes.
+
+	if (UseTimeOfDay(level, act))
 	{
-		level = LevelIDs_StationSquare;
-		act = 3;
+		// Station Square (unlike other sane adventure
+		// fields) uses arbitrary numbers for time of day.
+		if (level == LevelIDs_StationSquare)
+		{
+			switch (GetTimeOfDay())
+			{
+				default:
+					act = 4;
+					break;
+				case 1:
+					act = 1;
+					break;
+				case 2:
+					act = 3;
+					break;
+			}
+		}
+		else
+		{
+			act = GetTimeOfDay();
+		}
 	}
-	else if (level >= LevelIDs_StationSquare && (level < LevelIDs_Past || level > LevelIDs_SandHill))
+	else
 	{
 		switch (level)
 		{
-			// Any other adventure field presumably uses time of day
-			// in place of act for filenames (e.g Mystic Ruins).
 			default:
-				act = GetTimeOfDay();
+			{
 				break;
+			}
 
-				// Egg Carrier interior is not affected by time of day.
-			case LevelIDs_EggCarrierInside:
+			// Egg Walker takes place in Station Square at night.
+			case LevelIDs_EggWalker:
+			{
+				level = LevelIDs_StationSquare;
+				act = 3;
 				break;
+			}
 
-				// Station Square, unlike other sane adventure fields,
-				// uses arbitrary numbers for time of day.
-			case LevelIDs_StationSquare:
-				switch (GetTimeOfDay())
-				{
-					default:
-						act = 4;
-						break;
-					case 1:
-						act = 1;
-						break;
-					case 2:
-						act = 3;
-						break;
-				}
-
-				break;
-
-				// Station Square Chao Garden only supports day and evening.
-			case LevelIDs_SSGarden:
-				act = min(1, GetTimeOfDay());
-				break;
-
-				// Egg Carrier Exterior uses Emerald Coast's palette if it's on the ocean,
-				// otherwise it just uses a single palette, unaffected by time of day.
+			// Egg Carrier Exterior uses Emerald Coast's palette if it's on the ocean,
+			// otherwise it just uses a single palette, unaffected by time of day.
 			case LevelIDs_EggCarrierOutside:
+			{
 				int flag;
 
 				switch (CurrentCharacter)
@@ -184,6 +230,7 @@ std::string LanternPaletteId(Uint32 level, Uint32 act)
 					act = 0;
 				}
 				break;
+			}
 		}
 	}
 
@@ -202,15 +249,7 @@ std::string LanternPaletteId(Uint32 level, Uint32 act)
 		throw std::exception("Level ID out of range.");
 	}
 
-	if (!n)
-	{
-		result << "_";
-	}
-	else
-	{
-		result << n;
-	}
-
+	!n ? result << "_" : result << n;
 
 	auto i = (char)(level - (10 + 26 * n) + 'A');
 	result << i << act;
@@ -234,6 +273,11 @@ void UpdateLightDirections(const NJS_VECTOR& dir)
 	}
 }
 
+/// <summary>
+/// Loads palette parameter data (light direction) from the specified path.
+/// </summary>
+/// <param name="path">Path to the file.</param>
+/// <returns><c>true</c> on success.</returns>
 bool LoadLanternSource(const std::string& path)
 {
 	bool result = true;
@@ -287,6 +331,11 @@ bool LoadLanternSource(Uint32 level, Uint32 act)
 	return LoadLanternSource(name.str());
 }
 
+/// <summary>
+/// Loads palette data from the specified path.
+/// </summary>
+/// <param name="level">Path to the file.</param>
+/// <returns><c>true</c> on success.</returns>
 bool LoadLanternPalette(const std::string& path)
 {
 	auto file = std::ifstream(path, std::ios::binary);
@@ -387,6 +436,11 @@ void LoadLanternFiles()
 static Sint32 last_diffuse = -1;
 static Sint32 last_specular = -1;
 
+/// <summary>
+/// Selects a diffuse and specular palette index based on the given SADX light type and material flags.
+/// </summary>
+/// <param name="type">SADX light type.</param>
+/// <param name="flags">Material flags.</param>
 void SetPaletteLights(int type, int flags)
 {
 	auto pad = ControllerPointers[0];
@@ -410,7 +464,7 @@ void SetPaletteLights(int type, int flags)
 
 	Sint32 diffuse = -1;
 	Sint32 specular = -1;
-	
+
 	globals::light_type = type;
 	bool ignore_specular = (flags & NJD_FLAG_IGNORE_SPECULAR) && !(flags & NJD_FLAG_USE_ENV);
 
