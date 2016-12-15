@@ -12,21 +12,13 @@
 #include "globals.h"
 #include "lantern.h"
 
-enum RenderFlags
-{
-	EnvironmentMap   = 0x1,
-	ConstantMaterial = 0x2,
-	OffsetMaterial   = 0x4,
-	RenderFlags_8    = 0x8,
-	RenderFlags_10   = 0x10,
-};
-
 static Trampoline* CharSel_LoadA_t          = nullptr;
 static Trampoline* Direct3D_ParseMaterial_t = nullptr;
 static Trampoline* GoToNextLevel_t          = nullptr;
 static Trampoline* IncrementAct_t           = nullptr;
 static Trampoline* LoadLevelFiles_t         = nullptr;
 static Trampoline* SetLevelAndAct_t         = nullptr;
+static Trampoline* GoToNextChaoStage_t      = nullptr;
 static Trampoline* SetTimeOfDay_t           = nullptr;
 static Trampoline* DrawLandTable_t          = nullptr;
 
@@ -105,14 +97,14 @@ static void __cdecl CorrectMaterial_r()
 	device->GetMaterial(&material);
 	material.Power = LSPalette.SP_pow;
 
-	material.Ambient.r  /= 255.0f;
-	material.Ambient.g  /= 255.0f;
-	material.Ambient.b  /= 255.0f;
-	material.Ambient.a  /= 255.0f;
-	material.Diffuse.r  /= 255.0f;
-	material.Diffuse.g  /= 255.0f;
-	material.Diffuse.b  /= 255.0f;
-	material.Diffuse.a  /= 255.0f;
+	material.Ambient.r /= 255.0f;
+	material.Ambient.g /= 255.0f;
+	material.Ambient.b /= 255.0f;
+	material.Ambient.a /= 255.0f;
+	material.Diffuse.r /= 255.0f;
+	material.Diffuse.g /= 255.0f;
+	material.Diffuse.b /= 255.0f;
+	material.Diffuse.a /= 255.0f;
 	material.Specular.r /= 255.0f;
 	material.Specular.g /= 255.0f;
 	material.Specular.b /= 255.0f;
@@ -215,6 +207,30 @@ static void __cdecl SetLevelAndAct_r(Uint8 level, Uint8 act)
 	LoadLanternFiles();
 }
 
+static void __cdecl GoToNextChaoStage_r()
+{
+	TARGET_DYNAMIC(GoToNextChaoStage)();
+	switch (GetCurrentChaoStage())
+	{
+		case SADXChaoStage_StationSquare:
+			CurrentLevel = LevelIDs_SSGarden;
+			break;
+
+		case SADXChaoStage_EggCarrier:
+			CurrentLevel = LevelIDs_ECGarden;
+			break;
+
+		case SADXChaoStage_MysticRuins:
+			CurrentLevel = LevelIDs_MRGarden;
+			break;
+
+		default:
+			return;
+	}
+
+	LoadLanternFiles();
+}
+
 static void __cdecl GoToNextLevel_r()
 {
 	TARGET_DYNAMIC(GoToNextLevel)();
@@ -280,6 +296,7 @@ extern "C"
 		IncrementAct_t           = new Trampoline(0x004146E0, 0x004146E5, IncrementAct_r);
 		LoadLevelFiles_t         = new Trampoline(0x00422AD0, 0x00422AD8, LoadLevelFiles_r);
 		SetLevelAndAct_t         = new Trampoline(0x00414570, 0x00414576, SetLevelAndAct_r);
+		GoToNextChaoStage_t      = new Trampoline(0x00715130, 0x00715135, GoToNextChaoStage_r);
 		SetTimeOfDay_t           = new Trampoline(0x00412C00, 0x00412C05, SetTimeOfDay_r);
 		DrawLandTable_t          = new Trampoline(0x0043A6A0, 0x0043A6A8, DrawLandTable_r);
 
