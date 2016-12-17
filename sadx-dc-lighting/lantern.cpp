@@ -466,24 +466,20 @@ void SetPaletteLights(int type, int flags)
 	Sint32 specular = -1;
 
 	globals::light_type = type;
-	bool ignore_specular = (flags & NJD_FLAG_IGNORE_SPECULAR) && !(flags & NJD_FLAG_USE_ENV);
+	bool ignore_specular = !!(flags & NJD_FLAG_IGNORE_SPECULAR);
 
 	switch (type)
 	{
 		case 0:
 			diffuse = 0;
-			specular = ignore_specular ? 0 : 1;
+			specular = (ignore_specular && !(flags & NJD_FLAG_USE_ENV)) ? 0 : 1;
 			globals::light_dir = *(NJS_VECTOR*)&Direct3D_CurrentLight.Direction;
 			break;
 
 		case 2:
-			diffuse = 2;
-			specular = ignore_specular ? 2 : 3;
-			break;
-
 		case 4:
 			diffuse = 2;
-			specular = 3;
+			specular = ignore_specular ? 2 : 3;
 			break;
 
 		case 6:
