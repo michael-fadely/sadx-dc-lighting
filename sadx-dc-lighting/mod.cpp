@@ -309,6 +309,8 @@ extern "C"
 
 		// Too lazy to use a trampoline
 		WriteJump(Obj_Past, Obj_Past_r);
+
+		FixCharacterMaterials();
 	}
 
 	EXPORT void __cdecl OnFrame()
@@ -342,6 +344,7 @@ extern "C"
 			return;
 		}
 
+		FixCharacterMaterials_OnFrame();
 		DisplayLightDirection();
 	}
 

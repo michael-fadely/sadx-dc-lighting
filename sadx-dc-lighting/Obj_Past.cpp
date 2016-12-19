@@ -5,7 +5,7 @@
 
 VoidFunc(sub_541990, 0x541990);
 VoidFunc(sub_543F20, 0x543F20);
-ObjectFunc(sub_541FC0, 0x541FC0);
+static constexpr auto sub_541FC0 = (void*)0x00541FC0;
 FunctionPointer(Sint32, QueueSound_DualEntity, (int, void*, int, int, int), 0x00423F50);
 ObjectFunc(Obj_Past_Delete, 0x005419C0);
 
@@ -33,7 +33,12 @@ void __cdecl Obj_Past_r(ObjectMaster *_this)
 			break;
 
 		case 1:
-			sub_541FC0(_this);
+			// teeny tiny usercall function. I ain't writin' no wrapper for that.
+			__asm
+			{
+				mov eax, [_this]
+				call sub_541FC0
+			}
 			entity->Action = 2;
 			break;
 

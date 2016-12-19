@@ -39,6 +39,9 @@
     <ClInclude Include="Obj_Past.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="FixCharacterMaterials.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -63,6 +66,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Obj_Past.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FixCharacterMaterials.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

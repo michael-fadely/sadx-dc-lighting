@@ -105,6 +105,7 @@ xcopy /C /Y /D "$(ProjectDir)lantern.fx" "$(OutDir)system\"</Command>
     <ClInclude Include="..\sadx-mod-loader\libmodutils\Trampoline.h" />
     <ClInclude Include="d3d.h" />
     <ClInclude Include="datapointers.h" />
+    <ClInclude Include="FixCharacterMaterials.h" />
     <ClInclude Include="fog.h" />
     <ClInclude Include="globals.h" />
     <ClInclude Include="lantern.h" />
@@ -114,6 +115,7 @@ xcopy /C /Y /D "$(ProjectDir)lantern.fx" "$(OutDir)system\"</Command>
   <ItemGroup>
     <ClCompile Include="..\sadx-mod-loader\libmodutils\Trampoline.cpp" />
     <ClCompile Include="d3d.cpp" />
+    <ClCompile Include="FixCharacterMaterials.cpp" />
     <ClCompile Include="fog.cpp" />
     <ClCompile Include="globals.cpp" />
     <ClCompile Include="lantern.cpp" />

@@ -39,3 +39,4 @@
 #include "globals.h"
 #include "lantern.h"
 #include "Obj_Past.h"
+#include "FixCharacterMaterials.h"
