@@ -2,7 +2,7 @@
 #include <SADXModLoader.h>
 #include "FixCharacterMaterials.h"
 
-static HMODULE chrmodels_handle;
+static HMODULE chrmodels_handle = nullptr;
 
 inline int get_handle()
 {
@@ -159,13 +159,13 @@ void FixCharacterMaterials_OnFrame()
 	DataPointer(NJS_MATERIAL, mat_00012358, (0x00012358 + handle));
 	DataPointer(NJS_MATERIAL, mat_0011BB58, (0x0011BB58 + handle));
 
-	mat_00565C68.attrflags |= NJD_FLAG_IGNORE_SPECULAR; // Sonic's nose
-	mat_00426F18.attrflags |= NJD_FLAG_IGNORE_SPECULAR; // Tails' eye whites
-	mat_00426F2C.attrflags |= NJD_FLAG_IGNORE_SPECULAR; // Tails' nose
-	mat_002DD8FC.attrflags |= NJD_FLAG_IGNORE_SPECULAR; // Knuckles' nose
+	mat_00565C68.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // Sonic's nose
+	mat_00426F18.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // Tails' eye whites
+	mat_00426F2C.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // Tails' nose
+	mat_002DD8FC.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // Knuckles' nose
 	mat_002DD1E4.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR; // Knuckles' eye whites
 	mat_002E9C64.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR; // Knuckles' eye whites
-	mat_00012358.attrflags |= NJD_FLAG_IGNORE_SPECULAR; // Amy's nose
-	mat_0011BB58.attrflags |= NJD_FLAG_IGNORE_SPECULAR; // Amy's nose
+	mat_00012358.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // Amy's nose
+	mat_0011BB58.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // Amy's nose
 
 }
