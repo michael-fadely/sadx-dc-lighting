@@ -108,6 +108,7 @@ xcopy /C /Y /D "$(ProjectDir)lantern.fx" "$(OutDir)system\"</Command>
     <ClInclude Include="fog.h" />
     <ClInclude Include="globals.h" />
     <ClInclude Include="lantern.h" />
+    <ClInclude Include="Obj_Past.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
@@ -117,6 +118,7 @@ xcopy /C /Y /D "$(ProjectDir)lantern.fx" "$(OutDir)system\"</Command>
     <ClCompile Include="globals.cpp" />
     <ClCompile Include="lantern.cpp" />
     <ClCompile Include="mod.cpp" />
+    <ClCompile Include="Obj_Past.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>

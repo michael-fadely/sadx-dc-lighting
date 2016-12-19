@@ -93,7 +93,10 @@ namespace param
 {
 	D3DXHANDLE BaseTexture       = nullptr;
 	D3DXHANDLE DiffusePalette    = nullptr;
+	D3DXHANDLE DiffusePaletteB   = nullptr;
 	D3DXHANDLE SpecularPalette   = nullptr;
+	D3DXHANDLE SpecularPaletteB  = nullptr;
+	D3DXHANDLE BlendFactor       = nullptr;
 	D3DXHANDLE WorldMatrix       = nullptr;
 	D3DXHANDLE wvMatrix          = nullptr;
 	D3DXHANDLE ProjectionMatrix  = nullptr;
@@ -474,9 +477,20 @@ void d3d::UpdateParameterHandles()
 #define DOTHINGPLS(name) \
 	::param::##name = effect->GetParameterByName(nullptr, #name);
 
+	// Texture stuff:
+
 	DOTHINGPLS(BaseTexture);
+
 	DOTHINGPLS(DiffusePalette);
+	DOTHINGPLS(DiffusePaletteB);
+
 	DOTHINGPLS(SpecularPalette);
+	DOTHINGPLS(SpecularPaletteB);
+
+	DOTHINGPLS(BlendFactor);
+
+	// Other things:
+
 	DOTHINGPLS(WorldMatrix);
 	DOTHINGPLS(wvMatrix);
 	DOTHINGPLS(ProjectionMatrix);

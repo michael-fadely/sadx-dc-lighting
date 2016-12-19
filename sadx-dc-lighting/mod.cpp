@@ -11,6 +11,7 @@
 #include "fog.h"
 #include "globals.h"
 #include "lantern.h"
+#include "Obj_Past.h"
 
 static Trampoline* CharSel_LoadA_t          = nullptr;
 static Trampoline* Direct3D_ParseMaterial_t = nullptr;
@@ -305,6 +306,9 @@ extern "C"
 
 		// Material callback hijack
 		WriteJump((void*)0x0040A340, CorrectMaterial_r);
+
+		// Too lazy to use a trampoline
+		WriteJump(Obj_Past, Obj_Past_r);
 	}
 
 	EXPORT void __cdecl OnFrame()
@@ -334,7 +338,9 @@ extern "C"
 		}
 
 		if (d3d::effect == nullptr)
+		{
 			return;
+		}
 
 		DisplayLightDirection();
 	}

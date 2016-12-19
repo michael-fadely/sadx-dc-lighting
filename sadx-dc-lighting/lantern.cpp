@@ -42,7 +42,7 @@ inline void CreateTexture(IDirect3DTexture9*& texture)
 		texture = nullptr;
 	}
 
-	if (FAILED(d3d::device->CreateTexture(1, 256, 1, 0, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, &texture, nullptr)))
+	if (FAILED(d3d::device->CreateTexture(256, 1, 1, 0, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, &texture, nullptr)))
 	{
 		throw std::exception("Failed to create palette texture!");
 	}
@@ -433,8 +433,45 @@ void LoadLanternFiles()
 	}
 }
 
+
+static float blend_factor = 0.0f;
+
+void BlendFactor(float f)
+{
+	if (d3d::effect && f != blend_factor)
+	{
+		d3d::effect->SetFloat(param::BlendFactor, f);
+		blend_factor = f;
+	}
+}
+
+static Sint32 arb_diffuse = -1;
+static Sint32 arb_specular = -1;
+
+void SetBlendPalettes(Sint32 diffuseIndex, Sint32 specularIndex)
+{
+	if (d3d::effect == nullptr)
+	{
+		return;
+	}
+
+	if (diffuseIndex > -1 && diffuseIndex != arb_diffuse)
+	{
+		d3d::effect->SetTexture(param::DiffusePaletteB, palettes[diffuseIndex].diffuse);
+	}
+
+	if (specularIndex > -1 && specularIndex != arb_specular)
+	{
+		d3d::effect->SetTexture(param::SpecularPaletteB, palettes[specularIndex].specular);
+	}
+
+	arb_diffuse = diffuseIndex;
+	arb_specular = specularIndex;
+}
+
 static Sint32 last_diffuse = -1;
 static Sint32 last_specular = -1;
+static Sint32 last_type = -1;
 
 /// <summary>
 /// Selects a diffuse and specular palette index based on the given SADX light type and material flags.
@@ -488,6 +525,20 @@ void SetPaletteLights(int type, int flags)
 
 		default:
 			break;
+	}
+
+	if (type != last_type)
+	{
+		if (!type)
+		{
+			d3d::effect->SetFloat(param::BlendFactor, blend_factor);
+		}
+		else if (blend_factor != 0.0f)
+		{
+			d3d::effect->SetFloat(param::BlendFactor, 0.0f);
+		}
+
+		last_type = type;
 	}
 
 	if (diffuse > -1 && diffuse != last_diffuse)

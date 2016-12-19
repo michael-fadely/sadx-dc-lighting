@@ -36,6 +36,9 @@
     <ClInclude Include="lantern.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Obj_Past.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -57,6 +60,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="lantern.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Obj_Past.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

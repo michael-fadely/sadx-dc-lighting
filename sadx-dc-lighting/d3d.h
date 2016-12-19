@@ -19,7 +19,11 @@ namespace param
 {
 	extern D3DXHANDLE BaseTexture;
 	extern D3DXHANDLE DiffusePalette;
+	extern D3DXHANDLE DiffusePaletteB;
 	extern D3DXHANDLE SpecularPalette;
+	extern D3DXHANDLE SpecularPaletteB;
+	extern D3DXHANDLE BlendFactor;
+
 	extern D3DXHANDLE WorldMatrix;
 	extern D3DXHANDLE wvMatrix;
 	extern D3DXHANDLE ProjectionMatrix;

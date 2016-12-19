@@ -29,4 +29,6 @@ bool LoadLanternSource(const std::string& path);
 bool LoadLanternPalette(Uint32 level, Uint32 act);
 bool LoadLanternPalette(const std::string& path);
 void LoadLanternFiles();
+void BlendFactor(float f);
+void SetBlendPalettes(Sint32 diffuseIndex, Sint32 specularIndex);
 void SetPaletteLights(int type, int flags);

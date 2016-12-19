@@ -32,8 +32,14 @@ struct PS_IN
 };
 
 Texture2D BaseTexture;
+
 Texture2D DiffusePalette;
+Texture2D DiffusePaletteB;
+
 Texture2D SpecularPalette;
+Texture2D SpecularPaletteB;
+
+float BlendFactor = 0.0f;
 
 sampler2D baseSampler = sampler_state
 {
@@ -47,9 +53,25 @@ sampler2D diffuseSampler = sampler_state
 	AddressU  = Clamp;
 	AddressV  = Clamp;
 };
+sampler2D diffuseSamplerB = sampler_state
+{
+	Texture   = <DiffusePaletteB>;
+	MinFilter = Linear;
+	MagFilter = Linear;
+	AddressU  = Clamp;
+	AddressV  = Clamp;
+};
 sampler2D specularSampler = sampler_state
 {
 	Texture   = <SpecularPalette>;
+	MinFilter = Linear;
+	MagFilter = Linear;
+	AddressU  = Clamp;
+	AddressV  = Clamp;
+};
+sampler2D specularSamplerB = sampler_state
+{
+	Texture   = <SpecularPaletteB>;
 	MinFilter = Linear;
 	MagFilter = Linear;
 	AddressU  = Clamp;
@@ -119,9 +141,34 @@ float CalcFogFactor(float d)
 	return clamp(fogCoeff, 0, 1);
 }
 
+float4 BlendPalettes(sampler2D samplerA, sampler2D samplerB, float i)
+{
+	float4 a;
+	float4 b;
+
+	if (BlendFactor > 0.0f)
+	{
+		b = tex2Dlod(samplerB, float4(i, 0, 0, 0));
+	}
+
+	if (BlendFactor < 1.0f)
+	{
+		a = tex2Dlod(samplerA, float4(i, 0, 0, 0));
+	}
+
+	if (BlendFactor == 0.0f || BlendFactor == 1.0f)
+	{
+		return BlendFactor == 0.0f ? a : b;
+	}
+	else
+	{
+		return lerp(a, b, BlendFactor);
+	}
+}
+
 // Vertex shaders
 
-PS_IN vs_main(VS_IN input, uniform bool lightEnabled)
+PS_IN vs_main(VS_IN input, uniform bool lightEnabled, uniform bool interpolate = true)
 {
 	PS_IN output;
 
@@ -155,15 +202,23 @@ PS_IN vs_main(VS_IN input, uniform bool lightEnabled)
 		// Specifically avoiding the alpha component here. Palettes don't seem to do anything
 		// useful with their alpha channels.
 		float4 diffuse = GetDiffuse(input.color);
-		diffuse.rgb = saturate(diffuse + 0.3) * tex2Dlod(diffuseSampler, float4(0, i, 0, 0));
 
-		output.diffuse = diffuse;
+		float4 pdiffuse;
+		float4 pspecular;
 
-		// Ditto. You wouldn't want to add to the alpha channel.
-		float4 specular = tex2Dlod(specularSampler, float4(0, pow(i, 1.5), 0, 0));
-		specular.a = 0;
-
-		output.specular = specular;
+		if (interpolate)
+		{
+			pdiffuse = BlendPalettes(diffuseSampler, diffuseSamplerB, i);
+			pspecular = BlendPalettes(specularSampler, specularSamplerB, pow(i, 1.5));
+		}
+		else
+		{
+			pdiffuse = tex2Dlod(diffuseSampler, float4(i, 0, 0, 0));
+			pspecular = tex2Dlod(specularSampler, float4(pow(i, 1.5), 0, 0, 0));
+		}
+		
+		output.diffuse = float4((saturate(diffuse + 0.3) * pdiffuse).rgb, diffuse.a);
+		output.specular = float4(pspecular.rgb, 0.0f);
 	}
 	else
 	{
@@ -177,11 +232,11 @@ PS_IN vs_main(VS_IN input, uniform bool lightEnabled)
 
 PS_IN vs_light(VS_IN input)
 {
-	return vs_main(input, true);
+	return vs_main(input, true, true);
 }
 PS_IN vs_nolight(VS_IN input)
 {
-	return vs_main(input, false);
+	return vs_main(input, false, true);
 }
 
 // Pixel shaders
@@ -231,7 +286,7 @@ float4 ps_nofog(PS_IN input) : COLOR
 	return ps_main(input, false);
 }
 
-// Techniques
+// Standard techniques
 
 technique Standard
 {
