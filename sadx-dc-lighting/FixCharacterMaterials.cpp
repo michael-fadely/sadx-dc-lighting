@@ -32,8 +32,11 @@ void FixCharacterMaterials()
 	DataPointer(NJS_MATERIAL, mat_00012048, (0x00012048 + handle));
 	DataPointer(NJS_MATERIAL, mat_00015A00, (0x00015A00 + handle));
 	DataPointer(NJS_MATERIAL, mat_00015DF8, (0x00015DF8 + handle));
+	DataPointer(NJS_MATERIAL, mat_0011A080, (0x0011A080 + handle));
 	DataPointer(NJS_MATERIAL, mat_0011B788, (0x0011B788 + handle));
 	DataPointer(NJS_MATERIAL, mat_0011B978, (0x0011B978 + handle));
+	DataPointer(NJS_MATERIAL, mat_0011E718, (0x0011E718 + handle));
+	DataPointer(NJS_MATERIAL, mat_0011E8E0, (0x0011E8E0 + handle));
 	DataPointer(NJS_MATERIAL, mat_00127554, (0x00127554 + handle));
 	DataPointer(NJS_MATERIAL, mat_001276B4, (0x001276B4 + handle));
 	DataPointer(NJS_MATERIAL, mat_001284F0, (0x001284F0 + handle));
@@ -88,11 +91,14 @@ void FixCharacterMaterials()
 	mat_00010B2C.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // Rings with env map
 	mat_00010B40.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // Rings with env map
 	mat_00011A00.attrflags |=  NJD_FLAG_IGNORE_SPECULAR;
-	mat_00012048.attrflags |=  NJD_FLAG_IGNORE_LIGHT;
+	mat_00012048.attrflags |=  NJD_FLAG_IGNORE_SPECULAR;
 	mat_00015A00.attrflags |=  NJD_FLAG_IGNORE_SPECULAR;
 	mat_00015DF8.attrflags |=  NJD_FLAG_IGNORE_SPECULAR;
+	mat_0011A080.attrflags |=  NJD_FLAG_IGNORE_SPECULAR;
 	mat_0011B788.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // eye white 2
 	mat_0011B978.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // eye white 1
+	mat_0011E718.attrflags |=  NJD_FLAG_IGNORE_SPECULAR;
+	mat_0011E8E0.attrflags |=  NJD_FLAG_IGNORE_SPECULAR;
 	mat_00127554.attrflags |=  NJD_FLAG_IGNORE_SPECULAR;
 	mat_001276B4.attrflags |=  NJD_FLAG_IGNORE_SPECULAR;
 	mat_001284F0.attrflags |=  NJD_FLAG_IGNORE_SPECULAR;
