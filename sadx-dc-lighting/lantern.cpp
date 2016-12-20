@@ -1,4 +1,5 @@
 #include "stdafx.h"
+
 #include <d3d9.h>
 #include <exception>
 #include <string>
@@ -11,8 +12,14 @@
 #include "globals.h"
 #include "datapointers.h"
 
-static bool use_palette = false;
-static LanternPalette palettes[8] = {};
+#pragma pack(push, 1)
+struct ColorPair
+{
+	NJS_COLOR diffuse, specular;
+};
+#pragma pack(pop)
+
+static_assert(sizeof(ColorPair) == sizeof(NJS_COLOR) * 2, "AGAIN TRY");
 
 /// <summary>
 /// Get the pixel data of the specified texture.
@@ -42,7 +49,7 @@ inline void CreateTexture(IDirect3DTexture9*& texture)
 		texture = nullptr;
 	}
 
-	if (FAILED(d3d::device->CreateTexture(256, 1, 1, 0, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, &texture, nullptr)))
+	if (FAILED(d3d::device->CreateTexture(256, 1, 1, 0, D3DFMT_X8R8G8B8, D3DPOOL_MANAGED, &texture, nullptr)))
 	{
 		throw std::exception("Failed to create palette texture!");
 	}
@@ -82,11 +89,6 @@ static void CreatePaletteTexturePair(LanternPalette& palette, ColorPair* pairs)
 
 	palette.diffuse->UnlockRect(0);
 	palette.specular->UnlockRect(0);
-}
-
-bool UsePalette()
-{
-	return use_palette;
 }
 
 /*
@@ -142,12 +144,37 @@ static bool UseTimeOfDay(Uint32 level, Uint32 act)
 }
 
 /// <summary>
+/// Overwrites light directions for the current stage with the specified direction.
+/// </summary>
+/// <param name="dir">The direction with which to overwrite.</param>
+void UpdateLightDirections(const NJS_VECTOR& dir)
+{
+	int level = CurrentLevel;
+	int act = CurrentAct;
+	GetTimeOfDayLevelAndAct(&level, &act);
+
+	int n = 0;
+	for (StageLightData* i = GetStageLight(level, act, n); i != nullptr; i = GetStageLight(level, act, ++n))
+	{
+		i->xyz = dir;
+	}
+}
+
+bool LanternInstance::use_palette = false;
+float LanternInstance::blend_factor = 0.0f;
+
+bool LanternInstance::UsePalette()
+{
+	return use_palette;
+}
+
+/// <summary>
 /// Returns a string in the format "_[0-9]", "1[A-Z]", "2[A-Z]", etc.
 /// </summary>
 /// <param name="level">Current level.</param>
 /// <param name="act">Current act.</param>
 /// <returns>A string containing the properly formatted PL level ID.</returns>
-std::string LanternPaletteId(Uint32 level, Uint32 act)
+std::string LanternInstance::PaletteId(Sint32 level, Sint32 act)
 {
 	// TODO: Provide a method for other mods to handle this to allow for custom palettes.
 
@@ -256,21 +283,68 @@ std::string LanternPaletteId(Uint32 level, Uint32 act)
 	return result.str();
 }
 
-/// <summary>
-/// Overwrites light directions for the current stage with the specified direction.
-/// </summary>
-/// <param name="dir">The direction with which to overwrite.</param>
-void UpdateLightDirections(const NJS_VECTOR& dir)
+LanternInstance::LanternInstance(EffectParameter<IDirect3DTexture9*>* diffuse, EffectParameter<IDirect3DTexture9*>* specular)
+	: diffuse_handle(diffuse), specular_handle(specular),
+	  blend_type(-1), last_time(-1), last_act(-1), last_level(-1)
 {
-	int level = CurrentLevel;
-	int act = CurrentAct;
-	GetTimeOfDayLevelAndAct(&level, &act);
-
-	int n = 0;
-	for (StageLightData* i = GetStageLight(level, act, n); i != nullptr; i = GetStageLight(level, act, ++n))
+	for (auto& i : palette)
 	{
-		i->xyz = dir;
+		i = {};
 	}
+}
+
+LanternInstance::LanternInstance(LanternInstance&& inst) noexcept
+	: diffuse_handle(inst.diffuse_handle), specular_handle(inst.specular_handle),
+	  blend_type(inst.blend_type), last_time(inst.last_time), last_act(inst.last_act), last_level(inst.last_level)
+{
+	for (int i = 0; i < 8; i++)
+	{
+		palette[i] = inst.palette[i];
+		inst.palette[i] = {};
+	}
+}
+
+LanternInstance& LanternInstance::operator=(LanternInstance&& inst) noexcept
+{
+	diffuse_handle  = inst.diffuse_handle;
+	specular_handle = inst.specular_handle;
+	last_time       = inst.last_time;
+	last_act        = inst.last_act;
+	last_level      = inst.last_level;
+	blend_type      = inst.blend_type;
+
+	inst.diffuse_handle = nullptr;
+	inst.specular_handle = nullptr;
+
+	for (int i = 0; i < 8; i++)
+	{
+		palette[i] = inst.palette[i];
+		inst.palette[i] = {};
+	}
+
+	return *this;
+}
+
+LanternInstance::~LanternInstance()
+{
+	for (auto& i : palette)
+	{
+		if (i.diffuse)
+		{
+			i.diffuse->Release();
+		}
+
+		if (i.specular)
+		{
+			i.specular->Release();
+		}
+	}
+}
+
+void LanternInstance::SetLastLevel(Sint32 level, Sint32 act)
+{
+	last_level = level;
+	last_act = act;
 }
 
 /// <summary>
@@ -278,7 +352,7 @@ void UpdateLightDirections(const NJS_VECTOR& dir)
 /// </summary>
 /// <param name="path">Path to the file.</param>
 /// <returns><c>true</c> on success.</returns>
-bool LoadLanternSource(const std::string& path)
+bool ILantern::LoadSource(const std::string& path)
 {
 	bool result = true;
 	auto file = std::ifstream(path, std::ios::binary);
@@ -324,11 +398,16 @@ bool LoadLanternSource(const std::string& path)
 /// <param name="level">Current level/stage.</param>
 /// <param name="act">Current act.</param>
 /// <returns><c>true</c> on success.</returns>
-bool LoadLanternSource(Uint32 level, Uint32 act)
+bool LanternInstance::LoadSource(Sint32 level, Sint32 act) const
 {
 	std::stringstream name;
-	name << globals::system << "SL" << LanternPaletteId(level, act) << "B.BIN";
-	return LoadLanternSource(name.str());
+	name << globals::system << "SL" << PaletteId(level, act) << "B.BIN";
+	return ILantern::LoadSource(name.str());
+}
+
+bool LanternInstance::LoadFiles()
+{
+	return LoadFiles(*this);
 }
 
 /// <summary>
@@ -336,7 +415,7 @@ bool LoadLanternSource(Uint32 level, Uint32 act)
 /// </summary>
 /// <param name="level">Path to the file.</param>
 /// <returns><c>true</c> on success.</returns>
-bool LoadLanternPalette(const std::string& path)
+bool LanternInstance::LoadPalette(const std::string& path)
 {
 	auto file = std::ifstream(path, std::ios::binary);
 
@@ -365,22 +444,22 @@ bool LoadLanternPalette(const std::string& path)
 		auto index = i * 256;
 		if (index < colorData.size() && index + 256 < colorData.size())
 		{
-			CreatePaletteTexturePair(palettes[i], &colorData[index]);
+			CreatePaletteTexturePair(palette[i], &colorData[index]);
 		}
 		else
 		{
-			auto& palette = palettes[i];
+			auto& pair = palette[i];
 
-			if (palette.diffuse)
+			if (pair.diffuse)
 			{
-				palette.diffuse->Release();
-				palette.diffuse = nullptr;
+				pair.diffuse->Release();
+				pair.diffuse = nullptr;
 			}
 
-			if (palette.specular)
+			if (pair.specular)
 			{
-				palette.specular->Release();
-				palette.specular = nullptr;
+				pair.specular->Release();
+				pair.specular = nullptr;
 			}
 		}
 	}
@@ -394,18 +473,25 @@ bool LoadLanternPalette(const std::string& path)
 /// <param name="level">Current level/stage.</param>
 /// <param name="act">Current act.</param>
 /// <returns><c>true</c> on success.</returns>
-bool LoadLanternPalette(Uint32 level, Uint32 act)
+bool LanternInstance::LoadPalette(Sint32 level, Sint32 act)
 {
 	std::stringstream name;
-	name << globals::system << "PL" << LanternPaletteId(level, act) << "B.BIN";
-	return LoadLanternPalette(name.str());
+	name << globals::system << "PL" << PaletteId(level, act) << "B.BIN";
+	return LoadPalette(name.str());
 }
 
 /// <summary>
 /// Loads the lantern palette and source files for the current level if it (or the time of day) has changed.
 /// </summary>
-void LoadLanternFiles()
+bool LanternInstance::LoadFiles(LanternInstance& instance)
 {
+	// TODO: remove this function
+	// HACK: this is bad
+	if (CurrentLevel == LevelIDs_SkyDeck)
+	{
+		return true;
+	}
+
 	auto time = GetTimeOfDay();
 
 	for (int i = CurrentAct; i >= 0; i--)
@@ -415,70 +501,57 @@ void LoadLanternFiles()
 
 		GetTimeOfDayLevelAndAct(&level, &act);
 
-		if (level == globals::last_level && act == globals::last_act && time == globals::last_time)
-			break;
+		if (level == instance.last_level && act == instance.last_act && time == instance.last_time)
+		{
+			return false;
+		}
 
-		if (!LoadLanternPalette(CurrentLevel, i))
+		if (!instance.LoadPalette(CurrentLevel, i))
+		{
 			continue;
+		}
 
-		LoadLanternSource(CurrentLevel, i);
+		instance.LoadSource(CurrentLevel, i);
 
-		globals::last_time = time;
-		globals::last_level = level;
-		globals::last_act = act;
+		instance.last_time  = time;
+		instance.last_level = level;
+		instance.last_act   = act;
 
 		use_palette = false;
 		d3d::do_effect = false;
-		break;
+		return true;
 	}
+
+	return false;
 }
 
-
-static float blend_factor = 0.0f;
-
-void BlendFactor(float f)
+void LanternInstance::SetBlendFactor(float f)
 {
-	if (d3d::effect && f != blend_factor)
-	{
-		d3d::effect->SetFloat(param::BlendFactor, f);
-		blend_factor = f;
-	}
-}
-
-static Sint32 arb_diffuse = -1;
-static Sint32 arb_specular = -1;
-
-void SetBlendPalettes(Sint32 diffuseIndex, Sint32 specularIndex)
-{
-	if (d3d::effect == nullptr)
+	if (!d3d::effect)
 	{
 		return;
 	}
 
-	if (diffuseIndex > -1 && diffuseIndex != arb_diffuse)
-	{
-		d3d::effect->SetTexture(param::DiffusePaletteB, palettes[diffuseIndex].diffuse);
-	}
-
-	if (specularIndex > -1 && specularIndex != arb_specular)
-	{
-		d3d::effect->SetTexture(param::SpecularPaletteB, palettes[specularIndex].specular);
-	}
-
-	arb_diffuse = diffuseIndex;
-	arb_specular = specularIndex;
+	param::BlendFactor = f;
+	blend_factor = f;
 }
 
-static Sint32 last_diffuse = -1;
-static Sint32 last_specular = -1;
-static Sint32 last_type = -1;
+void LanternInstance::set_diffuse(Sint32 diffuse) const
+{
+	*diffuse_handle = palette[diffuse].diffuse;
+}
+
+void LanternInstance::set_specular(Sint32 specular) const
+{
+	*specular_handle = palette[specular].specular;
+}
 
 /// <summary>
 /// Selects a diffuse and specular palette index based on the given SADX light type and material flags.
 /// </summary>
 /// <param name="type">SADX light type.</param>
 /// <param name="flags">Material flags.</param>
-void SetPaletteLights(int type, int flags)
+void LanternInstance::SetPalettes(Sint32 type, Uint32 flags)
 {
 	auto pad = ControllerPointers[0];
 	if (d3d::effect == nullptr || pad && pad->HeldButtons & Buttons_Z)
@@ -527,31 +600,149 @@ void SetPaletteLights(int type, int flags)
 			break;
 	}
 
-	if (type != last_type)
+	// blend_type is used exclusively for local blending
+	if (blend_type > -1)
 	{
-		if (!type)
+		// not calling SetBlendFactor because the value is saved
+		// and restored when the light type matches the target type.
+		if (type == blend_type)
 		{
-			d3d::effect->SetFloat(param::BlendFactor, blend_factor);
+			param::BlendFactor = blend_factor;
 		}
 		else if (blend_factor != 0.0f)
 		{
-			d3d::effect->SetFloat(param::BlendFactor, 0.0f);
+			param::BlendFactor = 0.0f;
 		}
-
-		last_type = type;
 	}
 
-	if (diffuse > -1 && diffuse != last_diffuse)
-	{
-		d3d::effect->SetTexture(param::DiffusePalette, palettes[diffuse].diffuse);
-	}
+	set_diffuse(diffuse);
+	set_specular(specular);
 
-	if (specular > -1 && specular != last_specular)
-	{
-		d3d::effect->SetTexture(param::SpecularPalette, palettes[specular].specular);
-	}
-
-	last_diffuse = diffuse;
-	last_specular = specular;
 	d3d::do_effect = use_palette = diffuse > -1 && specular > -1;
+}
+
+// hard coded crap
+void LanternInstance::SetSelfBlend(Sint32 type, Sint32 diffuse, Sint32 specular)
+{
+	if (type < 0)
+	{
+		blend_type = -1;
+		param::DiffusePaletteB = nullptr;
+		param::SpecularPaletteB = nullptr;
+		return;
+	}
+
+	blend_type = type;
+
+	if (diffuse > -1)
+	{
+		param::DiffusePaletteB = palette[diffuse].diffuse;
+	}
+
+	if (specular > -1)
+	{
+		param::SpecularPaletteB = palette[specular].specular;
+	}
+}
+
+// Collection
+
+void LanternCollection::SetLastLevel(Sint32 level, Sint32 act)
+{
+	for (auto& i : instances)
+	{
+		i.SetLastLevel(level, act);
+	}
+}
+
+bool LanternCollection::LoadPalette(Sint32 level, Sint32 act)
+{
+	size_t count = 0;
+
+	for (auto& i : instances)
+	{
+		if (i.LoadPalette(level, act))
+		{
+			++count;
+		}
+	}
+
+	return count == instances.size();
+}
+
+bool LanternCollection::LoadPalette(const std::string& path)
+{
+	size_t count = 0;
+
+	for (auto& i : instances)
+	{
+		if (i.LoadPalette(path))
+		{
+			++count;
+		}
+	}
+
+	return count == instances.size();
+}
+
+bool LanternCollection::LoadSource(Sint32 level, Sint32 act) const
+{
+	size_t count = 0;
+
+	for (auto& i : instances)
+	{
+		if (i.LoadSource(level, act))
+		{
+			++count;
+		}
+	}
+
+	return count == instances.size();
+}
+
+bool LanternCollection::LoadFiles()
+{
+	size_t count = 0;
+
+	if (instances.empty())
+	{
+		instances.push_back(LanternInstance(&param::DiffusePalette, &param::SpecularPalette));
+	}
+
+	for (auto& i : instances)
+	{
+		if (i.LoadFiles())
+		{
+			++count;
+		}
+	}
+
+	return count == instances.size();
+}
+
+void LanternCollection::SetPalettes(Sint32 type, Uint32 flags)
+{
+	for (auto& i : instances)
+	{
+		i.SetPalettes(type, flags);
+	}
+}
+
+void LanternCollection::SetSelfBlend(Sint32 type, Sint32 diffuse, Sint32 specular)
+{
+	for (auto& i : instances)
+	{
+		i.SetSelfBlend(type, diffuse, specular);
+	}
+}
+
+size_t LanternCollection::Add(LanternInstance& src)
+{
+	instances.push_back(std::move(src));
+	return instances.size() - 1;
+}
+
+void LanternCollection::Remove(size_t index)
+{
+	instances.erase(instances.begin() + index);
 }

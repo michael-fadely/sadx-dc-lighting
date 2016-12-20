@@ -15,6 +15,7 @@
 #include "datapointers.h"
 #include "globals.h"
 #include "lantern.h"
+#include "EffectParameter.h"
 
 #pragma pack(push, 1)
 struct __declspec(align(2)) PolyBuff_RenderArgs
@@ -65,9 +66,7 @@ static Trampoline* ProcessModelNode_t                 = nullptr;
 static Trampoline* ProcessModelNode_B_t               = nullptr;
 static Trampoline* ProcessModelNode_C_t               = nullptr;
 static Trampoline* ProcessModelNode_D_t               = nullptr;
-static Trampoline* Direct3D_PerformLighting_t         = nullptr;
 static Trampoline* Direct3D_SetProjectionMatrix_t     = nullptr;
-static Trampoline* Direct3D_SetTexList_t              = nullptr;
 static Trampoline* Direct3D_SetViewportAndTransform_t = nullptr;
 static Trampoline* Direct3D_SetWorldTransform_t       = nullptr;
 static Trampoline* MeshSet_CreateVertexBuffer_t       = nullptr;
@@ -78,8 +77,6 @@ DataPointer(D3DXMATRIX, TransformationMatrix, 0x03D0FD80);
 DataPointer(D3DXMATRIX, ViewMatrix, 0x0389D398);
 DataPointer(D3DXMATRIX, WorldMatrix, 0x03D12900);
 DataPointer(D3DXMATRIX, _ProjectionMatrix, 0x03D129C0);
-DataPointer(NJS_TEXLIST*, CommonTextures, 0x03B290B0);
-DataArray(NJS_TEXLIST*, LevelObjTexlists, 0x03B290B4, 4);
 DataPointer(int, TransformAndViewportInvalid, 0x03D0FD1C);
 
 namespace d3d
@@ -91,30 +88,30 @@ namespace d3d
 
 namespace param
 {
-	D3DXHANDLE BaseTexture       = nullptr;
-	D3DXHANDLE DiffusePalette    = nullptr;
-	D3DXHANDLE DiffusePaletteB   = nullptr;
-	D3DXHANDLE SpecularPalette   = nullptr;
-	D3DXHANDLE SpecularPaletteB  = nullptr;
-	D3DXHANDLE BlendFactor       = nullptr;
-	D3DXHANDLE WorldMatrix       = nullptr;
-	D3DXHANDLE wvMatrix          = nullptr;
-	D3DXHANDLE ProjectionMatrix  = nullptr;
-	D3DXHANDLE wvMatrixInvT      = nullptr;
-	D3DXHANDLE TextureTransform  = nullptr;
-	D3DXHANDLE TextureEnabled    = nullptr;
-	D3DXHANDLE EnvironmentMapped = nullptr;
-	D3DXHANDLE AlphaEnabled      = nullptr;
-	D3DXHANDLE FogMode           = nullptr;
-	D3DXHANDLE FogStart          = nullptr;
-	D3DXHANDLE FogEnd            = nullptr;
-	D3DXHANDLE FogDensity        = nullptr;
-	D3DXHANDLE FogColor          = nullptr;
-	D3DXHANDLE LightDirection    = nullptr;
-	D3DXHANDLE LightLength       = nullptr;
-	D3DXHANDLE DiffuseSource     = nullptr;
-	D3DXHANDLE MaterialDiffuse   = nullptr;
-	D3DXHANDLE AlphaRef          = nullptr;
+	EffectParameter<IDirect3DTexture9*> BaseTexture(&d3d::effect, "BaseTexture", nullptr);
+	EffectParameter<IDirect3DTexture9*> DiffusePalette(&d3d::effect, "DiffusePalette", nullptr);
+	EffectParameter<IDirect3DTexture9*> DiffusePaletteB(&d3d::effect, "DiffusePaletteB", nullptr);
+	EffectParameter<IDirect3DTexture9*> SpecularPalette(&d3d::effect, "SpecularPalette", nullptr);
+	EffectParameter<IDirect3DTexture9*> SpecularPaletteB(&d3d::effect, "SpecularPaletteB", nullptr);
+	EffectParameter<float> BlendFactor(&d3d::effect, "BlendFactor", 0.0f);
+	EffectParameter<D3DXMATRIX> WorldMatrix(&d3d::effect, "WorldMatrix", {});
+	EffectParameter<D3DXMATRIX> wvMatrix(&d3d::effect, "wvMatrix", {});
+	EffectParameter<D3DXMATRIX> ProjectionMatrix(&d3d::effect, "ProjectionMatrix", {});
+	EffectParameter<D3DXMATRIX> wvMatrixInvT(&d3d::effect, "wvMatrixInvT", {});
+	EffectParameter<D3DXMATRIX> TextureTransform(&d3d::effect, "TextureTransform", {});
+	EffectParameter<bool> TextureEnabled(&d3d::effect, "TextureEnabled", true);
+	EffectParameter<bool> EnvironmentMapped(&d3d::effect, "EnvironmentMapped", false);
+	EffectParameter<bool> AlphaEnabled(&d3d::effect, "AlphaEnabled", true);
+	EffectParameter<int> FogMode(&d3d::effect, "FogMode", 0);
+	EffectParameter<float> FogStart(&d3d::effect, "FogStart", 0.0f);
+	EffectParameter<float> FogEnd(&d3d::effect, "FogEnd", 0.0f);
+	EffectParameter<float> FogDensity(&d3d::effect, "FogDensity", 0.0f);
+	EffectParameter<D3DXCOLOR> FogColor(&d3d::effect, "FogColor", {});
+	EffectParameter<D3DXVECTOR3> LightDirection(&d3d::effect, "LightDirection", {});
+	EffectParameter<float> LightLength(&d3d::effect, "LightLength", 0.0f);
+	EffectParameter<int> DiffuseSource(&d3d::effect, "DiffuseSource", 0);
+	EffectParameter<D3DXCOLOR> MaterialDiffuse(&d3d::effect, "MaterialDiffuse", {});
+	EffectParameter<float> AlphaRef(&d3d::effect, "AlphaRef", 0.0f);
 }
 
 using namespace d3d;
@@ -122,7 +119,9 @@ using namespace d3d;
 static void begin()
 {
 	if (!do_effect || began_effect || effect == nullptr)
+	{
 		return;
+	}
 
 	TechniqueIndex technique = (TechniqueIndex)((char)!globals::light | (char)!globals::fog << 1 & 2);
 	if (technique != last_technique)
@@ -144,7 +143,9 @@ static void begin()
 static void end()
 {
 	if (!began_effect || effect == nullptr)
+	{
 		return;
+	}
 
 	effect->EndPass();
 	effect->End();
@@ -174,7 +175,6 @@ static void DrawPolyBuff(PolyBuff* _this, D3DPRIMITIVETYPE type)
 	 */
 
 	Uint32 cullmode = D3DCULL_FORCE_DWORD;
-
 	auto args = _this->RenderArgs;
 
 	for (auto i = _this->LockCount; i; --i)
@@ -202,19 +202,20 @@ static void DrawPolyBuff(PolyBuff* _this, D3DPRIMITIVETYPE type)
 	end();
 }
 
-static void SetLightParameters()
+void d3d::SetLightParameters()
 {
-	using namespace d3d;
-
-	if (!UsePalette() || effect == nullptr)
+	if (!LanternInstance::UsePalette() || effect == nullptr)
+	{
 		return;
+	}
 
 	D3DLIGHT9 light;
 	device->GetLight(0, &light);
 	auto dir = -*(D3DXVECTOR3*)&light.Direction;
 	auto mag = D3DXVec3Length(&dir);
-	effect->SetValue(param::LightDirection, &dir, sizeof(D3DVECTOR));
-	effect->SetFloat(param::LightLength, mag);
+
+	param::LightDirection = dir;
+	param::LightLength = mag;
 }
 
 #pragma region Trampolines
@@ -264,69 +265,24 @@ static void __fastcall CreateDirect3DDevice_r(int a1, int behavior, int type)
 	}
 }
 
-static void __cdecl Direct3D_PerformLighting_r(int type)
-{
-	TARGET_DYNAMIC(Direct3D_PerformLighting)(0);
-
-	if (effect == nullptr)
-		return;
-
-	globals::light = true;
-
-	if (type != globals::light_type)
-	{
-		SetLightParameters();
-	}
-
-	SetPaletteLights(type, globals::no_specular ? NJD_FLAG_IGNORE_SPECULAR : 0);
-}
-
 static void __cdecl Direct3D_SetWorldTransform_r()
 {
 	TARGET_DYNAMIC(Direct3D_SetWorldTransform)();
 
-	if (!UsePalette() || effect == nullptr)
+	if (!LanternInstance::UsePalette() || effect == nullptr)
+	{
 		return;
+	}
 
-	effect->SetMatrix(param::WorldMatrix, &WorldMatrix);
+	param::WorldMatrix = WorldMatrix;
 
 	auto wvMatrix = WorldMatrix * ViewMatrix;
-	effect->SetMatrix(param::wvMatrix, &wvMatrix);
+	param::wvMatrix = wvMatrix;
 
 	D3DXMatrixInverse(&wvMatrix, nullptr, &wvMatrix);
 	D3DXMatrixTranspose(&wvMatrix, &wvMatrix);
 	// The inverse transpose matrix is used for environment mapping.
-	effect->SetMatrix(param::wvMatrixInvT, &wvMatrix);
-}
-
-static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
-{
-	if (texlist != Direct3D_CurrentTexList)
-	{
-		globals::no_specular = false;
-
-		if (!globals::light_type)
-		{
-			if (texlist == CommonTextures)
-			{
-				SetPaletteLights(0, 0);
-			}
-			else
-			{
-				for (int i = 0; i < 4; i++)
-				{
-					if (LevelObjTexlists[i] != texlist)
-						continue;
-
-					SetPaletteLights(0, NJD_FLAG_IGNORE_SPECULAR);
-					globals::no_specular = true;
-					break;
-				}
-			}
-		}
-	}
-
-	return TARGET_DYNAMIC(Direct3D_SetTexList)(texlist);
+	param::wvMatrixInvT = wvMatrix;
 }
 
 static void __stdcall Direct3D_SetProjectionMatrix_r(float hfov, float nearPlane, float farPlane)
@@ -334,11 +290,12 @@ static void __stdcall Direct3D_SetProjectionMatrix_r(float hfov, float nearPlane
 	TARGET_DYNAMIC(Direct3D_SetProjectionMatrix)(hfov, nearPlane, farPlane);
 
 	if (effect == nullptr)
+	{
 		return;
+	}
 
 	// The view matrix can also be set here if necessary.
-	auto m = _ProjectionMatrix * TransformationMatrix;
-	effect->SetMatrix(param::ProjectionMatrix, &m);
+	param::ProjectionMatrix = _ProjectionMatrix * TransformationMatrix;
 }
 
 static void __cdecl Direct3D_SetViewportAndTransform_r()
@@ -349,8 +306,7 @@ static void __cdecl Direct3D_SetViewportAndTransform_r()
 
 	if (effect != nullptr && invalid)
 	{
-		auto m = _ProjectionMatrix * TransformationMatrix;
-		effect->SetMatrix(param::ProjectionMatrix, &m);
+		param::ProjectionMatrix = _ProjectionMatrix * TransformationMatrix;
 	}
 }
 
@@ -359,7 +315,9 @@ static void __cdecl Direct3D_SetViewportAndTransform_r()
 static void __stdcall DrawMeshSetBuffer_c(MeshSetBuffer* buffer)
 {
 	if (!buffer->FVF)
+	{
 		return;
+	}
 
 	device->SetFVF(buffer->FVF);
 	device->SetStreamSource(0, buffer->VertexBuffer->GetProxyInterface(), 0, buffer->Size);
@@ -466,7 +424,7 @@ static auto __stdcall SetTransformHijack(Direct3DDevice8* _device, D3DTRANSFORMS
 {
 	if (effect != nullptr)
 	{
-		effect->SetMatrix(param::ProjectionMatrix, matrix);
+		param::ProjectionMatrix = *matrix;
 	}
 
 	return device->SetTransform(type, matrix);
@@ -474,41 +432,33 @@ static auto __stdcall SetTransformHijack(Direct3DDevice8* _device, D3DTRANSFORMS
 
 void d3d::UpdateParameterHandles()
 {
-#define DOTHINGPLS(name) \
-	::param::##name = effect->GetParameterByName(nullptr, #name);
-
 	// Texture stuff:
-
-	DOTHINGPLS(BaseTexture);
-
-	DOTHINGPLS(DiffusePalette);
-	DOTHINGPLS(DiffusePaletteB);
-
-	DOTHINGPLS(SpecularPalette);
-	DOTHINGPLS(SpecularPaletteB);
-
-	DOTHINGPLS(BlendFactor);
+	param::BaseTexture.UpdateHandle();
+	param::DiffusePalette.UpdateHandle();
+	param::DiffusePaletteB.UpdateHandle();
+	param::SpecularPalette.UpdateHandle();
+	param::SpecularPaletteB.UpdateHandle();
+	param::BlendFactor.UpdateHandle();
 
 	// Other things:
-
-	DOTHINGPLS(WorldMatrix);
-	DOTHINGPLS(wvMatrix);
-	DOTHINGPLS(ProjectionMatrix);
-	DOTHINGPLS(wvMatrixInvT);
-	DOTHINGPLS(TextureTransform);
-	DOTHINGPLS(TextureEnabled);
-	DOTHINGPLS(EnvironmentMapped);
-	DOTHINGPLS(AlphaEnabled);
-	DOTHINGPLS(FogMode);
-	DOTHINGPLS(FogStart);
-	DOTHINGPLS(FogEnd);
-	DOTHINGPLS(FogDensity);
-	DOTHINGPLS(FogColor);
-	DOTHINGPLS(LightDirection);
-	DOTHINGPLS(LightLength);
-	DOTHINGPLS(DiffuseSource);
-	DOTHINGPLS(MaterialDiffuse);
-	DOTHINGPLS(AlphaRef);
+	param::WorldMatrix.UpdateHandle();
+	param::wvMatrix.UpdateHandle();
+	param::ProjectionMatrix.UpdateHandle();
+	param::wvMatrixInvT.UpdateHandle();
+	param::TextureTransform.UpdateHandle();
+	param::TextureEnabled.UpdateHandle();
+	param::EnvironmentMapped.UpdateHandle();
+	param::AlphaEnabled.UpdateHandle();
+	param::FogMode.UpdateHandle();
+	param::FogStart.UpdateHandle();
+	param::FogEnd.UpdateHandle();
+	param::FogDensity.UpdateHandle();
+	param::FogColor.UpdateHandle();
+	param::LightDirection.UpdateHandle();
+	param::LightLength.UpdateHandle();
+	param::DiffuseSource.UpdateHandle();
+	param::MaterialDiffuse.UpdateHandle();
+	param::AlphaRef.UpdateHandle();
 }
 
 void d3d::LoadShader()
@@ -578,9 +528,7 @@ void d3d::InitTrampolines()
 	njDrawModel_SADX_B_t               = new Trampoline(0x00784AE0, 0x00784AE5, njDrawModel_SADX_B_r);
 	PolyBuff_DrawTriangleStrip_t       = new Trampoline(0x00794760, 0x00794767, PolyBuff_DrawTriangleStrip_r);
 	PolyBuff_DrawTriangleList_t        = new Trampoline(0x007947B0, 0x007947B7, PolyBuff_DrawTriangleList_r);
-	Direct3D_PerformLighting_t         = new Trampoline(0x00412420, 0x00412426, Direct3D_PerformLighting_r);
 	Direct3D_SetProjectionMatrix_t     = new Trampoline(0x00791170, 0x00791175, Direct3D_SetProjectionMatrix_r);
-	Direct3D_SetTexList_t              = new Trampoline(0x0077F3D0, 0x0077F3D8, Direct3D_SetTexList_r);
 	Direct3D_SetViewportAndTransform_t = new Trampoline(0x007912E0, 0x007912E8, Direct3D_SetViewportAndTransform_r);
 	Direct3D_SetWorldTransform_t       = new Trampoline(0x00791AB0, 0x00791AB5, Direct3D_SetWorldTransform_r);
 	MeshSet_CreateVertexBuffer_t       = new Trampoline(0x007853D0, 0x007853D6, MeshSet_CreateVertexBuffer_r);

@@ -30,6 +30,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <deque>
 
 // Local
 #include "Trampoline.h"
@@ -39,4 +40,6 @@
 #include "globals.h"
 #include "lantern.h"
 #include "Obj_Past.h"
+#include "Obj_SkyDeck.h"
 #include "FixCharacterMaterials.h"
+#include "EffectParameter.h"

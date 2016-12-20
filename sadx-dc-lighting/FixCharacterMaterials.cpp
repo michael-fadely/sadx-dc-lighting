@@ -48,7 +48,6 @@ static void scan(NJS_MODEL_SADX* model, const T(&ids)[N])
 
 	PrintDebug("0x%08X\n", (int)mats - (int)chrmodels_handle);
 }
-
 template<typename T = Uint32, size_t N>
 static void scan(const std::string& id, int length, const T(&ids)[N])
 {

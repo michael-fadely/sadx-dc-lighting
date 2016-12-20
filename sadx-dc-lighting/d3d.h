@@ -5,6 +5,8 @@
 #include <d3d8to9.hpp>
 #include <ninja.h>
 
+#include "EffectParameter.h"
+
 namespace d3d
 {
 	extern IDirect3DDevice9* device;
@@ -13,35 +15,35 @@ namespace d3d
 	void LoadShader();
 	void InitTrampolines();
 	void UpdateParameterHandles();
+	void SetLightParameters();
 }
 
 namespace param
 {
-	extern D3DXHANDLE BaseTexture;
-	extern D3DXHANDLE DiffusePalette;
-	extern D3DXHANDLE DiffusePaletteB;
-	extern D3DXHANDLE SpecularPalette;
-	extern D3DXHANDLE SpecularPaletteB;
-	extern D3DXHANDLE BlendFactor;
-
-	extern D3DXHANDLE WorldMatrix;
-	extern D3DXHANDLE wvMatrix;
-	extern D3DXHANDLE ProjectionMatrix;
-	extern D3DXHANDLE wvMatrixInvT;
-	extern D3DXHANDLE TextureTransform;
-	extern D3DXHANDLE TextureEnabled;
-	extern D3DXHANDLE EnvironmentMapped;
-	extern D3DXHANDLE AlphaEnabled;
-	extern D3DXHANDLE FogMode;
-	extern D3DXHANDLE FogStart;
-	extern D3DXHANDLE FogEnd;
-	extern D3DXHANDLE FogDensity;
-	extern D3DXHANDLE FogColor;
-	extern D3DXHANDLE LightDirection;
-	extern D3DXHANDLE LightLength;
-	extern D3DXHANDLE DiffuseSource;
-	extern D3DXHANDLE MaterialDiffuse;
-	extern D3DXHANDLE AlphaRef;
+	extern EffectParameter<IDirect3DTexture9*> BaseTexture;
+	extern EffectParameter<IDirect3DTexture9*> DiffusePalette;
+	extern EffectParameter<IDirect3DTexture9*> DiffusePaletteB;
+	extern EffectParameter<IDirect3DTexture9*> SpecularPalette;
+	extern EffectParameter<IDirect3DTexture9*> SpecularPaletteB;
+	extern EffectParameter<float> BlendFactor;
+	extern EffectParameter<D3DXMATRIX> WorldMatrix;
+	extern EffectParameter<D3DXMATRIX> wvMatrix;
+	extern EffectParameter<D3DXMATRIX> ProjectionMatrix;
+	extern EffectParameter<D3DXMATRIX> wvMatrixInvT;
+	extern EffectParameter<D3DXMATRIX> TextureTransform;
+	extern EffectParameter<bool> TextureEnabled;
+	extern EffectParameter<bool> EnvironmentMapped;
+	extern EffectParameter<bool> AlphaEnabled;
+	extern EffectParameter<int> FogMode;
+	extern EffectParameter<float> FogStart;
+	extern EffectParameter<float> FogEnd;
+	extern EffectParameter<float> FogDensity;
+	extern EffectParameter<D3DXCOLOR> FogColor;
+	extern EffectParameter<D3DXVECTOR3> LightDirection;
+	extern EffectParameter<float> LightLength;
+	extern EffectParameter<int> DiffuseSource;
+	extern EffectParameter<D3DXCOLOR> MaterialDiffuse;
+	extern EffectParameter<float> AlphaRef;
 }
 
 // Same as in the mod loader except with d3d8to9 types.

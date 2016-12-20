@@ -5,17 +5,13 @@
 
 VoidFunc(sub_541990, 0x541990);
 VoidFunc(sub_543F20, 0x543F20);
-static constexpr auto sub_541FC0 = (void*)0x00541FC0;
 FunctionPointer(Sint32, QueueSound_DualEntity, (int, void*, int, int, int), 0x00423F50);
 ObjectFunc(Obj_Past_Delete, 0x005419C0);
+static constexpr auto sub_541FC0 = (void*)0x00541FC0;
 
 static void __cdecl Obj_Past_Delete_r(ObjectMaster* _this)
 {
-	if (d3d::effect != nullptr)
-	{
-		BlendFactor(0.0f);
-	}
-
+	LanternInstance::SetBlendFactor(0.0f);
 	Obj_Past_Delete(_this);
 }
 
@@ -54,9 +50,8 @@ void __cdecl Obj_Past_r(ObjectMaster *_this)
 					entity->Rotation.x += NJM_DEG_ANG(2.8125f);
 					entity->Rotation.x %= 65536;
 					auto f = (njSin(entity->Rotation.x) + 1.0f) / 2.0f;
-					BlendFactor(f);
-					SetBlendPalettes(5, 5);
-					PrintDebug("%f\n", f);
+					LanternInstance::SetBlendFactor(f);
+					globals::palettes.SetSelfBlend(0, 5, 5);
 				}
 			}
 			else
