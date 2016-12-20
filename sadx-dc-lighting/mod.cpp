@@ -344,7 +344,6 @@ extern "C"
 			return;
 		}
 
-		FixCharacterMaterials_OnFrame();
 		DisplayLightDirection();
 	}
 
