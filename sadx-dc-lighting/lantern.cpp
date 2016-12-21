@@ -211,6 +211,17 @@ std::string LanternInstance::PaletteId(Sint32 level, Sint32 act)
 				break;
 			}
 
+			// Lost World act 3 uses act 1's palette.
+			case LevelIDs_LostWorld:
+			{
+				if (act == 2)
+				{
+					act = 0;
+				}
+
+				break;
+			}
+
 			// Egg Walker takes place in Station Square at night.
 			case LevelIDs_EggWalker:
 			{
