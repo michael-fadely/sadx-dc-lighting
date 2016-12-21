@@ -3,8 +3,15 @@
 #define _D3D8TYPES_H_
 
 #define EXPORT __declspec(dllexport)
+// Convenient macros for trampolines.
 #define TARGET_DYNAMIC(name) ((decltype(name##_r)*)name##_t->Target())
 #define TARGET_STATIC(name) ((decltype(name##_r)*)name##_t.Target())
+
+// Non-static variants of the MemAccess macros
+#define DataArray_(type, name, address, length) \
+	type *const name = (type *)address; const int name##_Length = length
+#define DataPointer_(type, name, address) \
+	type &name = *(type *)address
 
 #define WIN32_LEAN_AND_MEAN
 

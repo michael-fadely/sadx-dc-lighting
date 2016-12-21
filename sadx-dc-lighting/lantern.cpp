@@ -496,8 +496,8 @@ bool LanternInstance::LoadPalette(Sint32 level, Sint32 act)
 /// </summary>
 bool LanternInstance::LoadFiles(LanternInstance& instance)
 {
-	// TODO: remove this function
-	// HACK: this is bad
+	// Sky Deck needs to manage its own palette.
+	// TODO: something better than this
 	if (CurrentLevel == LevelIDs_SkyDeck)
 	{
 		return true;
