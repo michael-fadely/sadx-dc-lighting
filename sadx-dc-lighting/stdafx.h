@@ -9,7 +9,7 @@
 
 // Non-static variants of the MemAccess macros
 #define DataArray_(type, name, address, length) \
-	type *const name = (type *)address; const int name##_Length = length
+	type *const name = (type *)address
 #define DataPointer_(type, name, address) \
 	type &name = *(type *)address
 
