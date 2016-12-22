@@ -59,16 +59,6 @@ void EffectParameter<T>::ClearModified()
 }
 
 template <typename T>
-void EffectParameter<T>::SetValue()
-{
-	if (modified)
-	{
-		(*effect)->SetValue(handle, &data, sizeof(T));
-		ClearModified();
-	}
-}
-
-template <typename T>
 void EffectParameter<T>::operator=(const T& value)
 {
 	modified = !!(last != value);
