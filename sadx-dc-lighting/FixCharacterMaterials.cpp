@@ -20,8 +20,10 @@ inline int get_handle()
 	return (int)chrmodels_handle;
 }
 
+static std::vector<NJS_MATERIAL*> materials;
+
 template<typename T = Uint32, size_t N>
-static void scan(NJS_MODEL_SADX* model, const T(&ids)[N])
+static void models(NJS_MODEL_SADX* model, const T(&ids)[N])
 {
 	if (!model)
 	{
@@ -40,16 +42,24 @@ static void scan(NJS_MODEL_SADX* model, const T(&ids)[N])
 		return;
 	}
 
+	auto it = std::find(materials.begin(), materials.end(), mats);
+
+	if (it != materials.end())
+	{
+		return;
+	}
+
 	for (int i = 0; i < N; i++)
 	{
 		if (mats[i].attr_texId != ids[i])
 			return;
 	}
 
-	PrintDebug("0x%08X\n", (int)mats - (int)chrmodels_handle);
+	materials.push_back(mats);
+	PrintDebug("HIT: 0x%08X\n", (int)mats - (int)chrmodels_handle);
 }
 template<typename T = Uint32, size_t N>
-static void scan(const std::string& id, int length, const T(&ids)[N])
+static void models(const std::string& id, int length, const T(&ids)[N])
 {
 	auto handle = (NJS_MODEL_SADX**)GetProcAddress(chrmodels_handle, ("___" + id + "_MODELS").c_str());
 	if (!handle)
@@ -59,12 +69,12 @@ static void scan(const std::string& id, int length, const T(&ids)[N])
 
 	for (int i = 0; i < length; i++)
 	{
-		scan(handle[i], ids);
+		models(handle[i], ids);
 	}
 }
 
 template<typename T = Uint32, size_t N>
-static void traverse(NJS_OBJECT* object, const T(&ids)[N])
+static void objects(NJS_OBJECT* object, const T(&ids)[N])
 {
 	if (!object)
 	{
@@ -75,21 +85,21 @@ static void traverse(NJS_OBJECT* object, const T(&ids)[N])
 
 	if (model)
 	{
-		scan(model, ids);
+		models(model, ids);
 	}
 
 	if (object->child)
 	{
-		traverse(object->child, ids);
+		objects(object->child, ids);
 	}
 
 	if (object->sibling)
 	{
-		traverse(object->sibling, ids);
+		objects(object->sibling, ids);
 	}
 }
 template<typename T = Uint32, size_t N>
-static void traverse(const std::string& id, int length, const T(&ids)[N])
+static void objects(const std::string& id, int length, const T(&ids)[N])
 {
 	auto handle = (NJS_OBJECT**)GetProcAddress(chrmodels_handle, ("___" + id + "_OBJECTS").c_str());
 	if (!handle)
@@ -99,7 +109,33 @@ static void traverse(const std::string& id, int length, const T(&ids)[N])
 
 	for (int i = 0; i < length; i++)
 	{
-		traverse(handle[i], ids);
+		objects(handle[i], ids);
+	}
+}
+
+template<typename T = Uint32, size_t N>
+static void actions(NJS_ACTION* action, const T(&ids)[N])
+{
+	if (!action)
+	{
+		return;
+	}
+
+	auto object = action->object;
+	objects(object, ids);
+}
+template<typename T = Uint32, size_t N>
+static void actions(const std::string& id, int length, const T(&ids)[N])
+{
+	auto handle = (NJS_ACTION**)GetProcAddress(chrmodels_handle, ("___" + id + "_ACTIONS").c_str());
+	if (!handle)
+	{
+		return;
+	}
+
+	for (int i = 0; i < length; i++)
+	{
+		actions(handle[i], ids);
 	}
 }
 
@@ -108,12 +144,12 @@ void FixCharacterMaterials()
 	auto handle = get_handle();
 
 #if 0
-	int ids[] = { 7 };
-	traverse("AMY", 39, ids);
-	scan("AMY", 5, ids);
+	int ids[] = { 0x08, 0x13 };
+	actions("AMY", 80, ids);
+	objects("AMY", 39, ids);
+	models("AMY", 5, ids);
+	materials.clear();
 #endif
-
-	// TODO: Super Sonic jump ball
 	
 	// Sonic's nose:
 	DataArray_(NJS_MATERIAL, matlist_00565C68, (0x00565C68 + handle), 3);
@@ -123,6 +159,11 @@ void FixCharacterMaterials()
 	matlist_00565C68[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
 	matlist_0057636C[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
 	matlist_0057D7BC[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
+
+	// Super Sonic's jump ball:
+	DataArray_(NJS_MATERIAL, matlist_0062DEBC, (0x0062DEBC + handle), 1);
+
+	matlist_0062DEBC[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
 	
 	// Tails' shoes (additional) (8 duplicates? Are you kidding me?):
 	DataArray_(NJS_MATERIAL, matlist_00420290, (0x00420290 + handle), 2);
@@ -205,6 +246,7 @@ void FixCharacterMaterials()
 	// Amy's nose:
 	DataArray_(NJS_MATERIAL, matlist_00012358, (0x00012358 + handle), 3);
 	DataArray_(NJS_MATERIAL, matlist_00018ABC, (0x00018ABC + handle), 3);
+
 	matlist_00012358[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
 	matlist_00018ABC[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
 
@@ -226,8 +268,18 @@ void FixCharacterMaterials()
 	// Amy's headband:
 	DataArray_(NJS_MATERIAL, matlist_00012048, (0x00012048 + handle), 1);
 	DataArray_(NJS_MATERIAL, matlist_0001E848, (0x0001E848 + handle), 1);
+
 	matlist_00012048[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
 	matlist_0001E848[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
+
+	// Amy's bracelets
+	DataArray_(NJS_MATERIAL, matlist_0000D030, (0x0000D030 + handle), 2);
+	DataArray_(NJS_MATERIAL, matlist_00010B2C, (0x00010B2C + handle), 2);
+
+	matlist_0000D030[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
+	matlist_0000D030[1].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
+	matlist_00010B2C[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
+	matlist_00010B2C[1].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
 
 	// Big's nose:
 	DataArray_(NJS_MATERIAL, matlist_0011BB58, (0x0011BB58 + handle), 7);
@@ -262,10 +314,6 @@ void FixCharacterMaterials()
 	matlist_001284F0[1].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
 
 #pragma region help me
-	DataPointer_(NJS_MATERIAL, mat_0000D030, (0x0000D030 + handle));
-	DataPointer_(NJS_MATERIAL, mat_0000D044, (0x0000D044 + handle));
-	DataPointer_(NJS_MATERIAL, mat_00010B2C, (0x00010B2C + handle));
-	DataPointer_(NJS_MATERIAL, mat_00010B40, (0x00010B40 + handle));
 	DataPointer_(NJS_MATERIAL, mat_00011A00, (0x00011A00 + handle));
 	DataPointer_(NJS_MATERIAL, mat_00015A00, (0x00015A00 + handle));
 	DataPointer_(NJS_MATERIAL, mat_00015DF8, (0x00015DF8 + handle));
@@ -320,10 +368,6 @@ void FixCharacterMaterials()
 	DataPointer_(NJS_MATERIAL, mat_00582D08, (0x00582D08 + handle));
 #pragma endregion
 
-	mat_0000D030.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // Rings with env map
-	mat_0000D044.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // Rings with env map
-	mat_00010B2C.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // Rings with env map
-	mat_00010B40.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // Rings with env map
 	mat_00011A00.attrflags |=  NJD_FLAG_IGNORE_SPECULAR;
 	mat_00015A00.attrflags |=  NJD_FLAG_IGNORE_SPECULAR;
 	mat_00015DF8.attrflags |=  NJD_FLAG_IGNORE_SPECULAR;
