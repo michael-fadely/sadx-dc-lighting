@@ -22,6 +22,7 @@ inline int get_handle()
 
 static std::vector<NJS_MATERIAL*> materials;
 
+#ifdef _DEBUG
 template<typename T = Uint32, size_t N>
 static void models(NJS_MODEL_SADX* model, const T(&ids)[N])
 {
@@ -138,16 +139,17 @@ static void actions(const std::string& id, int length, const T(&ids)[N])
 		actions(handle[i], ids);
 	}
 }
+#endif
 
 void FixCharacterMaterials()
 {
 	auto handle = get_handle();
 
-#if 0
-	int ids[] = { 0x08, 0x13 };
-	actions("AMY", 80, ids);
-	objects("AMY", 39, ids);
-	models("AMY", 5, ids);
+#if _DEBUG
+	int ids[] = { 0, 11 };
+	actions("MILES", 114, ids);
+	objects("MILES", 72, ids);
+	models ("MILES", 15, ids);
 	materials.clear();
 #endif
 	
@@ -318,12 +320,8 @@ void FixCharacterMaterials()
 	DataPointer_(NJS_MATERIAL, mat_00015A00, (0x00015A00 + handle));
 	DataPointer_(NJS_MATERIAL, mat_00015DF8, (0x00015DF8 + handle));
 	DataPointer_(NJS_MATERIAL, mat_0011A080, (0x0011A080 + handle));
-	DataPointer_(NJS_MATERIAL, mat_0011E718, (0x0011E718 + handle));
-	DataPointer_(NJS_MATERIAL, mat_0011E8E0, (0x0011E8E0 + handle));
 	DataPointer_(NJS_MATERIAL, mat_00127554, (0x00127554 + handle));
 	DataPointer_(NJS_MATERIAL, mat_001276B4, (0x001276B4 + handle));
-	DataPointer_(NJS_MATERIAL, mat_001284F0, (0x001284F0 + handle));
-	DataPointer_(NJS_MATERIAL, mat_00128504, (0x00128504 + handle));
 	DataPointer_(NJS_MATERIAL, mat_001286B8, (0x001286B8 + handle));
 	DataPointer_(NJS_MATERIAL, mat_001286CC, (0x001286CC + handle));
 	DataPointer_(NJS_MATERIAL, mat_001286E0, (0x001286E0 + handle));
@@ -348,12 +346,6 @@ void FixCharacterMaterials()
 	DataPointer_(NJS_MATERIAL, mat_002E43B4, (0x002E43B4 + handle));
 	DataPointer_(NJS_MATERIAL, mat_002E53B0, (0x002E53B0 + handle));
 	DataPointer_(NJS_MATERIAL, mat_002E5B3C, (0x002E5B3C + handle));
-	DataPointer_(NJS_MATERIAL, mat_00421A04, (0x00421A04 + handle));
-	DataPointer_(NJS_MATERIAL, mat_0042202C, (0x0042202C + handle));
-	DataPointer_(NJS_MATERIAL, mat_00426884, (0x00426884 + handle));
-	DataPointer_(NJS_MATERIAL, mat_00426BC4, (0x00426BC4 + handle));
-	DataPointer_(NJS_MATERIAL, mat_00433774, (0x00433774 + handle));
-	DataPointer_(NJS_MATERIAL, mat_00433AB4, (0x00433AB4 + handle));
 	DataPointer_(NJS_MATERIAL, mat_0046E05C, (0x0046E05C + handle));
 	DataPointer_(NJS_MATERIAL, mat_0046E670, (0x0046E670 + handle));
 	DataPointer_(NJS_MATERIAL, mat_0046E684, (0x0046E684 + handle));
@@ -368,57 +360,51 @@ void FixCharacterMaterials()
 	DataPointer_(NJS_MATERIAL, mat_00582D08, (0x00582D08 + handle));
 #pragma endregion
 
-	mat_00011A00.attrflags |=  NJD_FLAG_IGNORE_SPECULAR;
-	mat_00015A00.attrflags |=  NJD_FLAG_IGNORE_SPECULAR;
-	mat_00015DF8.attrflags |=  NJD_FLAG_IGNORE_SPECULAR;
-	mat_0011A080.attrflags |=  NJD_FLAG_IGNORE_SPECULAR;
+	mat_00011A00.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // object_00012014 Amy's eye (white)
+	mat_00015A00.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // object_00015D28 Amy's eye (pupil)
+	mat_00015DF8.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // object_00016120 Amy's eye (pupil)
 
-	mat_0011E718.attrflags |=  NJD_FLAG_IGNORE_SPECULAR;
-	mat_0011E8E0.attrflags |=  NJD_FLAG_IGNORE_SPECULAR;
-	mat_00127554.attrflags |=  NJD_FLAG_IGNORE_SPECULAR;
-	mat_001276B4.attrflags |=  NJD_FLAG_IGNORE_SPECULAR;
-	mat_001284F0.attrflags |=  NJD_FLAG_IGNORE_SPECULAR;
-	mat_00128504.attrflags |=  NJD_FLAG_IGNORE_SPECULAR;
-	mat_001286B8.attrflags |=  NJD_FLAG_IGNORE_SPECULAR;
-	mat_001286CC.attrflags |=  NJD_FLAG_IGNORE_SPECULAR;
-	mat_001286E0.attrflags |=  NJD_FLAG_IGNORE_SPECULAR;
-	mat_001FDBB4.attrflags |=  NJD_FLAG_IGNORE_LIGHT;    // object_001FDF7C
-	mat_001FDBC8.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // object_001FDF7C
-	mat_00200540.attrflags |=  NJD_FLAG_IGNORE_LIGHT;    // object_0020098C
-	mat_00200554.attrflags |=  NJD_FLAG_IGNORE_LIGHT;    // object_0020098C
-	mat_002009E8.attrflags |=  NJD_FLAG_IGNORE_LIGHT;    // object_00200D14
-	mat_00200DD4.attrflags |=  NJD_FLAG_IGNORE_LIGHT;    // object_00201AE4
-	mat_00204EF0.attrflags |=  NJD_FLAG_IGNORE_LIGHT;    // object_0020524C
-	mat_002054FC.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // object_00205794
-	mat_00205510.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // object_00205794
-	mat_00206314.attrflags |=  NJD_FLAG_IGNORE_LIGHT;    // object_00206674
-	mat_00206924.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // object_00206BBC
-	mat_00206938.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // object_00206BBC
-	mat_0020B9E0.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // object_0020BCAC
-	mat_002D71A8.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR;
-	mat_002D7934.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR;
-	mat_002D8930.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR;
-	mat_002D90BC.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR;
-	mat_002E3C28.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR;
-	mat_002E43B4.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR;
-	mat_002E53B0.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR;
-	mat_002E5B3C.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR;
-	mat_00421A04.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR;
-	mat_0042202C.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR;
-	mat_00426884.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // eye 2
-	mat_00426BC4.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // eye 1
-	mat_00433774.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // eye 2
-	mat_00433AB4.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // eye 1
-	mat_0046E05C.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR;
-	mat_0046E670.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR;
-	mat_0046E684.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR;
-	mat_0046E698.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR;
-	mat_0046E6AC.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR;
-	mat_0046EE8C.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR;
-	mat_0046F4A0.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR;
-	mat_0046F4B4.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR;
-	mat_0046F4C8.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR;
-	mat_0046F4DC.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR;
-	mat_00579C94.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // object_0057BC44
-	mat_00582D08.attrflags |=  NJD_FLAG_IGNORE_LIGHT;    // object_00583284
+	mat_0011A080.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // object_0011A158 Big's belt buckle
+	mat_00127554.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // object_0012766C Big's life belt buckle
+	mat_001276B4.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // object_001284BC Big's life belt [1]
+	mat_001286B8.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // object_00128A90 Big's fishing rod (w/ upgrades) [0]
+	mat_001286CC.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // object_00128A90 Big's fishing rod (w/ upgrades) [1]
+	mat_001286E0.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // object_00128A90 Big's fishing rod (w/ upgrades) [2]
+
+	mat_001FDBB4.attrflags |=  NJD_FLAG_IGNORE_LIGHT;    // object_001FDF7C Gamma's light 1FDBA0[1]
+	mat_001FDBC8.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // object_001FDF7C Gamma's light 1FDBA0[2]
+	mat_00200540.attrflags |=  NJD_FLAG_IGNORE_LIGHT;    // object_0020098C Gamma's right eye 20052C[1]
+	mat_00200554.attrflags |=  NJD_FLAG_IGNORE_LIGHT;    // object_0020098C Gamma's uh... arrow things in between his eyes 20052C[2]
+	mat_002009E8.attrflags |=  NJD_FLAG_IGNORE_LIGHT;    // object_00200D14 Gamma's left eye 2009E8[2]
+	mat_00200DD4.attrflags |=  NJD_FLAG_IGNORE_LIGHT;    // object_00201AE4 Gamma's head (blue line) [7]
+	mat_00204EF0.attrflags |=  NJD_FLAG_IGNORE_LIGHT;    // object_0020524C Gamma's left foot [2]
+	mat_002054FC.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // object_00205794 Gamma's left tire [0]
+	mat_00205510.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // object_00205794 Gamma's left tire [1]
+	mat_00206314.attrflags |=  NJD_FLAG_IGNORE_LIGHT;    // object_00206674 Gamma's right foot [3]
+	mat_00206924.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // object_00206BBC Gamma's right tire [0]
+	mat_00206938.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // object_00206BBC Gamma's right tire [1]
+	mat_0020B9E0.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // object_0020BCAC gamma something idk [2]
+
+	mat_002D71A8.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR; // object_002D7900 Knuckles' left foot
+	mat_002D7934.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR; // object_002D7FDC Knuckles' left heel
+	mat_002D8930.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR; // object_002D9088 Knuckles' right foot
+	mat_002D90BC.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR; // object_002D9754 Knuckles' right heel
+	mat_002E3C28.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR; // object_002E4380 Knuckles' left shoe (gliding)
+	mat_002E43B4.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR; // object_002E4A5C Knuckles' left heel (gliding)
+	mat_002E53B0.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR; // object_002E5B08 Knuckles' right foot (gliding)
+	mat_002E5B3C.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR; // object_002E61D4 Knuckles' right heel (gliding)
+
+	mat_0046E05C.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR; // object_0046E63C Tails' right foot (flying) [1]
+	mat_0046E670.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR; // object_0046EE44 Tails' left heel (jet anklet) (flying) [0] / 3
+	mat_0046E684.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR; // object_0046EE44 Tails' left heel (jet anklet) (flying) [1] / 3
+	mat_0046E698.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR; // object_0046EE44 Tails' left heel (jet anklet) (flying) [2] / 3
+	mat_0046E6AC.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR; // object_0046EE44 Tails' left heel (jet anklet) (flying) [3] / 3
+	mat_0046EE8C.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR; // object_0046F46C Tails' right foot (jet anklet) (flying) [1]
+	mat_0046F4A0.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR; // object_0046FC84 Tails' right heel (jet anklet) (flying) [0] / 3
+	mat_0046F4B4.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR; // object_0046FC84 Tails' right heel (jet anklet) (flying) [1] / 3
+	mat_0046F4C8.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR; // object_0046FC84 Tails' right heel (jet anklet) (flying) [2] / 3
+	mat_0046F4DC.attrflags &= ~NJD_FLAG_IGNORE_SPECULAR; // object_0046FC84 Tails' right heel (jet anklet) (flying) [3] / 3
+
+	mat_00579C94.attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // object_0057BC44 Sonic's jump ball
+	mat_00582D08.attrflags |=  NJD_FLAG_IGNORE_LIGHT;    // object_00583284 Sonic's Crystal Ring [1]
 }
