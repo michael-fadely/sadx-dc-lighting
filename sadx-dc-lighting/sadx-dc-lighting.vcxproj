@@ -105,19 +105,25 @@ xcopy /C /Y /D "$(ProjectDir)lantern.fx" "$(OutDir)system\"</Command>
     <ClInclude Include="..\sadx-mod-loader\libmodutils\Trampoline.h" />
     <ClInclude Include="d3d.h" />
     <ClInclude Include="datapointers.h" />
+    <ClInclude Include="ecgarden.h" />
     <ClInclude Include="EffectParameter.h" />
+    <ClInclude Include="FixChaoGardenMaterials.h" />
     <ClInclude Include="FixCharacterMaterials.h" />
     <ClInclude Include="fog.h" />
     <ClInclude Include="globals.h" />
     <ClInclude Include="lantern.h" />
+    <ClInclude Include="mrgarden.h" />
+    <ClInclude Include="mrgarden_night.h" />
     <ClInclude Include="Obj_Past.h" />
     <ClInclude Include="Obj_SkyDeck.h" />
+    <ClInclude Include="ssgarden.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\sadx-mod-loader\libmodutils\Trampoline.cpp" />
     <ClCompile Include="d3d.cpp" />
     <ClCompile Include="EffectParameter.cpp" />
+    <ClCompile Include="FixChaoGardenMaterials.cpp" />
     <ClCompile Include="FixCharacterMaterials.cpp" />
     <ClCompile Include="fog.cpp" />
     <ClCompile Include="globals.cpp" />

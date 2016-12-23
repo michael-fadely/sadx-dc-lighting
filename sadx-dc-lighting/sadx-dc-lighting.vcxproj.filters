@@ -19,6 +19,12 @@
     <Filter Include="Source Files\Level Objects">
       <UniqueIdentifier>{667b9f63-33b4-4447-aef3-3337c1525e2d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Material Fixes">
+      <UniqueIdentifier>{909138b3-38bc-4aa8-9c03-340ba91d0326}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Material Fixes">
+      <UniqueIdentifier>{8120a15a-3505-4f78-8847-28ef4bed7740}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -42,9 +48,6 @@
     <ClInclude Include="lantern.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FixCharacterMaterials.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="EffectParameter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -53,6 +56,24 @@
     </ClInclude>
     <ClInclude Include="Obj_SkyDeck.h">
       <Filter>Header Files\Level Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="FixCharacterMaterials.h">
+      <Filter>Header Files\Material Fixes</Filter>
+    </ClInclude>
+    <ClInclude Include="FixChaoGardenMaterials.h">
+      <Filter>Header Files\Material Fixes</Filter>
+    </ClInclude>
+    <ClInclude Include="ssgarden.h">
+      <Filter>Header Files\Material Fixes</Filter>
+    </ClInclude>
+    <ClInclude Include="ecgarden.h">
+      <Filter>Header Files\Material Fixes</Filter>
+    </ClInclude>
+    <ClInclude Include="mrgarden.h">
+      <Filter>Header Files\Material Fixes</Filter>
+    </ClInclude>
+    <ClInclude Include="mrgarden_night.h">
+      <Filter>Header Files\Material Fixes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -77,9 +98,6 @@
     <ClCompile Include="lantern.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FixCharacterMaterials.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="EffectParameter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -88,6 +106,12 @@
     </ClCompile>
     <ClCompile Include="Obj_SkyDeck.cpp">
       <Filter>Source Files\Level Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="FixCharacterMaterials.cpp">
+      <Filter>Source Files\Material Fixes</Filter>
+    </ClCompile>
+    <ClCompile Include="FixChaoGardenMaterials.cpp">
+      <Filter>Source Files\Material Fixes</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

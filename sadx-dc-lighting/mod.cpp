@@ -13,6 +13,7 @@
 #include "globals.h"
 #include "lantern.h"
 #include "Obj_Past.h"
+#include "FixChaoGardenMaterials.h"
 
 static Trampoline* CharSel_LoadA_t            = nullptr;
 static Trampoline* Direct3D_ParseMaterial_t   = nullptr;
@@ -367,6 +368,7 @@ extern "C"
 		WriteJump(Obj_Past, Obj_Past_r);
 
 		FixCharacterMaterials();
+		FixChaoGardenMaterials();
 	}
 
 	EXPORT void __cdecl OnFrame()

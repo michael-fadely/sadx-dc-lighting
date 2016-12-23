@@ -50,3 +50,4 @@
 #include "Obj_SkyDeck.h"
 #include "FixCharacterMaterials.h"
 #include "EffectParameter.h"
+#include "FixChaoGardenMaterials.h"
