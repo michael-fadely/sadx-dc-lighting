@@ -1,6 +1,9 @@
 #include "stdafx.h"
-#include <string.h>
+
 #include <ninja.h>
+#include <string>
+
+#include "lantern.h"
 
 namespace globals
 {
@@ -9,7 +12,10 @@ namespace globals
 	bool light        = true;
 	bool no_specular  = false;
 
+#ifdef _DEBUG
 	NJS_VECTOR light_dir = {};
-	std::string globals::system = "";
+#endif
+
+	std::string system = "";
 	LanternCollection palettes = {};
 }

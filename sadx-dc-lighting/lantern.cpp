@@ -5,12 +5,16 @@
 #include <string>
 #include <sstream>
 #include <vector>
-#include <SADXModLoader.h>
 
 #include "d3d.h"
+#include <SADXModLoader.h>
+
 #include "lantern.h"
 #include "globals.h"
+
+#ifdef _DEBUG
 #include "datapointers.h"
+#endif
 
 #pragma pack(push, 1)
 struct ColorPair
@@ -564,8 +568,15 @@ void LanternInstance::set_specular(Sint32 specular) const
 /// <param name="flags">Material flags.</param>
 void LanternInstance::SetPalettes(Sint32 type, Uint32 flags)
 {
+#ifdef _DEBUG
 	auto pad = ControllerPointers[0];
-	if (d3d::effect == nullptr || pad && pad->HeldButtons & Buttons_Z)
+#endif
+
+	if (d3d::effect == nullptr
+#ifdef _DEBUG
+		|| pad && pad->HeldButtons & Buttons_Z
+#endif
+	)
 	{
 		use_palette = false;
 		d3d::do_effect = false;
@@ -594,7 +605,9 @@ void LanternInstance::SetPalettes(Sint32 type, Uint32 flags)
 		case 0:
 			diffuse = 0;
 			specular = (ignore_specular && !(flags & NJD_FLAG_USE_ENV)) ? 0 : 1;
+#ifdef _DEBUG
 			globals::light_dir = *(NJS_VECTOR*)&Direct3D_CurrentLight.Direction;
+#endif
 			break;
 
 		case 2:

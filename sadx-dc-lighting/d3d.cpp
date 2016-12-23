@@ -7,7 +7,6 @@
 #include <d3d8to9.hpp>
 
 // Mod loader
-#include <SADXModLoader.h>
 #include <Trampoline.h>
 
 // Local

@@ -1,5 +1,15 @@
 #include "stdafx.h"
-#include <SADXModLoader.h>
+
+#ifdef _DEBUG
+	#include <vector>
+
+	#include "d3d8types.hpp"
+	#include <SADXModLoader/SADXFunctions.h>
+#else
+	#include <ModLoader/MemAccess.h>
+#endif
+
+#include <ninja.h>
 #include "FixCharacterMaterials.h"
 
 static HMODULE chrmodels_handle = nullptr;
@@ -20,9 +30,9 @@ inline int get_handle()
 	return (int)chrmodels_handle;
 }
 
+#ifdef _DEBUG
 static std::vector<NJS_MATERIAL*> materials;
 
-#ifdef _DEBUG
 template<typename T = Uint32, size_t N>
 static void models(NJS_MODEL_SADX* model, const T(&ids)[N])
 {

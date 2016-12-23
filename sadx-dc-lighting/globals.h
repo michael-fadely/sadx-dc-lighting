@@ -6,7 +6,9 @@
 
 namespace globals
 {
+#ifdef _DEBUG
 	extern NJS_VECTOR light_dir;
+#endif
 	extern Sint32 light_type;
 	extern bool fog;
 	extern bool light;

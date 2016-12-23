@@ -5,6 +5,8 @@
 #include <d3d9.h>
 #include <deque>
 
+#include "EffectParameter.h"
+
 struct LanternPalette
 {
 	// The first set of colors in the pair.

@@ -15,6 +15,7 @@
 
 #define WIN32_LEAN_AND_MEAN
 
+#if 1
 // Windows API
 #include <Windows.h>
 
@@ -31,23 +32,24 @@
 #include <Trampoline.h>
 
 // Standard library
+#include <deque>
 #include <exception>
 #include <fstream>
 #include <ninja.h>
 #include <sstream>
 #include <string>
 #include <vector>
-#include <deque>
 
 // Local
-#include "Trampoline.h"
 #include "d3d.h"
 #include "datapointers.h"
+#include "EffectParameter.h"
+#include "FixChaoGardenMaterials.h"
+#include "FixCharacterMaterials.h"
 #include "fog.h"
 #include "globals.h"
 #include "lantern.h"
 #include "Obj_Past.h"
 #include "Obj_SkyDeck.h"
-#include "FixCharacterMaterials.h"
-#include "EffectParameter.h"
-#include "FixChaoGardenMaterials.h"
+#include "Trampoline.h"
+#endif

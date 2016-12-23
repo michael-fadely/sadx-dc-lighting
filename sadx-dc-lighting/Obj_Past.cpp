@@ -1,7 +1,10 @@
 #include "stdafx.h"
-#include <SADXModLoader.h>
 
 #include "d3d.h"
+#include <SADXModLoader.h>
+
+#include "lantern.h"
+#include "globals.h"
 
 VoidFunc(sub_541990, 0x541990);
 VoidFunc(sub_543F20, 0x543F20);

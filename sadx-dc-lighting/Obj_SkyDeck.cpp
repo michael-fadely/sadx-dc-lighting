@@ -1,7 +1,12 @@
 #include "stdafx.h"
+
+#include "d3d.h"
 #include <SADXModLoader.h> 
-#include "Obj_SkyDeck.h"
+
+#include "Trampoline.h"
 #include "globals.h"
+
+#include "Obj_SkyDeck.h"
 
 static size_t handle = 0;
 

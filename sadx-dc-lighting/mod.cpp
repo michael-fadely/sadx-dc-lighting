@@ -14,6 +14,7 @@
 #include "lantern.h"
 #include "Obj_Past.h"
 #include "FixChaoGardenMaterials.h"
+#include "FixCharacterMaterials.h"
 
 static Trampoline* CharSel_LoadA_t            = nullptr;
 static Trampoline* Direct3D_ParseMaterial_t   = nullptr;
@@ -37,9 +38,9 @@ DataPointer(NJS_COLOR, LandTableVertexColor, 0x03D08494);
 DataPointer(PaletteLight, LSPalette, 0x03ABDAF0);
 DataPointer(Uint32, LastRenderFlags, 0x03D08498);
 
+#ifdef _DEBUG
 static void DisplayLightDirection()
 {
-#ifdef _DEBUG
 	using namespace globals;
 
 	auto player = CharObj1Ptrs[0];
@@ -78,8 +79,8 @@ static void DisplayLightDirection()
 	points[1].z += light_dir.z * 10.0f;
 	colors[0] = colors[1] = 0xFFFFFF00;
 	DrawLineList(&info, 1, 0);
-#endif
 }
+#endif
 
 static void SetMaterialParameters(const D3DMATERIAL9& material)
 {
@@ -131,9 +132,18 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 
 	do_effect = false;
 
-	auto pad = ControllerPointers[0];
-	if (!LanternInstance::UsePalette() || pad && pad->HeldButtons & Buttons_Z)
+	if (!LanternInstance::UsePalette())
+	{
 		return;
+	}
+
+#ifdef _DEBUG
+	auto pad = ControllerPointers[0];
+	if (pad && pad->HeldButtons & Buttons_Z)
+	{
+		return;
+	}
+#endif
 
 	Uint32 flags = material->attrflags;
 	Uint32 texid = material->attr_texId & 0xFFFF;
@@ -371,6 +381,7 @@ extern "C"
 		FixChaoGardenMaterials();
 	}
 
+#ifdef _DEBUG
 	EXPORT void __cdecl OnFrame()
 	{
 		auto pad = ControllerPointers[0];
@@ -404,6 +415,7 @@ extern "C"
 
 		DisplayLightDirection();
 	}
+#endif
 
 	EXPORT void __cdecl OnRenderDeviceLost()
 	{

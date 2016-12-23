@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include <ModLoader/MemAccess.h>
 #include <Trampoline.h>
 #include "FixChaoGardenMaterials.h"
 
