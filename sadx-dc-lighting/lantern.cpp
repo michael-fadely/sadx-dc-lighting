@@ -553,12 +553,18 @@ void LanternInstance::SetBlendFactor(float f)
 
 void LanternInstance::set_diffuse(Sint32 diffuse) const
 {
-	*diffuse_handle = palette[diffuse].diffuse;
+	if (diffuse >= 0)
+	{
+		*diffuse_handle = palette[diffuse].diffuse;
+	}
 }
 
 void LanternInstance::set_specular(Sint32 specular) const
 {
-	*specular_handle = palette[specular].specular;
+	if (specular >= 0)
+	{
+		*specular_handle = palette[specular].specular;
+	}
 }
 
 /// <summary>
