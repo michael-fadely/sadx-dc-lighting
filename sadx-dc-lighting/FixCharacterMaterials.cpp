@@ -146,14 +146,14 @@ void FixCharacterMaterials()
 	auto handle = get_handle();
 
 #if _DEBUG
-	int ids[] = { 0, 11 };
-	actions("MILES", 114, ids);
-	objects("MILES", 72, ids);
-	models ("MILES", 15, ids);
+	int ids[] = { 2, 8, 8, 6, 1, 0 };
+	actions("SONIC", 149, ids);
+	objects("SONIC", 79, ids);
+	models ("SONIC", 11, ids);
 	materials.clear();
 #endif
 	
-	// Sonic's nose:
+	// Sonic's nose
 	DataArray_(NJS_MATERIAL, matlist_00565C68, (0x00565C68 + handle), 3);
 	DataArray_(NJS_MATERIAL, matlist_0057636C, (0x0057636C + handle), 3);
 	DataArray_(NJS_MATERIAL, matlist_0057D7BC, (0x0057D7BC + handle), 3);
@@ -162,10 +162,13 @@ void FixCharacterMaterials()
 	matlist_0057636C[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
 	matlist_0057D7BC[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
 
-	// Super Sonic's jump ball:
+	// Super Sonic's jump ball
 	DataArray_(NJS_MATERIAL, matlist_0062DEBC, (0x0062DEBC + handle), 1);
-
 	matlist_0062DEBC[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
+
+	// Sonic's eyes (cutscenes)
+	DataArray_(NJS_MATERIAL, matlist_0057BC78, (0x0057BC78 + handle), 6);
+	matlist_0057BC78[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
 
 	// Sonic's jump ball
 	DataArray_(NJS_MATERIAL, matlist_00579C94, (0x00579C94 + handle), 1);
@@ -221,6 +224,7 @@ void FixCharacterMaterials()
 	DataArray_(NJS_MATERIAL, matlist_00433AB4, (0x00433AB4 + handle), 1);
 	DataArray_(NJS_MATERIAL, matlist_0043CC48, (0x0043CC48 + handle), 1);
 	DataArray_(NJS_MATERIAL, matlist_0043CDD0, (0x0043CDD0 + handle), 1);
+	// (cutscenes)
 	DataArray_(NJS_MATERIAL, matlist_00447098, (0x00447098 + handle), 1);
 	DataArray_(NJS_MATERIAL, matlist_004473D4, (0x004473D4 + handle), 1);
 
@@ -230,8 +234,13 @@ void FixCharacterMaterials()
 	matlist_00433AB4[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
 	matlist_0043CC48[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
 	matlist_0043CDD0[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
+	// (cutscenes)
 	matlist_00447098[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
 	matlist_004473D4[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
+
+	// Tails' eye whites (cutscenes)
+	DataArray_(NJS_MATERIAL, matlist_00447718, (0x00447718 + handle), 5);
+	matlist_00447718[1].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
 
 	DataArray_(NJS_MATERIAL, matlist_0046E048, (0x0046E048 + handle), 2);
 	matlist_0046E048[1].attrflags &= ~NJD_FLAG_IGNORE_SPECULAR; // object_0046E63C Tails' right foot (flying)
@@ -255,10 +264,14 @@ void FixCharacterMaterials()
 	DataArray_(NJS_MATERIAL, matlist_002DD1E4, (0x002DD1E4 + handle), 3);
 	DataArray_(NJS_MATERIAL, matlist_002E9C64, (0x002E9C64 + handle), 3);
 	DataArray_(NJS_MATERIAL, matlist_00327E7C, (0x00327E7C + handle), 3);
+	// (cutscenes)
+	DataArray_(NJS_MATERIAL, matlist_002FC588, (0x002FC588 + handle), 3);
 
 	matlist_002DD1E4[0].attrflags &= ~NJD_FLAG_IGNORE_SPECULAR;
 	matlist_002E9C64[0].attrflags &= ~NJD_FLAG_IGNORE_SPECULAR;
 	matlist_00327E7C[0].attrflags &= ~NJD_FLAG_IGNORE_SPECULAR;
+	// (cutscenes)
+	matlist_002FC588[0].attrflags &= ~NJD_FLAG_IGNORE_SPECULAR;
 
 	// Knuckles' nose:
 	DataArray_(NJS_MATERIAL, matlist_002DD8FC, (0x002DD8FC + handle), 2);
@@ -304,8 +317,12 @@ void FixCharacterMaterials()
 
 	// Amy's eyes:
 	DataArray_(NJS_MATERIAL, matlist_00011A00, (0x00011A00 + handle), 1);
+	// (cutscenes)
+	DataArray_(NJS_MATERIAL, matlist_0001E200, (0x0001E200 + handle), 1);
 
 	matlist_00011A00[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR; // object_00012014
+	// (cutscenes)
+	matlist_0001E200[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR; // object_00012014
 
 	// Amy's eye pupils:
 	DataArray_(NJS_MATERIAL, matlist_000113FC, (0x000113FC + handle), 1);
@@ -348,11 +365,13 @@ void FixCharacterMaterials()
 	// Big's eyes
 	DataArray_(NJS_MATERIAL, matlist_0011B788, (0x0011B788 + handle), 1);
 	DataArray_(NJS_MATERIAL, matlist_0011B978, (0x0011B978 + handle), 1);
+	// (cutscenes)
 	DataArray_(NJS_MATERIAL, matlist_00129208, (0x00129208 + handle), 1);
 	DataArray_(NJS_MATERIAL, matlist_001293F8, (0x001293F8 + handle), 1);
 
 	matlist_0011B788[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
 	matlist_0011B978[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
+	// (cutscenes)
 	matlist_00129208[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
 	matlist_001293F8[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
 
