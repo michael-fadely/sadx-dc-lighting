@@ -14,7 +14,6 @@ namespace d3d
 	extern bool do_effect;
 	void LoadShader();
 	void InitTrampolines();
-	void UpdateParameterHandles();
 	void SetLightParameters();
 }
 

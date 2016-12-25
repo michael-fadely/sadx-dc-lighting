@@ -39,9 +39,6 @@
     <ClInclude Include="datapointers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="fog.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="globals.h">
       <Filter>Header Files</Filter>
     </ClInclude>

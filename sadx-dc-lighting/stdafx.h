@@ -46,7 +46,6 @@
 #include "EffectParameter.h"
 #include "FixChaoGardenMaterials.h"
 #include "FixCharacterMaterials.h"
-#include "fog.h"
 #include "globals.h"
 #include "lantern.h"
 #include "Obj_Past.h"

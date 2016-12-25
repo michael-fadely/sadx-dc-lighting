@@ -28,44 +28,37 @@ static void __cdecl njDisableFog_r()
 {
 	TARGET_STATIC(njDisableFog)();
 
-	if (effect == nullptr)
-		return;
-
-	globals::fog = false;
+	if (effect != nullptr)
+	{
+		globals::fog = false;
+	}
 }
 
 static void __cdecl njEnableFog_r()
 {
 	TARGET_STATIC(njEnableFog)();
 
-	if (effect == nullptr)
-		return;
-
-	if (!globals::fog)
+	if (effect != nullptr)
 	{
 		param::FogMode = fog_mode;
+		globals::fog = true;
 	}
-
-	globals::fog = true;
 }
 
 static void __cdecl njSetFogColor_r(Uint32 c)
 {
 	TARGET_STATIC(njSetFogColor)(c);
 
-	if (effect == nullptr)
-		return;
-
-	auto color = D3DXCOLOR(c);
-
-	static_assert(sizeof(D3DXCOLOR) == sizeof(D3DXVECTOR4),
-		"D3DXCOLOR and D3DXVECTOR4 size mismatch in fog setup.");
-
-	param::FogColor = color;
+	if (effect != nullptr)
+	{
+		param::FogColor = D3DXCOLOR(c);
+	}
 }
 
-void SetFogParameters()
+static void __cdecl njSetFogTable_r(NJS_FOG_TABLE fogtable)
 {
+	TARGET_STATIC(njSetFogTable)(fogtable);
+
 	if (effect == nullptr)
 		return;
 
@@ -85,10 +78,4 @@ void SetFogParameters()
 		device->GetRenderState(D3DRS_FOGDENSITY, (DWORD*)&density);
 		param::FogDensity = density;
 	}
-}
-
-static void __cdecl njSetFogTable_r(NJS_FOG_TABLE fogtable)
-{
-	TARGET_STATIC(njSetFogTable)(fogtable);
-	SetFogParameters();
 }

@@ -429,7 +429,7 @@ static auto __stdcall SetTransformHijack(Direct3DDevice8* _device, D3DTRANSFORMS
 	return device->SetTransform(type, matrix);
 }
 
-void d3d::UpdateParameterHandles()
+static void UpdateParameterHandles()
 {
 	// Texture stuff:
 	param::BaseTexture.UpdateHandle();
@@ -541,4 +541,26 @@ void d3d::InitTrampolines()
 	// call dword ptr [ecx+94h] (device->SetTransform)
 	WriteData((void*)0x00403234, 0x90i8, 8);
 	WriteCall((void*)0x00403236, SetTransformHijack);
+}
+
+// These exports are for the window resize branch of the mod loader.
+extern "C"
+{
+	EXPORT void __cdecl OnRenderDeviceLost()
+	{
+		if (effect != nullptr)
+		{
+			effect->OnLostDevice();
+			UpdateParameterHandles();
+		}
+	}
+
+	EXPORT void __cdecl OnRenderDeviceReset()
+	{
+		if (effect != nullptr)
+		{
+			effect->OnResetDevice();
+			UpdateParameterHandles();
+		}
+	}
 }

@@ -9,7 +9,6 @@
 // Local
 #include "d3d.h"
 #include "datapointers.h"
-#include "fog.h"
 #include "globals.h"
 #include "lantern.h"
 #include "Obj_Past.h"
@@ -391,7 +390,6 @@ extern "C"
 			if (pressed & Buttons_C)
 			{
 				d3d::LoadShader();
-				SetFogParameters();
 			}
 
 			if (pressed & Buttons_Left)
@@ -416,23 +414,4 @@ extern "C"
 		DisplayLightDirection();
 	}
 #endif
-
-	EXPORT void __cdecl OnRenderDeviceLost()
-	{
-		if (d3d::effect != nullptr)
-		{
-			d3d::effect->OnLostDevice();
-			d3d::UpdateParameterHandles();
-		}
-	}
-
-	EXPORT void __cdecl OnRenderDeviceReset()
-	{
-		if (d3d::effect != nullptr)
-		{
-			d3d::effect->OnResetDevice();
-			d3d::UpdateParameterHandles();
-			SetFogParameters();
-		}
-	}
 }
