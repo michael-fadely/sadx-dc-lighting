@@ -7,7 +7,7 @@
 template<typename T>
 class EffectParameter
 {
-	std::string name;
+	const std::string name;
 	ID3DXEffect** effect;
 	D3DXHANDLE handle;
 	bool modified;
