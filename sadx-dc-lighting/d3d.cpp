@@ -54,21 +54,18 @@ static Uint32 drawing    = 0;
 static TechniqueIndex last_technique = Standard;
 static D3DXHANDLE techniques[4] = {};
 
-static Trampoline* CreateDirect3DDevice_t             = nullptr;
+static Trampoline* Direct3D_PerformLighting_t         = nullptr;
 static Trampoline* sub_77EAD0_t                       = nullptr;
 static Trampoline* sub_77EBA0_t                       = nullptr;
 static Trampoline* njDrawModel_SADX_t                 = nullptr;
 static Trampoline* njDrawModel_SADX_B_t               = nullptr;
-static Trampoline* PolyBuff_DrawTriangleStrip_t       = nullptr;
-static Trampoline* PolyBuff_DrawTriangleList_t        = nullptr;
-static Trampoline* ProcessModelNode_t                 = nullptr;
-static Trampoline* ProcessModelNode_B_t               = nullptr;
-static Trampoline* ProcessModelNode_C_t               = nullptr;
-static Trampoline* ProcessModelNode_D_t               = nullptr;
+static Trampoline* MeshSet_CreateVertexBuffer_t       = nullptr;
 static Trampoline* Direct3D_SetProjectionMatrix_t     = nullptr;
 static Trampoline* Direct3D_SetViewportAndTransform_t = nullptr;
 static Trampoline* Direct3D_SetWorldTransform_t       = nullptr;
-static Trampoline* MeshSet_CreateVertexBuffer_t       = nullptr;
+static Trampoline* CreateDirect3DDevice_t             = nullptr;
+static Trampoline* PolyBuff_DrawTriangleStrip_t       = nullptr;
+static Trampoline* PolyBuff_DrawTriangleList_t        = nullptr;
 
 DataPointer(Direct3DDevice8*, Direct3D_Device, 0x03D128B0);
 DataPointer(D3DXMATRIX, InverseViewMatrix, 0x0389D358);
@@ -201,7 +198,7 @@ static void DrawPolyBuff(PolyBuff* _this, D3DPRIMITIVETYPE type)
 	end();
 }
 
-void d3d::SetLightParameters()
+static void SetLightParameters()
 {
 	if (!LanternInstance::UsePalette() || effect == nullptr)
 	{
@@ -307,6 +304,25 @@ static void __cdecl Direct3D_SetViewportAndTransform_r()
 	{
 		param::ProjectionMatrix = _ProjectionMatrix * TransformationMatrix;
 	}
+}
+
+static void __cdecl Direct3D_PerformLighting_r(int type)
+{
+	TARGET_DYNAMIC(Direct3D_PerformLighting)(0);
+
+	if (effect == nullptr)
+	{
+		return;
+	}
+
+	globals::light = true;
+
+	if (type != globals::light_type)
+	{
+		SetLightParameters();
+	}
+
+	globals::palettes.SetPalettes(type, globals::no_specular ? NJD_FLAG_IGNORE_SPECULAR : 0);
 }
 
 #pragma endregion
@@ -520,17 +536,18 @@ void d3d::LoadShader()
 
 void d3d::InitTrampolines()
 {
-	CreateDirect3DDevice_t             = new Trampoline(0x00794000, 0x00794007, CreateDirect3DDevice_r);
+	Direct3D_PerformLighting_t         = new Trampoline(0x00412420, 0x00412426, Direct3D_PerformLighting_r);
 	sub_77EAD0_t                       = new Trampoline(0x0077EAD0, 0x0077EAD7, sub_77EAD0_r);
 	sub_77EBA0_t                       = new Trampoline(0x0077EBA0, 0x0077EBA5, sub_77EBA0_r);
 	njDrawModel_SADX_t                 = new Trampoline(0x0077EDA0, 0x0077EDAA, njDrawModel_SADX_r);
 	njDrawModel_SADX_B_t               = new Trampoline(0x00784AE0, 0x00784AE5, njDrawModel_SADX_B_r);
-	PolyBuff_DrawTriangleStrip_t       = new Trampoline(0x00794760, 0x00794767, PolyBuff_DrawTriangleStrip_r);
-	PolyBuff_DrawTriangleList_t        = new Trampoline(0x007947B0, 0x007947B7, PolyBuff_DrawTriangleList_r);
+	MeshSet_CreateVertexBuffer_t       = new Trampoline(0x007853D0, 0x007853D6, MeshSet_CreateVertexBuffer_r);
 	Direct3D_SetProjectionMatrix_t     = new Trampoline(0x00791170, 0x00791175, Direct3D_SetProjectionMatrix_r);
 	Direct3D_SetViewportAndTransform_t = new Trampoline(0x007912E0, 0x007912E8, Direct3D_SetViewportAndTransform_r);
 	Direct3D_SetWorldTransform_t       = new Trampoline(0x00791AB0, 0x00791AB5, Direct3D_SetWorldTransform_r);
-	MeshSet_CreateVertexBuffer_t       = new Trampoline(0x007853D0, 0x007853D6, MeshSet_CreateVertexBuffer_r);
+	CreateDirect3DDevice_t             = new Trampoline(0x00794000, 0x00794007, CreateDirect3DDevice_r);
+	PolyBuff_DrawTriangleStrip_t       = new Trampoline(0x00794760, 0x00794767, PolyBuff_DrawTriangleStrip_r);
+	PolyBuff_DrawTriangleList_t        = new Trampoline(0x007947B0, 0x007947B7, PolyBuff_DrawTriangleList_r);
 
 	WriteJump((void*)0x0077EE45, DrawMeshSetBuffer_asm);
 

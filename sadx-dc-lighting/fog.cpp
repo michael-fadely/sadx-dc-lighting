@@ -60,7 +60,9 @@ static void __cdecl njSetFogTable_r(NJS_FOG_TABLE fogtable)
 	TARGET_STATIC(njSetFogTable)(fogtable);
 
 	if (effect == nullptr)
+	{
 		return;
+	}
 
 	device->GetRenderState(D3DRS_FOGTABLEMODE, (DWORD*)&fog_mode);
 	param::FogMode = fog_mode;

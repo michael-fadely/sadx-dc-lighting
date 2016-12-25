@@ -25,7 +25,6 @@ static Trampoline* GoToNextChaoStage_t        = nullptr;
 static Trampoline* SetTimeOfDay_t             = nullptr;
 static Trampoline* DrawLandTable_t            = nullptr;
 static Trampoline* Direct3D_SetTexList_t      = nullptr;
-static Trampoline* Direct3D_PerformLighting_t = nullptr;
 static Trampoline* SkyDeck_SimulateAltitude_t = nullptr;
 
 DataArray(PaletteLight, LightPaletteData, 0x00903E88, 256);
@@ -127,7 +126,9 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 	TARGET_DYNAMIC(Direct3D_ParseMaterial)(material);
 
 	if (effect == nullptr)
+	{
 		return;
+	}
 
 	do_effect = false;
 
@@ -268,23 +269,6 @@ static void __cdecl DrawLandTable_r()
 	_nj_constant_attr_or_ = or;
 }
 
-static void __cdecl Direct3D_PerformLighting_r(int type)
-{
-	TARGET_DYNAMIC(Direct3D_PerformLighting)(0);
-
-	if (d3d::effect == nullptr)
-		return;
-
-	globals::light = true;
-
-	if (type != globals::light_type)
-	{
-		d3d::SetLightParameters();
-	}
-
-	globals::palettes.SetPalettes(type, globals::no_specular ? NJD_FLAG_IGNORE_SPECULAR : 0);
-}
-
 DataArray(NJS_TEXLIST*, LevelObjTexlists, 0x03B290B4, 4);
 DataPointer(NJS_TEXLIST*, CommonTextures, 0x03B290B0);
 static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
@@ -364,7 +348,6 @@ extern "C"
 		SetTimeOfDay_t             = new Trampoline(0x00412C00, 0x00412C05, SetTimeOfDay_r);
 		DrawLandTable_t            = new Trampoline(0x0043A6A0, 0x0043A6A8, DrawLandTable_r);
 		Direct3D_SetTexList_t      = new Trampoline(0x0077F3D0, 0x0077F3D8, Direct3D_SetTexList_r);
-		Direct3D_PerformLighting_t = new Trampoline(0x00412420, 0x00412426, Direct3D_PerformLighting_r);
 		SkyDeck_SimulateAltitude_t = new Trampoline(0x005ECA80, 0x005ECA87, SkyDeck_SimulateAltitude_r);
 
 		// Correcting a function call since they're relative
