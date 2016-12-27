@@ -172,10 +172,6 @@ void FixCharacterMaterials()
 	matlist_0057636C[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
 	matlist_0057D7BC[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
 
-	// Super Sonic's jump ball
-	DataArray_(NJS_MATERIAL, matlist_0062DEBC, (0x0062DEBC + handle), 1);
-	matlist_0062DEBC[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
-
 	// Sonic's eyes (cutscenes)
 	DataArray_(NJS_MATERIAL, matlist_0057BC78, (0x0057BC78 + handle), 6);
 	matlist_0057BC78[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
@@ -187,6 +183,14 @@ void FixCharacterMaterials()
 	// Sonic's Crystal Ring
 	DataArray_(NJS_MATERIAL, matlist_00582CF4, (0x00582CF4 + handle), 2);
 	matlist_00582CF4[1].attrflags |= NJD_FLAG_IGNORE_LIGHT;    // object_00583284 Sonic's Crystal Ring
+
+	// Super Sonic's jump ball
+	DataArray_(NJS_MATERIAL, matlist_0062DEBC, (0x0062DEBC + handle), 1);
+	matlist_0062DEBC[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
+
+	// Metal Sonic's jump ball
+	DataArray_(NJS_MATERIAL, matlist_0059C268, (0x0059C268 + handle), 1);
+	matlist_0059C268[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
 	
 	// Tails' shoes (8 duplicates? Are you kidding me?):
 	DataArray_(NJS_MATERIAL, matlist_00420290, (0x00420290 + handle), 2);
