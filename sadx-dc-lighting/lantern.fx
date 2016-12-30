@@ -116,6 +116,8 @@ float4 MaterialDiffuse = float4(1.0f, 1.0f, 1.0f, 1.0f);
 float4 GetDiffuse(in float4 vcolor)
 {
 	return any(vcolor) ? vcolor : MaterialDiffuse;
+	//float4 d = any(vcolor) ? vcolor : MaterialDiffuse;
+	//return float4(1, 1, 1, d.a);
 }
 float CalcFogFactor(float d)
 {
@@ -192,15 +194,19 @@ PS_IN vs_main(VS_IN input, uniform bool lightEnabled, uniform bool interpolate =
 
 	if (lightEnabled == true)
 	{
-		float3 worldNormal = normalize(mul(input.normal, (float3x3)WorldMatrix));
+		float3 worldNormal = mul(input.normal, (float3x3)WorldMatrix);
 
-		// This is the brightness index of the current vertex's normal.
-		// It's calculated the same way one would calculate diffuse brightness, except it's then
-		// converted to an angle, and then to an index from there. 0 is brightest, 1 is darkest.
-		float i = +acos(dot(LightDirection, worldNormal) / (LightLength * length(worldNormal))) / PI;
+		// This is the "brightness index" calculation. Just a dot product
+		// of the vertex normal (in world space) and the light direction.
+		float _dot = dot(LightDirection, worldNormal);
 
-		// Specifically avoiding the alpha component here. Palettes don't seem to do anything
-		// useful with their alpha channels.
+		// The palette's brightest point is 0, and its darkest point is 1,
+		// so we push the dot product (-1 .. 1) into the rage 0 .. 1, and
+		// subtract it from 1. This is the value we use for indexing into
+		// the palette.
+		// HACK: This clamp prevents a visual bug in the Mystic Ruins past (shrine on fire)
+		float i = clamp(1 - (_dot + 1) / 2, 0, 0.99);
+
 		float4 diffuse = GetDiffuse(input.color);
 
 		float4 pdiffuse;
@@ -209,14 +215,15 @@ PS_IN vs_main(VS_IN input, uniform bool lightEnabled, uniform bool interpolate =
 		if (interpolate)
 		{
 			pdiffuse = BlendPalettes(diffuseSampler, diffuseSamplerB, i);
-			pspecular = BlendPalettes(specularSampler, specularSamplerB, pow(i, 1.5));
+			pspecular = BlendPalettes(specularSampler, specularSamplerB, i);
 		}
 		else
 		{
 			pdiffuse = tex2Dlod(diffuseSampler, float4(i, 0, 0, 0));
-			pspecular = tex2Dlod(specularSampler, float4(pow(i, 1.5), 0, 0, 0));
+			pspecular = tex2Dlod(specularSampler, float4(i, 0, 0, 0));
 		}
 		
+		// TODO: remove this diffuse addition
 		output.diffuse = float4((saturate(diffuse + 0.3) * pdiffuse).rgb, diffuse.a);
 		output.specular = float4(pspecular.rgb, 0.0f);
 	}
