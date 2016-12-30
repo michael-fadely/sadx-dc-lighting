@@ -182,6 +182,31 @@ static void __cdecl ChaoGardenMR_SetLandTable_Night_r()
 	copy_materials(matlist_000338D8, 0x000338D8, ModuleHandles[2]);
 }
 
+DataPointer(NJS_OBJECT, ChaoRaceDoor_Model, 0x0340C5A4);
+DataPointer(NJS_OBJECT, BlackMarketDoor_Model, 0x034091C4);
+DataPointer(NJS_OBJECT, SSGardenExit_Model, 0x0340A9C4);
+
+static void fix_light(NJS_OBJECT* obj)
+{
+	if (!obj)
+	{
+		return;
+	}
+
+	auto model = obj->getbasicdxmodel();
+
+	if (model != nullptr && model->nbMat > 0)
+	{
+		for (int i = 0; i < model->nbMat; i++)
+		{
+			model->mats[i].attrflags &= ~NJD_FLAG_IGNORE_LIGHT;
+		}
+	}
+
+	fix_light(obj->child);
+	fix_light(obj->sibling);
+}
+
 void FixChaoGardenMaterials()
 {
 	ChaoGardenMR_SetLandTable_Day_t     = new Trampoline(0x0072A790, 0x0072A796, ChaoGardenMR_SetLandTable_Day_r);
@@ -189,6 +214,10 @@ void FixChaoGardenMaterials()
 	ChaoGardenMR_SetLandTable_Night_t   = new Trampoline(0x0072A8B0, 0x0072A8B6, ChaoGardenMR_SetLandTable_Night_r);
 
 #pragma region Station Square
+	fix_light(&ChaoRaceDoor_Model);
+	fix_light(&BlackMarketDoor_Model);
+	fix_light(&SSGardenExit_Model);
+
 	copy_materials(matlist_03236884, 0x03236884);
 	copy_materials(matlist_03236AF8, 0x03236AF8);
 	copy_materials(matlist_03236D08, 0x03236D08);
