@@ -87,10 +87,9 @@ static void SetMaterialParameters(const D3DMATERIAL9& material)
 	if (!LanternInstance::UsePalette() || effect == nullptr)
 		return;
 
-	// This will need to be re-evaluated for chunk models.
-	//D3DMATERIALCOLORSOURCE colorsource;
-	//device->GetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, (DWORD*)&colorsource);
-	//effect->SetInt(param::DiffuseSource, colorsource);
+	D3DMATERIALCOLORSOURCE colorsource;
+	device->GetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, (DWORD*)&colorsource);
+	param::DiffuseSource = colorsource;
 	param::MaterialDiffuse = material.Diffuse;
 }
 

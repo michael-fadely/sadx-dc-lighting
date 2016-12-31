@@ -92,8 +92,6 @@ static float4x4 TextureTransform = {
 	 0.5, 0.5, 0.0, 1.0
 };
 
-// This will need to be non-static for chunk models.
-static uint DiffuseSource = (uint)D3DMCS_COLOR1;
 // This never changes
 static float  AlphaRef = 16.0f / 255.0f;
 
@@ -110,14 +108,22 @@ float4 FogColor;
 float3 LightDirection  = float3(0.0f, -1.0f, 0.0f);
 float  LightLength     = 1.0f;
 float4 MaterialDiffuse = float4(1.0f, 1.0f, 1.0f, 1.0f);
+uint   DiffuseSource   = (uint)D3DMCS_COLOR1;
 
 // Helpers
 
 float4 GetDiffuse(in float4 vcolor)
 {
-	return any(vcolor) ? vcolor : MaterialDiffuse;
-	//float4 d = any(vcolor) ? vcolor : MaterialDiffuse;
-	//return float4(1, 1, 1, d.a);
+	float4 color = (DiffuseSource == D3DMCS_COLOR1 && any(vcolor)) ? vcolor : MaterialDiffuse;
+
+	if (floor(color.r * 255) == 178
+		&& floor(color.g * 255) == 178
+		&& floor(color.b * 255) == 178)
+	{
+		return float4(1, 1, 1, color.a);
+	}
+
+	return color;
 }
 float CalcFogFactor(float d)
 {
@@ -223,8 +229,7 @@ PS_IN vs_main(VS_IN input, uniform bool lightEnabled, uniform bool interpolate =
 			pspecular = tex2Dlod(specularSampler, float4(i, 0, 0, 0));
 		}
 		
-		// TODO: remove this diffuse addition
-		output.diffuse = float4((saturate(diffuse + 0.3) * pdiffuse).rgb, diffuse.a);
+		output.diffuse = float4((diffuse * pdiffuse).rgb, diffuse.a);
 		output.specular = float4(pspecular.rgb, 0.0f);
 	}
 	else

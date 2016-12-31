@@ -59,7 +59,6 @@ static Trampoline* sub_77EAD0_t                       = nullptr;
 static Trampoline* sub_77EBA0_t                       = nullptr;
 static Trampoline* njDrawModel_SADX_t                 = nullptr;
 static Trampoline* njDrawModel_SADX_B_t               = nullptr;
-static Trampoline* MeshSet_CreateVertexBuffer_t       = nullptr;
 static Trampoline* Direct3D_SetProjectionMatrix_t     = nullptr;
 static Trampoline* Direct3D_SetViewportAndTransform_t = nullptr;
 static Trampoline* Direct3D_SetWorldTransform_t       = nullptr;
@@ -374,67 +373,6 @@ static void __declspec(naked) DrawMeshSetBuffer_asm()
 	}
 }
 
-static void MeshSet_CreateVertexBuffer_original(MeshSetBuffer* mesh, int count)
-{
-	// ReSharper disable once CppEntityNeverUsed
-	auto original = MeshSet_CreateVertexBuffer_t->Target();
-	__asm
-	{
-		mov  edi, mesh
-		push count
-		call original
-		add  esp, 4
-	}
-}
-
-// Overrides landtable vertex colors with white (retaining alpha channel)
-static void __cdecl MeshSet_CreateVertexBuffer_c(MeshSetBuffer* mesh, int count)
-{
-	if (mesh->VertexBuffer == nullptr && mesh->Meshset->vertcolor != nullptr)
-	{
-		auto n = count;
-
-		switch (mesh->Meshset->type_matId & NJD_MESHSET_MASK)
-		{
-			default:
-				n = n - 2 * mesh->Meshset->nbMesh;
-				break;
-
-			case NJD_MESHSET_3:
-				n = mesh->Meshset->nbMesh * 3;
-				break;
-
-			case NJD_MESHSET_4:
-				n = mesh->Meshset->nbMesh * 4;
-				break;
-		}
-
-		for (int i = 0; i < n; i++)
-		{
-			auto& color = mesh->Meshset->vertcolor[i].color;
-
-			if ((color & 0x00FFFFFF) == 0x00B2B2B2)
-			{
-				color |= 0x00FFFFFF;
-			}
-		}
-	}
-
-	MeshSet_CreateVertexBuffer_original(mesh, count);
-}
-static void __declspec(naked) MeshSet_CreateVertexBuffer_r()
-{
-	__asm
-	{
-		push [esp + 04h]  // count
-		push edi          // mesh
-		call MeshSet_CreateVertexBuffer_c
-		pop  edi          // mesh
-		add  esp, 4       // count
-		retn
-	}
-}
-
 static auto __stdcall SetTransformHijack(Direct3DDevice8* _device, D3DTRANSFORMSTATETYPE type, D3DXMATRIX* matrix)
 {
 	if (effect != nullptr)
@@ -541,7 +479,6 @@ void d3d::InitTrampolines()
 	sub_77EBA0_t                       = new Trampoline(0x0077EBA0, 0x0077EBA5, sub_77EBA0_r);
 	njDrawModel_SADX_t                 = new Trampoline(0x0077EDA0, 0x0077EDAA, njDrawModel_SADX_r);
 	njDrawModel_SADX_B_t               = new Trampoline(0x00784AE0, 0x00784AE5, njDrawModel_SADX_B_r);
-	MeshSet_CreateVertexBuffer_t       = new Trampoline(0x007853D0, 0x007853D6, MeshSet_CreateVertexBuffer_r);
 	Direct3D_SetProjectionMatrix_t     = new Trampoline(0x00791170, 0x00791175, Direct3D_SetProjectionMatrix_r);
 	Direct3D_SetViewportAndTransform_t = new Trampoline(0x007912E0, 0x007912E8, Direct3D_SetViewportAndTransform_r);
 	Direct3D_SetWorldTransform_t       = new Trampoline(0x00791AB0, 0x00791AB5, Direct3D_SetWorldTransform_r);
