@@ -12,8 +12,6 @@
 #define D3DMCS_COLOR1   1 // Diffuse vertex color is used
 #define D3DMCS_COLOR2   2 // Specular vertex color is used
 
-#define PI 3.141592
-
 struct VS_IN
 {
 	float3 position : POSITION;
@@ -141,6 +139,7 @@ float CalcFogFactor(float d)
 		case FOGMODE_EXP2:
 			fogCoeff = 1.0 / pow(E, d * d * FogDensity * FogDensity);
 			break;
+
 		case FOGMODE_LINEAR:
 			fogCoeff = (FogEnd - d) / (FogEnd - FogStart);
 			break;
@@ -151,27 +150,9 @@ float CalcFogFactor(float d)
 
 float4 BlendPalettes(sampler2D samplerA, sampler2D samplerB, float i)
 {
-	float4 a;
-	float4 b;
-
-	if (BlendFactor > 0.0f)
-	{
-		b = tex2Dlod(samplerB, float4(i, 0, 0, 0));
-	}
-
-	if (BlendFactor < 1.0f)
-	{
-		a = tex2Dlod(samplerA, float4(i, 0, 0, 0));
-	}
-
-	if (BlendFactor == 0.0f || BlendFactor == 1.0f)
-	{
-		return BlendFactor == 0.0f ? a : b;
-	}
-	else
-	{
-		return lerp(a, b, BlendFactor);
-	}
+	float4 a = tex2Dlod(samplerA, float4(i, 0, 0, 0));
+	float4 b = tex2Dlod(samplerB, float4(i, 0, 0, 0));
+	return lerp(a, b, BlendFactor);
 }
 
 // Vertex shaders
@@ -275,15 +256,7 @@ float4 ps_main(PS_IN input, uniform bool useFog)
 	if (useFog)
 	{
 		float factor = CalcFogFactor(input.fogDist);
-
-		if (factor == 0.0f)
-		{
-			result.rgb = FogColor.rgb;
-		}
-		else
-		{
-			result.rgb = (float3)(factor * result + (1.0 - factor) * FogColor);
-		}
+		result.rgb = (factor * result + (1.0 - factor) * FogColor).rgb;
 	}
 
 	return result;
