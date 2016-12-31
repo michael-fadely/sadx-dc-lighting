@@ -307,13 +307,17 @@ static void __cdecl Direct3D_SetViewportAndTransform_r()
 
 static void __cdecl Direct3D_PerformLighting_r(int type)
 {
-	TARGET_DYNAMIC(Direct3D_PerformLighting)(0);
+	auto target = TARGET_DYNAMIC(Direct3D_PerformLighting);
 
-	if (effect == nullptr)
+	if (effect == nullptr || !LanternInstance::UsePalette())
 	{
+		target(type);
 		return;
 	}
 
+	// This specifically force light type 0 to prevent
+	// the light direction from being overwritten.
+	target(0);
 	globals::light = true;
 
 	if (type != globals::light_type)
