@@ -6,12 +6,12 @@ void EffectParameter<D3DXMATRIX>::operator=(const D3DXMATRIX& value)
 {
 	if (!modified)
 	{
-		modified = !!(data != value);
+		modified = !!(last != value);
 	}
 
 	if (modified)
 	{
-		data = value;
+		current = value;
 	}
 }
 
@@ -20,7 +20,7 @@ void EffectParameter<bool>::SetValue()
 {
 	if (modified)
 	{
-		(*effect)->SetBool(handle, data);
+		(*effect)->SetBool(handle, current);
 		ClearModified();
 	}
 }
@@ -30,7 +30,7 @@ void EffectParameter<int>::SetValue()
 {
 	if (modified)
 	{
-		(*effect)->SetInt(handle, data);
+		(*effect)->SetInt(handle, current);
 		ClearModified();
 	}
 }
@@ -40,7 +40,7 @@ void EffectParameter<float>::SetValue()
 {
 	if (modified)
 	{
-		(*effect)->SetFloat(handle, data);
+		(*effect)->SetFloat(handle, current);
 		ClearModified();
 	}
 }
@@ -50,7 +50,7 @@ void EffectParameter<D3DXVECTOR4>::SetValue()
 {
 	if (modified)
 	{
-		(*effect)->SetVector(handle, &data);
+		(*effect)->SetVector(handle, &current);
 		ClearModified();
 	}
 }
@@ -60,7 +60,7 @@ void EffectParameter<D3DXVECTOR3>::SetValue()
 {
 	if (modified)
 	{
-		D3DXVECTOR4 v = D3DXVECTOR4(data, 0.0f);
+		D3DXVECTOR4 v = D3DXVECTOR4(current, 0.0f);
 		(*effect)->SetVector(handle, &v);
 		ClearModified();
 	}
@@ -72,7 +72,7 @@ void EffectParameter<D3DXCOLOR>::SetValue()
 	if (modified)
 	{
 		static_assert(sizeof(D3DXCOLOR) == sizeof(D3DXVECTOR4), "D3DXCOLOR size does not match D3DXVECTOR4.");
-		(*effect)->SetVector(handle, (D3DXVECTOR4*)&data);
+		(*effect)->SetVector(handle, (D3DXVECTOR4*)&current);
 		ClearModified();
 	}
 }
@@ -82,7 +82,7 @@ void EffectParameter<D3DXMATRIX>::SetValue()
 {
 	if (modified)
 	{
-		(*effect)->SetMatrix(handle, &data);
+		(*effect)->SetMatrix(handle, &current);
 		ClearModified();
 	}
 }
@@ -92,7 +92,7 @@ void EffectParameter<IDirect3DTexture9*>::SetValue()
 {
 	if (modified)
 	{
-		(*effect)->SetTexture(handle, data);
+		(*effect)->SetTexture(handle, current);
 		ClearModified();
 	}
 }

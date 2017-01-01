@@ -21,11 +21,11 @@ class EffectParameter : public IEffectParameter
 	D3DXHANDLE handle;
 	bool modified;
 	T last;
-	T data;
+	T current;
 
 public:
 	explicit EffectParameter(ID3DXEffect** effect, const std::string& name, const T& defaultValue)
-		: name(name), effect(effect), handle(nullptr), modified(false), last(defaultValue), data(defaultValue)
+		: name(name), effect(effect), handle(nullptr), modified(false), last(defaultValue), current(defaultValue)
 	{
 	}
 
@@ -46,7 +46,7 @@ EffectParameter<T>& EffectParameter<T>::operator=(EffectParameter<T>&& inst) noe
 	handle   = inst.handle;
 	modified = inst.modified;
 	last     = inst.last;
-	data     = inst.data;
+	current  = inst.current;
 
 	inst.effect = nullptr;
 	return *this;
@@ -68,7 +68,7 @@ void EffectParameter<T>::UpdateHandle()
 template <typename T>
 void EffectParameter<T>::ClearModified()
 {
-	last = data;
+	last = current;
 	modified = false;
 }
 
@@ -76,7 +76,7 @@ template <typename T>
 void EffectParameter<T>::operator=(const T& value)
 {
 	modified = !!(last != value);
-	data = value;
+	current = value;
 }
 
 template<> void EffectParameter<D3DXMATRIX>::operator=(const D3DXMATRIX& value);
