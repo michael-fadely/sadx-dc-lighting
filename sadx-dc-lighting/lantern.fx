@@ -46,32 +46,32 @@ sampler2D baseSampler = sampler_state
 sampler2D diffuseSampler = sampler_state
 {
 	Texture   = <DiffusePalette>;
-	MinFilter = Linear;
-	MagFilter = Linear;
+	MinFilter = Point;
+	MagFilter = Point;
 	AddressU  = Clamp;
 	AddressV  = Clamp;
 };
 sampler2D diffuseSamplerB = sampler_state
 {
 	Texture   = <DiffusePaletteB>;
-	MinFilter = Linear;
-	MagFilter = Linear;
+	MinFilter = Point;
+	MagFilter = Point;
 	AddressU  = Clamp;
 	AddressV  = Clamp;
 };
 sampler2D specularSampler = sampler_state
 {
 	Texture   = <SpecularPalette>;
-	MinFilter = Linear;
-	MagFilter = Linear;
+	MinFilter = Point;
+	MagFilter = Point;
 	AddressU  = Clamp;
 	AddressV  = Clamp;
 };
 sampler2D specularSamplerB = sampler_state
 {
 	Texture   = <SpecularPaletteB>;
-	MinFilter = Linear;
-	MagFilter = Linear;
+	MinFilter = Point;
+	MagFilter = Point;
 	AddressU  = Clamp;
 	AddressV  = Clamp;
 };
@@ -194,7 +194,7 @@ PS_IN vs_main(VS_IN input, uniform bool lightEnabled, uniform bool interpolate =
 		// subtract it from 1. This is the value we use for indexing into
 		// the palette.
 		// HACK: This clamp prevents a visual bug in the Mystic Ruins past (shrine on fire)
-		float i = clamp(1 - (_dot + 1) / 2, 0, 0.99);
+		float i = floor(clamp(1 - (_dot + 1) / 2, 0, 0.99) * 255) / 255;
 
 		float4 diffuse = GetDiffuse(input.color);
 
