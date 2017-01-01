@@ -156,7 +156,7 @@ static void begin()
 
 	for (auto i : param::parameters)
 	{
-		i->SetValue();
+		i->Commit();
 	}
 
 	effect->Begin(&passes, 0);

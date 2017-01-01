@@ -9,8 +9,8 @@ class IEffectParameter
 public:
 	virtual ~IEffectParameter() = default;
 	virtual void UpdateHandle() = 0;
-	virtual void ClearModified() = 0;
-	virtual void SetValue() = 0;
+	virtual void Clear() = 0;
+	virtual void Commit() = 0;
 };
 
 template<typename T>
@@ -19,38 +19,21 @@ class EffectParameter : public IEffectParameter
 	const std::string name;
 	ID3DXEffect** effect;
 	D3DXHANDLE handle;
-	bool modified;
+	bool assigned;
 	T last;
 	T current;
 
 public:
 	explicit EffectParameter(ID3DXEffect** effect, const std::string& name, const T& defaultValue)
-		: name(name), effect(effect), handle(nullptr), modified(false), last(defaultValue), current(defaultValue)
+		: name(name), effect(effect), handle(nullptr), assigned(false), last(defaultValue), current(defaultValue)
 	{
 	}
 
-	EffectParameter<T>& operator=(EffectParameter<T>&& inst) noexcept;
-
 	void UpdateHandle() override;
-	void ClearModified() override;
-	void SetValue() override;
+	void Clear() override;
+	void Commit() override;
 	void operator=(const T& value);
 };
-
-
-template <typename T>
-EffectParameter<T>& EffectParameter<T>::operator=(EffectParameter<T>&& inst) noexcept
-{
-	name     = inst.name;
-	effect   = inst.effect;
-	handle   = inst.handle;
-	modified = inst.modified;
-	last     = inst.last;
-	current  = inst.current;
-
-	inst.effect = nullptr;
-	return *this;
-}
 
 template <typename T>
 void EffectParameter<T>::UpdateHandle()
@@ -60,32 +43,29 @@ void EffectParameter<T>::UpdateHandle()
 
 	if (!was_null)
 	{
-		modified = true;
-		SetValue();
+		Commit();
 	}
 }
 
 template <typename T>
-void EffectParameter<T>::ClearModified()
+void EffectParameter<T>::Clear()
 {
+	assigned = false;
 	last = current;
-	modified = false;
 }
 
 template <typename T>
 void EffectParameter<T>::operator=(const T& value)
 {
-	modified = !!(last != value);
+	assigned = true;
 	current = value;
 }
 
-template<> void EffectParameter<D3DXMATRIX>::operator=(const D3DXMATRIX& value);
-
-template<> void EffectParameter<bool>::SetValue();
-template<> void EffectParameter<int>::SetValue();
-template<> void EffectParameter<float>::SetValue();
-template<> void EffectParameter<D3DXVECTOR4>::SetValue();
-template<> void EffectParameter<D3DXVECTOR3>::SetValue();
-template<> void EffectParameter<D3DXCOLOR>::SetValue();
-template<> void EffectParameter<D3DXMATRIX>::SetValue();
-template<> void EffectParameter<IDirect3DTexture9*>::SetValue();
+template<> void EffectParameter<bool>::Commit();
+template<> void EffectParameter<int>::Commit();
+template<> void EffectParameter<float>::Commit();
+template<> void EffectParameter<D3DXVECTOR4>::Commit();
+template<> void EffectParameter<D3DXVECTOR3>::Commit();
+template<> void EffectParameter<D3DXCOLOR>::Commit();
+template<> void EffectParameter<D3DXMATRIX>::Commit();
+template<> void EffectParameter<IDirect3DTexture9*>::Commit();

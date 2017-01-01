@@ -2,97 +2,83 @@
 #include "EffectParameter.h"
 
 template<>
-void EffectParameter<D3DXMATRIX>::operator=(const D3DXMATRIX& value)
+void EffectParameter<bool>::Commit()
 {
-	if (!modified)
-	{
-		modified = !!(last != value);
-	}
-
-	if (modified)
-	{
-		current = value;
-	}
-}
-
-template<>
-void EffectParameter<bool>::SetValue()
-{
-	if (modified)
+	if (assigned && last != current)
 	{
 		(*effect)->SetBool(handle, current);
-		ClearModified();
+		Clear();
 	}
 }
 
 template<>
-void EffectParameter<int>::SetValue()
+void EffectParameter<int>::Commit()
 {
-	if (modified)
+	if (assigned && last != current)
 	{
 		(*effect)->SetInt(handle, current);
-		ClearModified();
+		Clear();
 	}
 }
 
 template<>
-void EffectParameter<float>::SetValue()
+void EffectParameter<float>::Commit()
 {
-	if (modified)
+	if (assigned && last != current)
 	{
 		(*effect)->SetFloat(handle, current);
-		ClearModified();
+		Clear();
 	}
 }
 
 template<>
-void EffectParameter<D3DXVECTOR4>::SetValue()
+void EffectParameter<D3DXVECTOR4>::Commit()
 {
-	if (modified)
+	if (assigned && last != current)
 	{
 		(*effect)->SetVector(handle, &current);
-		ClearModified();
+		Clear();
 	}
 }
 
 template<>
-void EffectParameter<D3DXVECTOR3>::SetValue()
+void EffectParameter<D3DXVECTOR3>::Commit()
 {
-	if (modified)
+	if (assigned && last != current)
 	{
 		D3DXVECTOR4 v = D3DXVECTOR4(current, 0.0f);
 		(*effect)->SetVector(handle, &v);
-		ClearModified();
+		Clear();
 	}
 }
 
 template<>
-void EffectParameter<D3DXCOLOR>::SetValue()
+void EffectParameter<D3DXCOLOR>::Commit()
 {
-	if (modified)
+	if (assigned && last != current)
 	{
 		static_assert(sizeof(D3DXCOLOR) == sizeof(D3DXVECTOR4), "D3DXCOLOR size does not match D3DXVECTOR4.");
 		(*effect)->SetVector(handle, (D3DXVECTOR4*)&current);
-		ClearModified();
+		Clear();
 	}
 }
 
 template<>
-void EffectParameter<D3DXMATRIX>::SetValue()
+void EffectParameter<D3DXMATRIX>::Commit()
 {
-	if (modified)
+	if (assigned && last != current)
 	{
 		(*effect)->SetMatrix(handle, &current);
-		ClearModified();
+		Clear();
 	}
 }
 
 template<>
-void EffectParameter<IDirect3DTexture9*>::SetValue()
+void EffectParameter<IDirect3DTexture9*>::Commit()
 {
-	if (modified)
+	if (assigned && last != current)
 	{
 		(*effect)->SetTexture(handle, current);
-		ClearModified();
+		Clear();
 	}
 }
