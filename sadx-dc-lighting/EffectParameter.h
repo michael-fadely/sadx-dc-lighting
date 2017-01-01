@@ -4,8 +4,17 @@
 #include <d3d9.h>
 #include <d3dx9effect.h>
 
+class IEffectParameter
+{
+public:
+	virtual ~IEffectParameter() = default;
+	virtual void UpdateHandle() = 0;
+	virtual void ClearModified() = 0;
+	virtual void SetValue() = 0;
+};
+
 template<typename T>
-class EffectParameter
+class EffectParameter : public IEffectParameter
 {
 	const std::string name;
 	ID3DXEffect** effect;
@@ -22,9 +31,9 @@ public:
 
 	EffectParameter<T>& operator=(EffectParameter<T>&& inst) noexcept;
 
-	void UpdateHandle();
-	void ClearModified();
-	void SetValue();
+	void UpdateHandle() override;
+	void ClearModified() override;
+	void SetValue() override;
 	void operator=(const T& value);
 };
 
@@ -46,9 +55,14 @@ EffectParameter<T>& EffectParameter<T>::operator=(EffectParameter<T>&& inst) noe
 template <typename T>
 void EffectParameter<T>::UpdateHandle()
 {
+	bool was_null = handle == nullptr;
 	handle = (*effect)->GetParameterByName(nullptr, name.c_str());
-	modified = true;
-	SetValue();
+
+	if (!was_null)
+	{
+		modified = true;
+		SetValue();
+	}
 }
 
 template <typename T>
@@ -63,7 +77,6 @@ void EffectParameter<T>::operator=(const T& value)
 {
 	modified = !!(last != value);
 	data = value;
-	SetValue();
 }
 
 template<> void EffectParameter<D3DXMATRIX>::operator=(const D3DXMATRIX& value);

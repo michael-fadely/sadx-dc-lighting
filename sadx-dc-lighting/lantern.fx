@@ -82,8 +82,7 @@ float4x4 ProjectionMatrix;
 // The inverse transpose of the world view matrix - used for environment mapping.
 float4x4 wvMatrixInvT;
 // Used primarily for environment mapping.
-// TODO: check if texture transform is enabled for standard textures
-static float4x4 TextureTransform = {
+float4x4 TextureTransform = {
 	-0.5, 0.0, 0.0, 0.0,
 	 0.0, 0.5, 0.0, 0.0,
 	 0.0, 0.0, 1.0, 0.0,

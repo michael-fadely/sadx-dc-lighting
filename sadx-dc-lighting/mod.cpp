@@ -160,6 +160,9 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 	param::EnvironmentMapped = (flags & NJD_FLAG_USE_ENV) != 0;
 	param::AlphaEnabled = (flags & NJD_FLAG_USE_ALPHA) != 0;
 	param::TextureEnabled = use_texture;
+
+	// Environment map matrix
+	param::TextureTransform = *(D3DXMATRIX*)0x038A5DD0;
 	
 	if (use_texture)
 	{

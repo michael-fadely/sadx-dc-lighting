@@ -4,8 +4,15 @@
 template<>
 void EffectParameter<D3DXMATRIX>::operator=(const D3DXMATRIX& value)
 {
-	// This happens so infrequently; just skip 
-	(*effect)->SetMatrix(handle, &value);
+	if (!modified)
+	{
+		modified = !!(data != value);
+	}
+
+	if (modified)
+	{
+		data = value;
+	}
 }
 
 template<>

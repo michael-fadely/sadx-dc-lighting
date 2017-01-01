@@ -108,6 +108,34 @@ namespace param
 	EffectParameter<D3DXCOLOR> MaterialDiffuse(&d3d::effect, "MaterialDiffuse", {});
 	EffectParameter<float> AlphaRef(&d3d::effect, "AlphaRef", 0.0f);
 	EffectParameter<D3DXVECTOR3> NormalScale(&d3d::effect, "NormalScale", { 1.0f, 1.0f, 1.0f });
+
+	static IEffectParameter* const parameters[] = {
+		&BaseTexture,
+		&DiffusePalette,
+		&DiffusePaletteB,
+		&SpecularPalette,
+		&SpecularPaletteB,
+		&BlendFactor,
+		&WorldMatrix,
+		&wvMatrix,
+		&ProjectionMatrix,
+		&wvMatrixInvT,
+		&TextureTransform,
+		&TextureEnabled,
+		&EnvironmentMapped,
+		&AlphaEnabled,
+		&FogMode,
+		&FogStart,
+		&FogEnd,
+		&FogDensity,
+		&FogColor,
+		&LightDirection,
+		&LightLength,
+		&DiffuseSource,
+		&MaterialDiffuse,
+		&AlphaRef,
+		&NormalScale, 
+	};
 }
 
 using namespace d3d;
@@ -124,6 +152,11 @@ static void begin()
 	{
 		effect->SetTechnique(techniques[technique]);
 		last_technique = technique;
+	}
+
+	for (auto i : param::parameters)
+	{
+		i->SetValue();
 	}
 
 	effect->Begin(&passes, 0);
@@ -390,34 +423,10 @@ static auto __stdcall SetTransformHijack(Direct3DDevice8* _device, D3DTRANSFORMS
 
 static void UpdateParameterHandles()
 {
-	// Texture stuff:
-	param::BaseTexture.UpdateHandle();
-	param::DiffusePalette.UpdateHandle();
-	param::DiffusePaletteB.UpdateHandle();
-	param::SpecularPalette.UpdateHandle();
-	param::SpecularPaletteB.UpdateHandle();
-	param::BlendFactor.UpdateHandle();
-
-	// Other things:
-	param::WorldMatrix.UpdateHandle();
-	param::wvMatrix.UpdateHandle();
-	param::ProjectionMatrix.UpdateHandle();
-	param::wvMatrixInvT.UpdateHandle();
-	param::TextureTransform.UpdateHandle();
-	param::TextureEnabled.UpdateHandle();
-	param::EnvironmentMapped.UpdateHandle();
-	param::AlphaEnabled.UpdateHandle();
-	param::FogMode.UpdateHandle();
-	param::FogStart.UpdateHandle();
-	param::FogEnd.UpdateHandle();
-	param::FogDensity.UpdateHandle();
-	param::FogColor.UpdateHandle();
-	param::LightDirection.UpdateHandle();
-	param::LightLength.UpdateHandle();
-	param::DiffuseSource.UpdateHandle();
-	param::MaterialDiffuse.UpdateHandle();
-	param::AlphaRef.UpdateHandle();
-	param::NormalScale.UpdateHandle();
+	for (auto i : param::parameters)
+	{
+		i->UpdateHandle();
+	}
 }
 
 void d3d::LoadShader()
