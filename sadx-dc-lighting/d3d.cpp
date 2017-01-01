@@ -107,6 +107,7 @@ namespace param
 	EffectParameter<int> DiffuseSource(&d3d::effect, "DiffuseSource", 0);
 	EffectParameter<D3DXCOLOR> MaterialDiffuse(&d3d::effect, "MaterialDiffuse", {});
 	EffectParameter<float> AlphaRef(&d3d::effect, "AlphaRef", 0.0f);
+	EffectParameter<D3DXVECTOR3> NormalScale(&d3d::effect, "NormalScale", { 1.0f, 1.0f, 1.0f });
 }
 
 using namespace d3d;
@@ -416,6 +417,7 @@ static void UpdateParameterHandles()
 	param::DiffuseSource.UpdateHandle();
 	param::MaterialDiffuse.UpdateHandle();
 	param::AlphaRef.UpdateHandle();
+	param::NormalScale.UpdateHandle();
 }
 
 void d3d::LoadShader()

@@ -42,6 +42,7 @@ namespace param
 	extern EffectParameter<int> DiffuseSource;
 	extern EffectParameter<D3DXCOLOR> MaterialDiffuse;
 	extern EffectParameter<float> AlphaRef;
+	extern EffectParameter<D3DXVECTOR3> NormalScale;
 }
 
 // Same as in the mod loader except with d3d8to9 types.

@@ -108,6 +108,8 @@ float  LightLength     = 1.0f;
 float4 MaterialDiffuse = float4(1.0f, 1.0f, 1.0f, 1.0f);
 uint   DiffuseSource   = (uint)D3DMCS_COLOR1;
 
+float3 NormalScale = float3(1, 1, 1);
+
 // Helpers
 
 float4 GetDiffuse(in float4 vcolor)
@@ -181,7 +183,7 @@ PS_IN vs_main(VS_IN input, uniform bool lightEnabled, uniform bool interpolate =
 
 	if (lightEnabled == true)
 	{
-		float3 worldNormal = mul(input.normal, (float3x3)WorldMatrix);
+		float3 worldNormal = mul(input.normal * NormalScale, (float3x3)WorldMatrix);
 
 		// This is the "brightness index" calculation. Just a dot product
 		// of the vertex normal (in world space) and the light direction.

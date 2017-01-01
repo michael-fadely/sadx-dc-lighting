@@ -35,6 +35,7 @@ DataPointer(NJS_COLOR, EntityVertexColor, 0x03D0848C);
 DataPointer(NJS_COLOR, LandTableVertexColor, 0x03D08494);
 DataPointer(PaletteLight, LSPalette, 0x03ABDAF0);
 DataPointer(Uint32, LastRenderFlags, 0x03D08498);
+DataPointer(NJS_VECTOR, NormalScaleMultiplier, 0x03B121F8);
 
 #ifdef _DEBUG
 static void DisplayLightDirection()
@@ -317,6 +318,14 @@ static void __cdecl SkyDeck_SimulateAltitude_r(Uint16 act)
 	LanternInstance::SetBlendFactor(f);
 }
 
+static void __cdecl NormalScale(float x, float y, float z)
+{
+	if (x != 0.0f || y != 0.0f || z != 0.0f)
+	{
+		param::NormalScale = D3DXVECTOR3(x, y, z);
+	}
+}
+
 extern "C"
 {
 	EXPORT ModInfo SADXModInfo = { ModLoaderVer };
@@ -360,6 +369,15 @@ extern "C"
 
 		FixCharacterMaterials();
 		FixChaoGardenMaterials();
+
+		// Vertex normal correction for certain objects in
+		// Red Mountain and Sky Deck.
+		WriteCall((void*)0x00411EDA, NormalScale);
+		WriteCall((void*)0x00411F1D, NormalScale);
+		WriteCall((void*)0x00411F44, NormalScale);
+		WriteCall((void*)0x00412783, NormalScale);
+
+		NormalScaleMultiplier = { 1.0f, 1.0f, 1.0f };
 	}
 
 #ifdef _DEBUG
