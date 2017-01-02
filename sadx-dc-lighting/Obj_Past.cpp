@@ -10,7 +10,10 @@ VoidFunc(sub_541990, 0x541990);
 VoidFunc(sub_543F20, 0x543F20);
 FunctionPointer(Sint32, QueueSound_DualEntity, (int, void*, int, int, int), 0x00423F50);
 ObjectFunc(Obj_Past_Delete, 0x005419C0);
+
 static constexpr auto sub_541FC0 = (void*)0x00541FC0;
+
+static Trampoline* Obj_Past_t = nullptr;
 
 static void __cdecl Obj_Past_Delete_r(ObjectMaster* _this)
 {
@@ -18,7 +21,7 @@ static void __cdecl Obj_Past_Delete_r(ObjectMaster* _this)
 	Obj_Past_Delete(_this);
 }
 
-void __cdecl Obj_Past_r(ObjectMaster *_this)
+static void __cdecl Obj_Past_r(ObjectMaster *_this)
 {
 	auto entity = _this->Data1;
 	switch (entity->Action)
@@ -71,4 +74,9 @@ void __cdecl Obj_Past_r(ObjectMaster *_this)
 		default:
 			break;
 	}
+}
+
+void Past_Init()
+{
+	Obj_Past_t = new Trampoline(0x005420C0, 0x005420C5, Obj_Past_r);
 }

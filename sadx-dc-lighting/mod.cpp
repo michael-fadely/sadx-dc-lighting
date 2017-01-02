@@ -25,10 +25,10 @@ static Trampoline* GoToNextChaoStage_t        = nullptr;
 static Trampoline* SetTimeOfDay_t             = nullptr;
 static Trampoline* DrawLandTable_t            = nullptr;
 static Trampoline* Direct3D_SetTexList_t      = nullptr;
-static Trampoline* SkyDeck_SimulateAltitude_t = nullptr;
 
 DataArray(PaletteLight, LightPaletteData, 0x00903E88, 256);
 DataArray(StageLightData, CurrentStageLights, 0x03ABD9F8, 4);
+DataArray(NJS_TEXLIST*, LevelObjTexlists, 0x03B290B4, 4);
 
 DataPointer(EntityData1*, Camera_Data1, 0x03B2CBB0);
 DataPointer(NJS_COLOR, EntityVertexColor, 0x03D0848C);
@@ -36,6 +36,7 @@ DataPointer(NJS_COLOR, LandTableVertexColor, 0x03D08494);
 DataPointer(PaletteLight, LSPalette, 0x03ABDAF0);
 DataPointer(Uint32, LastRenderFlags, 0x03D08498);
 DataPointer(NJS_VECTOR, NormalScaleMultiplier, 0x03B121F8);
+DataPointer(NJS_TEXLIST*, CommonTextures, 0x03B290B0);
 
 #ifdef _DEBUG
 static void DisplayLightDirection()
@@ -272,8 +273,6 @@ static void __cdecl DrawLandTable_r()
 	_nj_constant_attr_or_ = or;
 }
 
-DataArray(NJS_TEXLIST*, LevelObjTexlists, 0x03B290B4, 4);
-DataPointer(NJS_TEXLIST*, CommonTextures, 0x03B290B0);
 static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
 {
 	if (texlist != Direct3D_CurrentTexList)
@@ -302,23 +301,6 @@ static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
 	}
 
 	return TARGET_DYNAMIC(Direct3D_SetTexList)(texlist);
-}
-
-DataPointer(int, SkyDeck_AltitudeMode, 0x03C80608);
-DataPointer(float, SkyDeck_SkyAltitude, 0x03C80610);
-static float skydeck_factor = 0.0f;
-static void __cdecl SkyDeck_SimulateAltitude_r(Uint16 act)
-{
-	TARGET_DYNAMIC(SkyDeck_SimulateAltitude)(act);
-
-	// 0 = high altitide (bright), 1 = low altitude (dark)
-	if (SkyDeck_AltitudeMode > 1)
-	{
-		LanternInstance::SetBlendFactor(0.0f);
-	}
-
-	float f = (max(180.0f, min(250.0f, SkyDeck_SkyAltitude)) - 180.0f) / 70.0f;
-	LanternInstance::SetBlendFactor(f);
 }
 
 static void __cdecl NormalScale(float x, float y, float z)
@@ -359,7 +341,6 @@ extern "C"
 		SetTimeOfDay_t             = new Trampoline(0x00412C00, 0x00412C05, SetTimeOfDay_r);
 		DrawLandTable_t            = new Trampoline(0x0043A6A0, 0x0043A6A8, DrawLandTable_r);
 		Direct3D_SetTexList_t      = new Trampoline(0x0077F3D0, 0x0077F3D8, Direct3D_SetTexList_r);
-		SkyDeck_SimulateAltitude_t = new Trampoline(0x005ECA80, 0x005ECA87, SkyDeck_SimulateAltitude_r);
 
 		// Correcting a function call since they're relative
 		WriteCall(IncrementAct_t->Target(), (void*)0x00424830);
@@ -367,11 +348,10 @@ extern "C"
 		// Material callback hijack
 		WriteJump((void*)0x0040A340, CorrectMaterial_r);
 
-		// Too lazy to use a trampoline
-		WriteJump(Obj_Past, Obj_Past_r);
-
 		FixCharacterMaterials();
 		FixChaoGardenMaterials();
+		Past_Init();
+		SkyDeck_Init();
 
 		// Vertex normal correction for certain objects in
 		// Red Mountain and Sky Deck.
