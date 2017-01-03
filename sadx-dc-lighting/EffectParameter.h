@@ -9,6 +9,7 @@ class IEffectParameter
 public:
 	virtual ~IEffectParameter() = default;
 	virtual void UpdateHandle() = 0;
+	virtual bool Modified() = 0;
 	virtual void Clear() = 0;
 	virtual void Commit() = 0;
 };
@@ -19,37 +20,42 @@ class EffectParameter : public IEffectParameter
 	const std::string name;
 	ID3DXEffect** effect;
 	D3DXHANDLE handle;
+	bool reset;
 	bool assigned;
 	T last;
 	T current;
 
 public:
 	explicit EffectParameter(ID3DXEffect** effect, const std::string& name, const T& defaultValue)
-		: name(name), effect(effect), handle(nullptr), assigned(false), last(defaultValue), current(defaultValue)
+		: name(name), effect(effect), handle(nullptr), reset(false), assigned(false), last(defaultValue), current(defaultValue)
 	{
 	}
 
 	void UpdateHandle() override;
+	bool Modified() override;
 	void Clear() override;
 	void Commit() override;
 	void operator=(const T& value);
 };
 
 template <typename T>
+bool EffectParameter<T>::Modified()
+{
+	return reset || assigned && last != current;
+}
+
+template <typename T>
 void EffectParameter<T>::UpdateHandle()
 {
-	bool was_null = handle == nullptr;
+	reset = handle != nullptr;
 	handle = (*effect)->GetParameterByName(nullptr, name.c_str());
-
-	if (!was_null)
-	{
-		Commit();
-	}
+	Commit();
 }
 
 template <typename T>
 void EffectParameter<T>::Clear()
 {
+	reset = false;
 	assigned = false;
 	last = current;
 }

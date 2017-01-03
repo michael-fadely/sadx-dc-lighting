@@ -520,7 +520,6 @@ extern "C"
 		if (effect != nullptr)
 		{
 			effect->OnLostDevice();
-			UpdateParameterHandles();
 		}
 	}
 
