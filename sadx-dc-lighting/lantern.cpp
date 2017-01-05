@@ -299,7 +299,7 @@ std::string LanternInstance::PaletteId(Sint32 level, Sint32 act)
 }
 
 LanternInstance::LanternInstance(EffectParameter<IDirect3DTexture9*>* diffuse, EffectParameter<IDirect3DTexture9*>* specular)
-	: diffuse_handle(diffuse), specular_handle(specular),
+	: diffuse_param(diffuse), specular_param(specular),
 	  blend_type(-1), last_time(-1), last_act(-1), last_level(-1)
 {
 	for (auto& i : palette)
@@ -309,7 +309,7 @@ LanternInstance::LanternInstance(EffectParameter<IDirect3DTexture9*>* diffuse, E
 }
 
 LanternInstance::LanternInstance(LanternInstance&& inst) noexcept
-	: diffuse_handle(inst.diffuse_handle), specular_handle(inst.specular_handle),
+	: diffuse_param(inst.diffuse_param), specular_param(inst.specular_param),
 	  blend_type(inst.blend_type), last_time(inst.last_time), last_act(inst.last_act), last_level(inst.last_level)
 {
 	for (int i = 0; i < 8; i++)
@@ -321,15 +321,15 @@ LanternInstance::LanternInstance(LanternInstance&& inst) noexcept
 
 LanternInstance& LanternInstance::operator=(LanternInstance&& inst) noexcept
 {
-	diffuse_handle  = inst.diffuse_handle;
-	specular_handle = inst.specular_handle;
-	last_time       = inst.last_time;
-	last_act        = inst.last_act;
-	last_level      = inst.last_level;
-	blend_type      = inst.blend_type;
+	diffuse_param  = inst.diffuse_param;
+	specular_param = inst.specular_param;
+	last_time      = inst.last_time;
+	last_act       = inst.last_act;
+	last_level     = inst.last_level;
+	blend_type     = inst.blend_type;
 
-	inst.diffuse_handle = nullptr;
-	inst.specular_handle = nullptr;
+	inst.diffuse_param = nullptr;
+	inst.specular_param = nullptr;
 
 	for (int i = 0; i < 8; i++)
 	{
@@ -347,11 +347,13 @@ LanternInstance::~LanternInstance()
 		if (i.diffuse)
 		{
 			i.diffuse->Release();
+			i.diffuse = nullptr;
 		}
 
 		if (i.specular)
 		{
 			i.specular->Release();
+			i.specular = nullptr;
 		}
 	}
 }
@@ -555,7 +557,7 @@ void LanternInstance::set_diffuse(Sint32 diffuse) const
 {
 	if (diffuse >= 0)
 	{
-		*diffuse_handle = palette[diffuse].diffuse;
+		*diffuse_param = palette[diffuse].diffuse;
 	}
 }
 
@@ -563,7 +565,7 @@ void LanternInstance::set_specular(Sint32 specular) const
 {
 	if (specular >= 0)
 	{
-		*specular_handle = palette[specular].specular;
+		*specular_param = palette[specular].specular;
 	}
 }
 

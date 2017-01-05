@@ -44,7 +44,7 @@ static void __cdecl SkyBox_SkyDeck_r(ObjectMaster* _this)
 	TARGET_DYNAMIC(SkyBox_SkyDeck)(_this);
 }
 
-void __cdecl Obj_SkyDeck_Delete(ObjectMaster* _this)
+static void __cdecl Obj_SkyDeck_Delete(ObjectMaster* _this)
 {
 	globals::palettes.Remove(handle);
 	LanternInstance::SetBlendFactor(0.0f);

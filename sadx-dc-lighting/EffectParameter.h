@@ -67,6 +67,8 @@ void EffectParameter<T>::operator=(const T& value)
 	current = value;
 }
 
+template<> void EffectParameter<IDirect3DTexture9*>::operator=(IDirect3DTexture9* const& value);
+
 template<> void EffectParameter<bool>::Commit();
 template<> void EffectParameter<int>::Commit();
 template<> void EffectParameter<float>::Commit();

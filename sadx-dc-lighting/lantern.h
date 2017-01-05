@@ -37,8 +37,8 @@ class LanternInstance : ILantern
 	static float blend_factor;
 	static bool use_palette;
 
-	EffectParameter<IDirect3DTexture9*>* diffuse_handle;
-	EffectParameter<IDirect3DTexture9*>* specular_handle;
+	EffectParameter<IDirect3DTexture9*>* diffuse_param;
+	EffectParameter<IDirect3DTexture9*>* specular_param;
 	LanternPalette palette[8];
 
 	Sint32 blend_type;
