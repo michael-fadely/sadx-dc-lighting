@@ -25,6 +25,38 @@ struct ColorPair
 
 static_assert(sizeof(ColorPair) == sizeof(NJS_COLOR) * 2, "AGAIN TRY");
 
+bool SourceLight_t::operator==(const SourceLight_t& rhs) const
+{
+	return rhs.y   == y
+		&& rhs.z   == z
+		&& DIF[0]  == rhs.DIF[0]
+		&& DIF[2]  == rhs.DIF[1]
+		&& DIF[1]  == rhs.DIF[2]
+		&& AMB[0]  == rhs.AMB[0]
+		&& AMB[2]  == rhs.AMB[1]
+		&& AMB[1]  == rhs.AMB[2]
+		&& SP_pow  == rhs.SP_pow
+		&& SP[0]   == rhs.SP[0]
+		&& SP[2]   == rhs.SP[1]
+		&& SP[1]   == rhs.SP[2]
+		&& unknown == rhs.unknown;
+}
+
+bool SourceLight_t::operator!=(const SourceLight_t& rhs) const
+{
+	return !operator==(rhs);
+}
+
+template<>
+void EffectParameter<SourceLight_t>::Commit()
+{
+	if (Modified())
+	{
+		(*effect)->SetValue(handle, &current, sizeof(SourceLight_t));
+		Clear();
+	}
+}
+
 /// <summary>
 /// Get the pixel data of the specified texture.
 /// </summary>
@@ -364,12 +396,20 @@ void LanternInstance::SetLastLevel(Sint32 level, Sint32 act)
 	last_act = act;
 }
 
+static SourceLight SourceLights[16] = {};
+
+template <typename T>
+T lerp(const T& v0, const T& v1, float t)
+{
+	return (T)((1.0f - t) * v0 + t * v1);
+}
+
 /// <summary>
 /// Loads palette parameter data (light direction) from the specified path.
 /// </summary>
 /// <param name="path">Path to the file.</param>
 /// <returns><c>true</c> on success.</returns>
-bool ILantern::LoadSource(const std::string& path)
+bool LanternInstance::LoadSource(const std::string& path)
 {
 	bool result = true;
 	auto file = std::ifstream(path, std::ios::binary);
@@ -386,23 +426,34 @@ bool ILantern::LoadSource(const std::string& path)
 	{
 		PrintDebug("[lantern] Loading lantern source: %s\n", path.c_str());
 
-		Angle yaw, roll;
+		for (int i = 0; i < 16; i++)
+		{
+			file.read((char*)&SourceLights[i], sizeof(SourceLight));
+			const auto& s = SourceLights[i].stage;
 
-		file.seekg(0x5A0);
-		file.read((char*)&yaw, sizeof(Angle));
-		file.read((char*)&roll, sizeof(Angle));
+#if 1
+			PrintDebug("[lantern] [%02d]    DIF: < %f, %f, %f >\n", i, s.DIF[0], s.DIF[1], s.DIF[2]);
+			PrintDebug("[lantern] [%02d]    AMB: < %f, %f, %f >\n", i, s.AMB[0], s.AMB[1], s.AMB[2]);
+			PrintDebug("[lantern] [%02d] SP_pow: < %f >\n",         i, s.SP_pow);
+			PrintDebug("[lantern] [%02d]     SP: < %f, %f, %f >\n", i, s.SP[0], s.SP[1], s.SP[2]);
+
+			PrintDebug("\n");
+#endif
+		}
+
 		file.close();
 
-		NJS_MATRIX m;
-		auto _m = &m;
+		param::SourceLight = SourceLights[15].stage;
 
-		njUnitMatrix(_m);
-		njRotateY(_m, yaw);
-		njRotateZ(_m, roll);
+		NJS_MATRIX m;
+
+		njUnitMatrix(&m);
+		njRotateY(&m, SourceLights[15].stage.y);
+		njRotateZ(&m, SourceLights[15].stage.z);
 
 		// Default light direction is down, so we want to rotate relative to that.
 		static const NJS_VECTOR vs = { 0.0f, -1.0f, 0.0f };
-		njCalcVector(_m, (NJS_VECTOR*)&vs, &dir);
+		njCalcVector(&m, (NJS_VECTOR*)&vs, &dir);
 	}
 
 	UpdateLightDirections(dir);
@@ -415,11 +466,11 @@ bool ILantern::LoadSource(const std::string& path)
 /// <param name="level">Current level/stage.</param>
 /// <param name="act">Current act.</param>
 /// <returns><c>true</c> on success.</returns>
-bool LanternInstance::LoadSource(Sint32 level, Sint32 act) const
+bool LanternInstance::LoadSource(Sint32 level, Sint32 act)
 {
 	std::stringstream name;
 	name << globals::system << "SL" << PaletteId(level, act) << "B.BIN";
-	return ILantern::LoadSource(name.str());
+	return LoadSource(name.str());
 }
 
 bool LanternInstance::LoadFiles()
@@ -650,6 +701,9 @@ void LanternInstance::SetPalettes(Sint32 type, Uint32 flags)
 	set_diffuse(diffuse);
 	set_specular(specular);
 
+	param::UseSourceLight = true;
+	param::SourceLight = SourceLights[15].stage;
+
 	d3d::do_effect = use_palette = diffuse > -1 && specular > -1;
 }
 
@@ -717,13 +771,28 @@ bool LanternCollection::LoadPalette(const std::string& path)
 	return count == instances.size();
 }
 
-bool LanternCollection::LoadSource(Sint32 level, Sint32 act) const
+bool LanternCollection::LoadSource(Sint32 level, Sint32 act)
 {
 	size_t count = 0;
 
 	for (auto& i : instances)
 	{
 		if (i.LoadSource(level, act))
+		{
+			++count;
+		}
+	}
+
+	return count == instances.size();
+}
+
+bool LanternCollection::LoadSource(const std::string& path)
+{
+	size_t count = 0;
+
+	for (auto& i : instances)
+	{
+		if (i.LoadSource(path))
 		{
 			++count;
 		}

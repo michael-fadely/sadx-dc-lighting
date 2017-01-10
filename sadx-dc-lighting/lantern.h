@@ -4,6 +4,7 @@
 #include <ninja.h>
 #include <d3d9.h>
 #include <deque>
+#include <SADXModLoader/SADXStructs.h>
 
 #include "EffectParameter.h"
 
@@ -15,6 +16,31 @@ struct LanternPalette
 	IDirect3DTexture9* specular;
 };
 
+#pragma pack(push, 1)
+struct SourceLight_t
+{
+	Angle y, z;
+
+	float DIF[3];
+	float AMB[3];
+	float SP_pow;
+	float SP[3];
+	float unknown;
+
+	bool operator==(const SourceLight_t& rhs) const;
+	bool operator!=(const SourceLight_t& rhs) const;
+};
+
+union SourceLight
+{
+	SourceLight_t stage;
+	PaletteLight source;
+};
+#pragma pack(pop)
+
+static_assert(sizeof(SourceLight) == 0x60, "SourceLight size mismatch");
+template<> void EffectParameter<SourceLight_t>::Commit();
+
 class LanternInstance;
 
 class ILantern
@@ -25,8 +51,8 @@ public:
 	virtual bool LoadFiles() = 0;
 	virtual bool LoadPalette(Sint32 level, Sint32 act) = 0;
 	virtual bool LoadPalette(const std::string& path) = 0;
-	virtual bool LoadSource(Sint32 level, Sint32 act) const = 0;
-	static bool LoadSource(const std::string& path);
+	virtual bool LoadSource(Sint32 level, Sint32 act) = 0;
+	virtual bool LoadSource(const std::string& path) = 0;
 	virtual void SetLastLevel(Sint32 level, Sint32 act) = 0;
 	virtual void SetPalettes(Sint32 type, Uint32 flags) = 0;
 	virtual void SetSelfBlend(Sint32 type, Sint32 diffuse, Sint32 specular) = 0;
@@ -66,7 +92,8 @@ public:
 	bool LoadFiles() override;
 	bool LoadPalette(Sint32 level, Sint32 act) override;
 	bool LoadPalette(const std::string& path) override;
-	bool LoadSource(Sint32 level, Sint32 act) const override;
+	bool LoadSource(Sint32 level, Sint32 act) override;
+	bool LoadSource(const std::string& path) override;
 	void SetLastLevel(Sint32 level, Sint32 act) override;
 	void SetPalettes(Sint32 type, Uint32 flags) override;
 	void SetSelfBlend(Sint32 type, Sint32 diffuse, Sint32 specular) override;
@@ -84,7 +111,8 @@ public:
 	bool LoadFiles() override;
 	bool LoadPalette(Sint32 level, Sint32 act) override;
 	bool LoadPalette(const std::string& path) override;
-	bool LoadSource(Sint32 level, Sint32 act) const override;
+	bool LoadSource(Sint32 level, Sint32 act) override;
+	bool LoadSource(const std::string& path) override;
 	void SetLastLevel(Sint32 level, Sint32 act) override;
 	void SetPalettes(Sint32 type, Uint32 flags) override;
 	void SetSelfBlend(Sint32 type, Sint32 diffuse, Sint32 specular) override;

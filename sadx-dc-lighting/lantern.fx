@@ -76,6 +76,16 @@ sampler2D specularSamplerB = sampler_state
 	AddressV  = Clamp;
 };
 
+struct SourceLight_t
+{
+	int y, z;
+	float3 DIF;
+	float3 AMB;
+	float SP_pow;
+	float3 SP;
+	float unknown;
+};
+
 float4x4 WorldMatrix;
 float4x4 wvMatrix;
 float4x4 ProjectionMatrix;
@@ -108,6 +118,9 @@ float4 MaterialDiffuse = float4(1.0f, 1.0f, 1.0f, 1.0f);
 uint   DiffuseSource   = (uint)D3DMCS_COLOR1;
 
 float3 NormalScale = float3(1, 1, 1);
+
+bool UseSourceLight = false;
+SourceLight_t SourceLight;
 
 // Helpers
 
@@ -187,6 +200,7 @@ PS_IN vs_main(VS_IN input, uniform bool lightEnabled, uniform bool interpolate =
 		// This is the "brightness index" calculation. Just a dot product
 		// of the vertex normal (in world space) and the light direction.
 		float _dot = dot(LightDirection, worldNormal);
+		float4 diffuse = GetDiffuse(input.color);
 
 		// The palette's brightest point is 0, and its darkest point is 1,
 		// so we push the dot product (-1 .. 1) into the rage 0 .. 1, and
@@ -195,24 +209,33 @@ PS_IN vs_main(VS_IN input, uniform bool lightEnabled, uniform bool interpolate =
 		// HACK: This clamp prevents a visual bug in the Mystic Ruins past (shrine on fire)
 		float i = floor(clamp(1 - (_dot + 1) / 2, 0, 0.99) * 255) / 255;
 
-		float4 diffuse = GetDiffuse(input.color);
-
-		float4 pdiffuse;
-		float4 pspecular;
-
-		if (interpolate)
+		if (UseSourceLight == true)
 		{
-			pdiffuse = BlendPalettes(diffuseSampler, diffuseSamplerB, i);
-			pspecular = BlendPalettes(specularSampler, specularSamplerB, i);
+			// typing this shit is annoying as fuck
+			// SourceLight.SP_pow
+			output.diffuse = float4(_dot * (diffuse.rgb * SourceLight.DIF), diffuse.a);
+			//output.specular = float4(pow(_dot, SourceLight.SP_pow) * SourceLight.SP, 0);
+			output.specular = 0;
 		}
 		else
 		{
-			pdiffuse = tex2Dlod(diffuseSampler, float4(i, 0, 0, 0));
-			pspecular = tex2Dlod(specularSampler, float4(i, 0, 0, 0));
-		}
+			float4 pdiffuse;
+			float4 pspecular;
+
+			if (interpolate)
+			{
+				pdiffuse = BlendPalettes(diffuseSampler, diffuseSamplerB, i);
+				pspecular = BlendPalettes(specularSampler, specularSamplerB, i);
+			}
+			else
+			{
+				pdiffuse = tex2Dlod(diffuseSampler, float4(i, 0, 0, 0));
+				pspecular = tex2Dlod(specularSampler, float4(i, 0, 0, 0));
+			}
 		
-		output.diffuse = float4((diffuse * pdiffuse).rgb, diffuse.a);
-		output.specular = float4(pspecular.rgb, 0.0f);
+			output.diffuse = float4((diffuse * pdiffuse).rgb, diffuse.a);
+			output.specular = float4(pspecular.rgb, 0.0f);
+		}
 	}
 	else
 	{
