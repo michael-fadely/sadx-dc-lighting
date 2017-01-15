@@ -79,11 +79,9 @@ sampler2D specularSamplerB = sampler_state
 struct SourceLight_t
 {
 	int y, z;
-	float3 DIF;
-	float3 AMB;
-	float SP_pow;
-	float3 SP;
-	float unknown;
+	float3 ambient;
+	float2 unknown;
+	float power;
 };
 
 float4x4 WorldMatrix;
@@ -112,10 +110,11 @@ float  FogEnd;
 float  FogDensity;
 float4 FogColor;
 
-float3 LightDirection  = float3(0.0f, -1.0f, 0.0f);
-float  LightLength     = 1.0f;
-float4 MaterialDiffuse = float4(1.0f, 1.0f, 1.0f, 1.0f);
-uint   DiffuseSource   = (uint)D3DMCS_COLOR1;
+float3 LightDirection   = float3(0.0f, -1.0f, 0.0f);
+float4 MaterialDiffuse  = float4(1.0f, 1.0f, 1.0f, 1.0f);
+float4 MaterialSpecular = float4(0.0f, 0.0f, 0.0f, 0.0f);
+float  MaterialPower    = 1.0f;
+uint   DiffuseSource    = (uint)D3DMCS_COLOR1;
 
 float3 NormalScale = float3(1, 1, 1);
 
@@ -211,11 +210,8 @@ PS_IN vs_main(VS_IN input, uniform bool lightEnabled, uniform bool interpolate =
 
 		if (UseSourceLight == true)
 		{
-			// typing this shit is annoying as fuck
-			// SourceLight.SP_pow
-			output.diffuse = float4(_dot * (diffuse.rgb * SourceLight.DIF), diffuse.a);
-			//output.specular = float4(pow(_dot, SourceLight.SP_pow) * SourceLight.SP, 0);
-			output.specular = 0;
+			output.diffuse = max(0, float4(diffuse.rgb * SourceLight.ambient * _dot, diffuse.a));
+			output.specular = max(0, float4(1, 1, 1, 0.0f) * pow(_dot, MaterialPower));
 		}
 		else
 		{

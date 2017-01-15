@@ -39,9 +39,12 @@ namespace param
 	extern EffectParameter<float> FogDensity;
 	extern EffectParameter<D3DXCOLOR> FogColor;
 	extern EffectParameter<D3DXVECTOR3> LightDirection;
-	extern EffectParameter<float> LightLength;
 	extern EffectParameter<int> DiffuseSource;
+
 	extern EffectParameter<D3DXCOLOR> MaterialDiffuse;
+	extern EffectParameter<D3DXCOLOR> MaterialSpecular;
+	extern EffectParameter<float> MaterialPower;
+
 	extern EffectParameter<float> AlphaRef;
 	extern EffectParameter<D3DXVECTOR3> NormalScale;
 	extern EffectParameter<bool> UseSourceLight;

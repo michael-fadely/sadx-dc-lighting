@@ -21,11 +21,9 @@ struct SourceLight_t
 {
 	Angle y, z;
 
-	float DIF[3];
-	float AMB[3];
-	float SP_pow;
-	float SP[3];
-	float unknown;
+	float ambient[3];
+	float unknown[2];
+	float ambient_power;
 
 	bool operator==(const SourceLight_t& rhs) const;
 	bool operator!=(const SourceLight_t& rhs) const;
