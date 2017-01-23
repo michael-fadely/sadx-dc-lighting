@@ -190,6 +190,25 @@ bool LanternInstance::UsePalette()
 	return use_palette;
 }
 
+inline bool GameModeIngame()
+{
+	switch ((GameModes)GameMode)
+	{
+		case GameModes_Restart:
+		case GameModes_Adventure_ActionStg:
+		case GameModes_Adventure_Field:
+		case GameModes_Trial:
+		case GameModes_Mission:
+		case GameModes_Restart2:
+		case GameModes_StartAdventure:
+		case GameModes_Adventure_Story:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
 /// <summary>
 /// Returns a string in the format "_[0-9]", "1[A-Z]", "2[A-Z]", etc.
 /// </summary>
@@ -230,6 +249,16 @@ std::string LanternInstance::PaletteId(Sint32 level, Sint32 act)
 		{
 			default:
 			{
+				break;
+			}
+
+			case LevelIDs_HedgehogHammer:
+			{
+				if (GameModeIngame())
+				{
+					level = LevelIDs_EggCarrierInside;
+					act = 2;
+				}
 				break;
 			}
 
