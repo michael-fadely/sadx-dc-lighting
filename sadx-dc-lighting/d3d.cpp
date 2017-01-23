@@ -103,9 +103,17 @@ namespace param
 	EffectParameter<float> FogDensity(&d3d::effect, "FogDensity", 0.0f);
 	EffectParameter<D3DXCOLOR> FogColor(&d3d::effect, "FogColor", {});
 	EffectParameter<D3DXVECTOR3> LightDirection(&d3d::effect, "LightDirection", {});
-	EffectParameter<float> LightLength(&d3d::effect, "LightLength", 0.0f);
 	EffectParameter<int> DiffuseSource(&d3d::effect, "DiffuseSource", 0);
+
 	EffectParameter<D3DXCOLOR> MaterialDiffuse(&d3d::effect, "MaterialDiffuse", {});
+
+#ifdef USE_SL
+	EffectParameter<D3DXCOLOR> MaterialSpecular(&d3d::effect, "MaterialSpecular", {});
+	EffectParameter<float> MaterialPower(&d3d::effect, "MaterialPower", 1.0f);
+	EffectParameter<bool> UseSourceLight(&d3d::effect, "UseSourceLight", false);
+	EffectParameter<SourceLight_t> SourceLight(&d3d::effect, "SourceLight", {});
+#endif
+
 	EffectParameter<float> AlphaRef(&d3d::effect, "AlphaRef", 0.0f);
 	EffectParameter<D3DXVECTOR3> NormalScale(&d3d::effect, "NormalScale", { 1.0f, 1.0f, 1.0f });
 
@@ -130,11 +138,17 @@ namespace param
 		&FogDensity,
 		&FogColor,
 		&LightDirection,
-		&LightLength,
 		&DiffuseSource,
 		&MaterialDiffuse,
 		&AlphaRef,
-		&NormalScale, 
+		&NormalScale,
+
+#ifdef USE_SL
+		&SourceLight,
+		&MaterialSpecular,
+		&MaterialPower,
+		&UseSourceLight,
+#endif
 	};
 }
 
@@ -240,11 +254,7 @@ static void SetLightParameters()
 
 	D3DLIGHT9 light;
 	device->GetLight(0, &light);
-	auto dir = -*(D3DXVECTOR3*)&light.Direction;
-	auto mag = D3DXVec3Length(&dir);
-
-	param::LightDirection = dir;
-	param::LightLength = mag;
+	param::LightDirection = -*(D3DXVECTOR3*)&light.Direction;
 }
 
 #pragma region Trampolines

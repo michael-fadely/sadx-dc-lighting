@@ -102,12 +102,28 @@ float  FogEnd;
 float  FogDensity;
 float4 FogColor;
 
-float3 LightDirection  = float3(0.0f, -1.0f, 0.0f);
-float  LightLength     = 1.0f;
-float4 MaterialDiffuse = float4(1.0f, 1.0f, 1.0f, 1.0f);
-uint   DiffuseSource   = (uint)D3DMCS_COLOR1;
+float3 LightDirection   = float3(0.0f, -1.0f, 0.0f);
+float4 MaterialDiffuse  = float4(1.0f, 1.0f, 1.0f, 1.0f);
+uint   DiffuseSource    = (uint)D3DMCS_COLOR1;
 
 float3 NormalScale = float3(1, 1, 1);
+
+#ifdef USE_SL
+
+struct SourceLight_t
+{
+	int y, z;
+	float3 ambient;
+	float2 unknown;
+	float power;
+};
+
+bool          UseSourceLight   = false;
+float4        MaterialSpecular = float4(0.0f, 0.0f, 0.0f, 0.0f);
+float         MaterialPower    = 1.0f;
+SourceLight_t SourceLight;
+
+#endif
 
 // Helpers
 
@@ -187,6 +203,7 @@ PS_IN vs_main(VS_IN input, uniform bool lightEnabled, uniform bool interpolate =
 		// This is the "brightness index" calculation. Just a dot product
 		// of the vertex normal (in world space) and the light direction.
 		float _dot = dot(LightDirection, worldNormal);
+		float4 diffuse = GetDiffuse(input.color);
 
 		// The palette's brightest point is 0, and its darkest point is 1,
 		// so we push the dot product (-1 .. 1) into the rage 0 .. 1, and
@@ -195,24 +212,34 @@ PS_IN vs_main(VS_IN input, uniform bool lightEnabled, uniform bool interpolate =
 		// HACK: This clamp prevents a visual bug in the Mystic Ruins past (shrine on fire)
 		float i = floor(clamp(1 - (_dot + 1) / 2, 0, 0.99) * 255) / 255;
 
-		float4 diffuse = GetDiffuse(input.color);
-
-		float4 pdiffuse;
-		float4 pspecular;
-
-		if (interpolate)
+#ifdef USE_SL
+		if (UseSourceLight == true)
 		{
-			pdiffuse = BlendPalettes(diffuseSampler, diffuseSamplerB, i);
-			pspecular = BlendPalettes(specularSampler, specularSamplerB, i);
+			output.diffuse = max(0, float4(diffuse.rgb * SourceLight.ambient * _dot, diffuse.a));
+			output.specular = max(0, float4(1, 1, 1, 0.0f) * pow(_dot, MaterialPower));
 		}
 		else
 		{
-			pdiffuse = tex2Dlod(diffuseSampler, float4(i, 0, 0, 0));
-			pspecular = tex2Dlod(specularSampler, float4(i, 0, 0, 0));
-		}
+#endif
+			float4 pdiffuse;
+			float4 pspecular;
+
+			if (interpolate)
+			{
+				pdiffuse = BlendPalettes(diffuseSampler, diffuseSamplerB, i);
+				pspecular = BlendPalettes(specularSampler, specularSamplerB, i);
+			}
+			else
+			{
+				pdiffuse = tex2Dlod(diffuseSampler, float4(i, 0, 0, 0));
+				pspecular = tex2Dlod(specularSampler, float4(i, 0, 0, 0));
+			}
 		
-		output.diffuse = float4((diffuse * pdiffuse).rgb, diffuse.a);
-		output.specular = float4(pspecular.rgb, 0.0f);
+			output.diffuse = float4((diffuse * pdiffuse).rgb, diffuse.a);
+			output.specular = float4(pspecular.rgb, 0.0f);
+#ifdef USE_SL
+		}
+#endif
 	}
 	else
 	{

@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "lantern.h"
 #include "EffectParameter.h"
 
 template<>

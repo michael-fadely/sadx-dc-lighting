@@ -91,17 +91,27 @@ static void SetMaterialParameters(const D3DMATERIAL9& material)
 
 	D3DMATERIALCOLORSOURCE colorsource;
 	device->GetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, (DWORD*)&colorsource);
-	param::DiffuseSource = colorsource;
+
+	param::DiffuseSource   = colorsource;
 	param::MaterialDiffuse = material.Diffuse;
+
+#ifdef USE_SL
+	param::MaterialSpecular = material.Specular;
+	param::MaterialPower    = material.Power;
+#endif
 }
 
 static void __cdecl CorrectMaterial_r()
 {
 	using namespace d3d;
-	D3DMATERIAL9 material; // [sp+8h] [bp-44h]@1
+	D3DMATERIAL9 material;
 
 	device->GetMaterial(&material);
-	material.Power = LSPalette.SP_pow;
+
+	if (!LanternInstance::UsePalette())
+	{
+		material.Power = LSPalette.SP_pow;
+	}
 
 	material.Ambient.r /= 255.0f;
 	material.Ambient.g /= 255.0f;
@@ -331,16 +341,16 @@ extern "C"
 		globals::system.append("\\system\\");
 
 		d3d::InitTrampolines();
-		CharSel_LoadA_t            = new Trampoline(0x00512BC0, 0x00512BC6, CharSel_LoadA_r);
-		Direct3D_ParseMaterial_t   = new Trampoline(0x00784850, 0x00784858, Direct3D_ParseMaterial_r);
-		GoToNextLevel_t            = new Trampoline(0x00414610, 0x00414616, GoToNextLevel_r);
-		IncrementAct_t             = new Trampoline(0x004146E0, 0x004146E5, IncrementAct_r);
-		LoadLevelFiles_t           = new Trampoline(0x00422AD0, 0x00422AD8, LoadLevelFiles_r);
-		SetLevelAndAct_t           = new Trampoline(0x00414570, 0x00414576, SetLevelAndAct_r);
-		GoToNextChaoStage_t        = new Trampoline(0x00715130, 0x00715135, GoToNextChaoStage_r);
-		SetTimeOfDay_t             = new Trampoline(0x00412C00, 0x00412C05, SetTimeOfDay_r);
-		DrawLandTable_t            = new Trampoline(0x0043A6A0, 0x0043A6A8, DrawLandTable_r);
-		Direct3D_SetTexList_t      = new Trampoline(0x0077F3D0, 0x0077F3D8, Direct3D_SetTexList_r);
+		CharSel_LoadA_t          = new Trampoline(0x00512BC0, 0x00512BC6, CharSel_LoadA_r);
+		Direct3D_ParseMaterial_t = new Trampoline(0x00784850, 0x00784858, Direct3D_ParseMaterial_r);
+		GoToNextLevel_t          = new Trampoline(0x00414610, 0x00414616, GoToNextLevel_r);
+		IncrementAct_t           = new Trampoline(0x004146E0, 0x004146E5, IncrementAct_r);
+		LoadLevelFiles_t         = new Trampoline(0x00422AD0, 0x00422AD8, LoadLevelFiles_r);
+		SetLevelAndAct_t         = new Trampoline(0x00414570, 0x00414576, SetLevelAndAct_r);
+		GoToNextChaoStage_t      = new Trampoline(0x00715130, 0x00715135, GoToNextChaoStage_r);
+		SetTimeOfDay_t           = new Trampoline(0x00412C00, 0x00412C05, SetTimeOfDay_r);
+		DrawLandTable_t          = new Trampoline(0x0043A6A0, 0x0043A6A8, DrawLandTable_r);
+		Direct3D_SetTexList_t    = new Trampoline(0x0077F3D0, 0x0077F3D8, Direct3D_SetTexList_r);
 
 		// Correcting a function call since they're relative
 		WriteCall(IncrementAct_t->Target(), (void*)0x00424830);

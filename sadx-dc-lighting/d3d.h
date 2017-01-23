@@ -5,6 +5,7 @@
 #include <d3d8to9.hpp>
 #include <ninja.h>
 
+#include "lantern.h"
 #include "EffectParameter.h"
 
 namespace d3d
@@ -38,11 +39,19 @@ namespace param
 	extern EffectParameter<float> FogDensity;
 	extern EffectParameter<D3DXCOLOR> FogColor;
 	extern EffectParameter<D3DXVECTOR3> LightDirection;
-	extern EffectParameter<float> LightLength;
 	extern EffectParameter<int> DiffuseSource;
+
 	extern EffectParameter<D3DXCOLOR> MaterialDiffuse;
+
 	extern EffectParameter<float> AlphaRef;
 	extern EffectParameter<D3DXVECTOR3> NormalScale;
+
+#ifdef USE_SL
+	extern EffectParameter<D3DXCOLOR> MaterialSpecular;
+	extern EffectParameter<float> MaterialPower;
+	extern EffectParameter<bool> UseSourceLight;
+	extern EffectParameter<SourceLight_t> SourceLight;
+#endif
 }
 
 // Same as in the mod loader except with d3d8to9 types.
