@@ -156,10 +156,10 @@ void FixCharacterMaterials()
 	auto handle = get_handle();
 
 #if _DEBUG
-	int ids[] = { 2, 8, 8, 6, 1, 0 };
-	actions("SONIC", 149, ids);
-	objects("SONIC", 79, ids);
-	models ("SONIC", 11, ids);
+	int ids[] = { 1, 18, 3, 27, 33 };
+	actions("E102", 78, ids);
+	objects("E102", 28, ids);
+	//models ("E102", 11, ids);
 	materials.clear();
 #endif
 	
@@ -432,6 +432,9 @@ void FixCharacterMaterials()
 	matlist_001286B8[0].attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // object_00128A90 Big's fishing rod (w/ upgrades)
 	matlist_001286B8[1].attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // object_00128A90 Big's fishing rod (w/ upgrades)
 	matlist_001286B8[2].attrflags |=  NJD_FLAG_IGNORE_SPECULAR; // object_00128A90 Big's fishing rod (w/ upgrades)
+
+	DataArray_(NJS_MATERIAL, matlist_0020B1D0, (0x0020B1D0 + handle), 5); // Gamma's laser thing
+	matlist_0020B1D0[4].attrflags |= NJD_FLAG_IGNORE_LIGHT;
 
 	DataArray_(NJS_MATERIAL, matlist_001FDBA0, (0x001FDBA0 + handle), 5);
 	matlist_001FDBA0[1].attrflags |=  NJD_FLAG_IGNORE_LIGHT; // object_001FDF7C Gamma's light
