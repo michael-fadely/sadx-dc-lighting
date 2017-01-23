@@ -377,17 +377,29 @@ void FixCharacterMaterials()
 	matlist_00125450[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
 
 	// Big's eyes
+	// whites
 	DataArray_(NJS_MATERIAL, matlist_0011B788, (0x0011B788 + handle), 1);
 	DataArray_(NJS_MATERIAL, matlist_0011B978, (0x0011B978 + handle), 1);
+	// pupils
+	DataArray_(NJS_MATERIAL, matlist_0011B630, (0x0011B630 + handle), 1);
+	DataArray_(NJS_MATERIAL, matlist_0011B4D8, (0x0011B4D8 + handle), 1);
 	// (cutscenes)
+	// whites
 	DataArray_(NJS_MATERIAL, matlist_00129208, (0x00129208 + handle), 1);
 	DataArray_(NJS_MATERIAL, matlist_001293F8, (0x001293F8 + handle), 1);
+	// pupils
+	DataArray_(NJS_MATERIAL, matlist_00129910, (0x00129910 + handle), 1);
+	DataArray_(NJS_MATERIAL, matlist_001297B8, (0x001297B8 + handle), 1);
 
-	matlist_0011B788[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
-	matlist_0011B978[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
+	matlist_0011B788[0].attrflags |= NJD_FLAG_IGNORE_LIGHT;
+	matlist_0011B978[0].attrflags |= NJD_FLAG_IGNORE_LIGHT;
+	matlist_0011B630[0].attrflags |= NJD_FLAG_IGNORE_LIGHT;
+	matlist_0011B4D8[0].attrflags |= NJD_FLAG_IGNORE_LIGHT;
 	// (cutscenes)
-	matlist_00129208[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
-	matlist_001293F8[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
+	matlist_00129208[0].attrflags |= NJD_FLAG_IGNORE_LIGHT;
+	matlist_001293F8[0].attrflags |= NJD_FLAG_IGNORE_LIGHT;
+	matlist_00129910[0].attrflags |= NJD_FLAG_IGNORE_LIGHT;
+	matlist_001297B8[0].attrflags |= NJD_FLAG_IGNORE_LIGHT;
 
 	// Big's fishing rod (without upgrades)
 	DataArray_(NJS_MATERIAL, matlist_0011E8E0, (0x0011E8E0 + handle), 3);
