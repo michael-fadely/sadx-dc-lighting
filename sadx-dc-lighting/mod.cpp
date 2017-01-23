@@ -92,10 +92,13 @@ static void SetMaterialParameters(const D3DMATERIAL9& material)
 	D3DMATERIALCOLORSOURCE colorsource;
 	device->GetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, (DWORD*)&colorsource);
 
-	param::DiffuseSource    = colorsource;
-	param::MaterialDiffuse  = material.Diffuse;
+	param::DiffuseSource   = colorsource;
+	param::MaterialDiffuse = material.Diffuse;
+
+#ifdef USE_SL
 	param::MaterialSpecular = material.Specular;
 	param::MaterialPower    = material.Power;
+#endif
 }
 
 static void __cdecl CorrectMaterial_r()

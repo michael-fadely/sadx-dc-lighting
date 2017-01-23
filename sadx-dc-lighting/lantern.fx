@@ -76,14 +76,6 @@ sampler2D specularSamplerB = sampler_state
 	AddressV  = Clamp;
 };
 
-struct SourceLight_t
-{
-	int y, z;
-	float3 ambient;
-	float2 unknown;
-	float power;
-};
-
 float4x4 WorldMatrix;
 float4x4 wvMatrix;
 float4x4 ProjectionMatrix;
@@ -112,14 +104,26 @@ float4 FogColor;
 
 float3 LightDirection   = float3(0.0f, -1.0f, 0.0f);
 float4 MaterialDiffuse  = float4(1.0f, 1.0f, 1.0f, 1.0f);
-float4 MaterialSpecular = float4(0.0f, 0.0f, 0.0f, 0.0f);
-float  MaterialPower    = 1.0f;
 uint   DiffuseSource    = (uint)D3DMCS_COLOR1;
 
 float3 NormalScale = float3(1, 1, 1);
 
-bool UseSourceLight = false;
+#ifdef USE_SL
+
+struct SourceLight_t
+{
+	int y, z;
+	float3 ambient;
+	float2 unknown;
+	float power;
+};
+
+bool          UseSourceLight   = false;
+float4        MaterialSpecular = float4(0.0f, 0.0f, 0.0f, 0.0f);
+float         MaterialPower    = 1.0f;
 SourceLight_t SourceLight;
+
+#endif
 
 // Helpers
 
@@ -208,6 +212,7 @@ PS_IN vs_main(VS_IN input, uniform bool lightEnabled, uniform bool interpolate =
 		// HACK: This clamp prevents a visual bug in the Mystic Ruins past (shrine on fire)
 		float i = floor(clamp(1 - (_dot + 1) / 2, 0, 0.99) * 255) / 255;
 
+#ifdef USE_SL
 		if (UseSourceLight == true)
 		{
 			output.diffuse = max(0, float4(diffuse.rgb * SourceLight.ambient * _dot, diffuse.a));
@@ -215,6 +220,7 @@ PS_IN vs_main(VS_IN input, uniform bool lightEnabled, uniform bool interpolate =
 		}
 		else
 		{
+#endif
 			float4 pdiffuse;
 			float4 pspecular;
 
@@ -231,7 +237,9 @@ PS_IN vs_main(VS_IN input, uniform bool lightEnabled, uniform bool interpolate =
 		
 			output.diffuse = float4((diffuse * pdiffuse).rgb, diffuse.a);
 			output.specular = float4(pspecular.rgb, 0.0f);
+#ifdef USE_SL
 		}
+#endif
 	}
 	else
 	{

@@ -106,13 +106,16 @@ namespace param
 	EffectParameter<int> DiffuseSource(&d3d::effect, "DiffuseSource", 0);
 
 	EffectParameter<D3DXCOLOR> MaterialDiffuse(&d3d::effect, "MaterialDiffuse", {});
+
+#ifdef USE_SL
 	EffectParameter<D3DXCOLOR> MaterialSpecular(&d3d::effect, "MaterialSpecular", {});
 	EffectParameter<float> MaterialPower(&d3d::effect, "MaterialPower", 1.0f);
+	EffectParameter<bool> UseSourceLight(&d3d::effect, "UseSourceLight", false);
+	EffectParameter<SourceLight_t> SourceLight(&d3d::effect, "SourceLight", {});
+#endif
 
 	EffectParameter<float> AlphaRef(&d3d::effect, "AlphaRef", 0.0f);
 	EffectParameter<D3DXVECTOR3> NormalScale(&d3d::effect, "NormalScale", { 1.0f, 1.0f, 1.0f });
-	EffectParameter<bool> UseSourceLight(&d3d::effect, "UseSourceLight", false);
-	EffectParameter<SourceLight_t> SourceLight(&d3d::effect, "SourceLight", {});
 
 	static IEffectParameter* const parameters[] = {
 		&BaseTexture,
@@ -137,12 +140,15 @@ namespace param
 		&LightDirection,
 		&DiffuseSource,
 		&MaterialDiffuse,
-		&MaterialSpecular,
-		&MaterialPower,
 		&AlphaRef,
 		&NormalScale,
+
+#ifdef USE_SL
+		&SourceLight,
+		&MaterialSpecular,
+		&MaterialPower,
 		&UseSourceLight,
-		&SourceLight
+#endif
 	};
 }
 
