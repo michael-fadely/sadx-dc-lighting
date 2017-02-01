@@ -8,14 +8,6 @@
 
 #include "EffectParameter.h"
 
-struct LanternPalette
-{
-	// The first set of colors in the pair.
-	IDirect3DTexture9* diffuse;
-	// The second set of colors in the pair.
-	IDirect3DTexture9* specular;
-};
-
 #pragma pack(push, 1)
 struct SourceLight_t
 {
@@ -61,9 +53,9 @@ class LanternInstance : ILantern
 	static float blend_factor;
 	static bool use_palette;
 
-	EffectParameter<IDirect3DTexture9*>* diffuse_param;
-	EffectParameter<IDirect3DTexture9*>* specular_param;
-	LanternPalette palette[8];
+	EffectParameter<Texture>* atlas;
+	EffectParameter<float>* diffuse_param;
+	EffectParameter<float>* specular_param;
 
 	Sint32 blend_type;
 	Sint8 last_time;
@@ -74,7 +66,7 @@ class LanternInstance : ILantern
 	void set_specular(Sint32 specular) const;
 
 public:
-	LanternInstance(EffectParameter<IDirect3DTexture9*>* diffuse, EffectParameter<IDirect3DTexture9*>* specular);
+	LanternInstance(EffectParameter<Texture>* atlas, EffectParameter<float>* diffuse_param, EffectParameter<float>* specular_param);
 	LanternInstance(LanternInstance&& instance) noexcept;
 
 	LanternInstance(const LanternInstance&) = default;

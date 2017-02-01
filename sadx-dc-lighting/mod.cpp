@@ -12,6 +12,7 @@
 #include "globals.h"
 #include "lantern.h"
 #include "Obj_Past.h"
+#include "Obj_SkyDeck.h"
 #include "FixChaoGardenMaterials.h"
 #include "FixCharacterMaterials.h"
 
@@ -334,7 +335,7 @@ extern "C"
 			return;
 		}
 
-		LanternInstance base(&param::DiffusePalette, &param::SpecularPalette);
+		LanternInstance base(&param::PaletteA, &param::DiffuseIndexA, &param::SpecularIndexA);
 		globals::palettes.Add(base);
 
 		globals::system = path;

@@ -18,6 +18,7 @@
 #if 1
 // Windows API
 #include <Windows.h>
+#include <atlbase.h>
 
 // Direct3D
 #include <d3d9.h>
