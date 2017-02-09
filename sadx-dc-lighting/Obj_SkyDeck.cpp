@@ -48,6 +48,7 @@ static void __cdecl Obj_SkyDeck_Delete(ObjectMaster* _this)
 {
 	globals::palettes.Remove(handle);
 	LanternInstance::SetBlendFactor(0.0f);
+	handle = 0;
 }
 static void __cdecl Obj_SkyDeck_r(ObjectMaster* _this)
 {
@@ -66,6 +67,7 @@ static void __cdecl Obj_SkyDeck_r(ObjectMaster* _this)
 	LanternInstance lantern(&param::DiffusePaletteB, &param::SpecularPaletteB);
 	lantern.LoadPalette(LevelIDs_SkyDeck, 1);
 	handle = globals::palettes.Add(lantern);
+	globals::palettes.SetLastLevel(-1, -1);
 }
 
 void SkyDeck_Init()
