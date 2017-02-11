@@ -316,9 +316,13 @@ static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
 
 static void __cdecl NormalScale(float x, float y, float z)
 {
-	if (x != 0.0f || y != 0.0f || z != 0.0f)
+	if (x > FLT_EPSILON || y > FLT_EPSILON || z > FLT_EPSILON)
 	{
 		param::NormalScale = D3DXVECTOR3(x, y, z);
+	}
+	else
+	{
+		param::NormalScale = D3DXVECTOR3(1.0f, 1.0f, 1.0f);
 	}
 }
 
