@@ -634,6 +634,7 @@ void LanternInstance::SetSelfBlend(Sint32 type, Sint32 diffuse, Sint32 specular)
 	}
 
 	blend_type = type;
+	param::PaletteB = param::PaletteA;
 
 	if (diffuse > -1)
 	{

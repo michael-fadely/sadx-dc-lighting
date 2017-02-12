@@ -39,6 +39,7 @@ public:
 	void Clear() override;
 	void Commit() override;
 	void operator=(const T& value);
+	void operator=(const EffectParameter<T>& value);
 };
 
 template <typename T>
@@ -68,6 +69,12 @@ void EffectParameter<T>::operator=(const T& value)
 {
 	assigned = true;
 	current = value;
+}
+
+template <typename T>
+void EffectParameter<T>::operator=(const EffectParameter<T>& value)
+{
+	*this = value.current;
 }
 
 template<> void EffectParameter<bool>::Commit();
