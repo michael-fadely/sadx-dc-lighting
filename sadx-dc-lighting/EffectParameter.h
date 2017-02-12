@@ -1,8 +1,11 @@
 #pragma once
 
 #include <string>
+#include <atlbase.h>
 #include <d3d9.h>
 #include <d3dx9effect.h>
+
+using Texture = CComPtr<IDirect3DTexture9>;
 
 class IEffectParameter
 {
@@ -36,6 +39,7 @@ public:
 	void Clear() override;
 	void Commit() override;
 	void operator=(const T& value);
+	void operator=(const EffectParameter<T>& value);
 };
 
 template <typename T>
@@ -67,7 +71,11 @@ void EffectParameter<T>::operator=(const T& value)
 	current = value;
 }
 
-template<> void EffectParameter<IDirect3DTexture9*>::operator=(IDirect3DTexture9* const& value);
+template <typename T>
+void EffectParameter<T>::operator=(const EffectParameter<T>& value)
+{
+	*this = value.current;
+}
 
 template<> void EffectParameter<bool>::Commit();
 template<> void EffectParameter<int>::Commit();
@@ -76,4 +84,4 @@ template<> void EffectParameter<D3DXVECTOR4>::Commit();
 template<> void EffectParameter<D3DXVECTOR3>::Commit();
 template<> void EffectParameter<D3DXCOLOR>::Commit();
 template<> void EffectParameter<D3DXMATRIX>::Commit();
-template<> void EffectParameter<IDirect3DTexture9*>::Commit();
+template<> void EffectParameter<Texture>::Commit();

@@ -30,46 +30,25 @@ struct PS_IN
 };
 
 Texture2D BaseTexture;
-
-Texture2D DiffusePalette;
-Texture2D DiffusePaletteB;
-
-Texture2D SpecularPalette;
-Texture2D SpecularPaletteB;
-
-float BlendFactor = 0.0f;
-
 sampler2D baseSampler = sampler_state
 {
 	Texture = <BaseTexture>;
 };
-sampler2D diffuseSampler = sampler_state
+
+Texture2D PaletteA;
+sampler2D atlasSamplerA = sampler_state
 {
-	Texture   = <DiffusePalette>;
+	Texture   = <PaletteA>;
 	MinFilter = Point;
 	MagFilter = Point;
 	AddressU  = Clamp;
 	AddressV  = Clamp;
 };
-sampler2D diffuseSamplerB = sampler_state
+
+Texture2D PaletteB;
+sampler2D atlasSamplerB = sampler_state
 {
-	Texture   = <DiffusePaletteB>;
-	MinFilter = Point;
-	MagFilter = Point;
-	AddressU  = Clamp;
-	AddressV  = Clamp;
-};
-sampler2D specularSampler = sampler_state
-{
-	Texture   = <SpecularPalette>;
-	MinFilter = Point;
-	MagFilter = Point;
-	AddressU  = Clamp;
-	AddressV  = Clamp;
-};
-sampler2D specularSamplerB = sampler_state
-{
-	Texture   = <SpecularPaletteB>;
+	Texture   = <PaletteB>;
 	MinFilter = Point;
 	MagFilter = Point;
 	AddressU  = Clamp;
@@ -90,7 +69,13 @@ float4x4 TextureTransform = {
 };
 
 // This never changes
-static float  AlphaRef = 16.0f / 255.0f;
+static float AlphaRef = 16.0f / 255.0f;
+
+// Pre-adjusted on the CPU before being sent to the shader.
+float DiffuseIndexA = 0;
+float DiffuseIndexB = 0;
+float SpecularIndexA = 0;
+float SpecularIndexB = 0;
 
 bool TextureEnabled    = true;
 bool EnvironmentMapped = false;
@@ -107,6 +92,8 @@ float4 MaterialDiffuse  = float4(1.0f, 1.0f, 1.0f, 1.0f);
 uint   DiffuseSource    = (uint)D3DMCS_COLOR1;
 
 float3 NormalScale = float3(1, 1, 1);
+
+float BlendFactor = 0.0f;
 
 #ifdef USE_SL
 
@@ -165,13 +152,6 @@ float CalcFogFactor(float d)
 	return clamp(fogCoeff, 0, 1);
 }
 
-float4 BlendPalettes(sampler2D samplerA, sampler2D samplerB, float i)
-{
-	float4 a = tex2Dlod(samplerA, float4(i, 0, 0, 0));
-	float4 b = tex2Dlod(samplerB, float4(i, 0, 0, 0));
-	return lerp(a, b, BlendFactor);
-}
-
 // Vertex shaders
 
 PS_IN vs_main(VS_IN input, uniform bool lightEnabled, uniform bool interpolate = true)
@@ -221,20 +201,18 @@ PS_IN vs_main(VS_IN input, uniform bool lightEnabled, uniform bool interpolate =
 		else
 		{
 #endif
-			float4 pdiffuse;
-			float4 pspecular;
+			float4 pdiffuse = tex2Dlod(atlasSamplerA, float4(i, DiffuseIndexA, 0, 0));
+			float4 pspecular = tex2Dlod(atlasSamplerA, float4(i, SpecularIndexA, 0, 0));
 
 			if (interpolate)
 			{
-				pdiffuse = BlendPalettes(diffuseSampler, diffuseSamplerB, i);
-				pspecular = BlendPalettes(specularSampler, specularSamplerB, i);
+				float4 bdiffuse = tex2Dlod(atlasSamplerB, float4(i, DiffuseIndexB, 0, 0));
+				float4 bspecular = tex2Dlod(atlasSamplerB, float4(i, SpecularIndexB, 0, 0));
+
+				pdiffuse = lerp(pdiffuse, bdiffuse, BlendFactor);
+				pspecular = lerp(pspecular, bspecular, BlendFactor);
 			}
-			else
-			{
-				pdiffuse = tex2Dlod(diffuseSampler, float4(i, 0, 0, 0));
-				pspecular = tex2Dlod(specularSampler, float4(i, 0, 0, 0));
-			}
-		
+
 			output.diffuse = float4((diffuse * pdiffuse).rgb, diffuse.a);
 			output.specular = float4(pspecular.rgb, 0.0f);
 #ifdef USE_SL

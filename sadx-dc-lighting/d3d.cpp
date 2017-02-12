@@ -83,11 +83,16 @@ namespace d3d
 
 namespace param
 {
-	EffectParameter<IDirect3DTexture9*> BaseTexture(&d3d::effect, "BaseTexture", nullptr);
-	EffectParameter<IDirect3DTexture9*> DiffusePalette(&d3d::effect, "DiffusePalette", nullptr);
-	EffectParameter<IDirect3DTexture9*> DiffusePaletteB(&d3d::effect, "DiffusePaletteB", nullptr);
-	EffectParameter<IDirect3DTexture9*> SpecularPalette(&d3d::effect, "SpecularPalette", nullptr);
-	EffectParameter<IDirect3DTexture9*> SpecularPaletteB(&d3d::effect, "SpecularPaletteB", nullptr);
+	EffectParameter<Texture> BaseTexture(&d3d::effect, "BaseTexture", nullptr);
+
+	EffectParameter<Texture> PaletteA(&d3d::effect, "PaletteA", nullptr);
+	EffectParameter<float> DiffuseIndexA(&d3d::effect, "DiffuseIndexA", 0.0f);
+	EffectParameter<float> SpecularIndexA(&d3d::effect, "SpecularIndexA", 0.0f);
+
+	EffectParameter<Texture> PaletteB(&d3d::effect, "PaletteB", nullptr);
+	EffectParameter<float> DiffuseIndexB(&d3d::effect, "DiffuseIndexB", 0.0f);
+	EffectParameter<float> SpecularIndexB(&d3d::effect, "SpecularIndexB", 0.0f);
+
 	EffectParameter<float> BlendFactor(&d3d::effect, "BlendFactor", 0.0f);
 	EffectParameter<D3DXMATRIX> WorldMatrix(&d3d::effect, "WorldMatrix", {});
 	EffectParameter<D3DXMATRIX> wvMatrix(&d3d::effect, "wvMatrix", {});
@@ -119,10 +124,15 @@ namespace param
 
 	static IEffectParameter* const parameters[] = {
 		&BaseTexture,
-		&DiffusePalette,
-		&DiffusePaletteB,
-		&SpecularPalette,
-		&SpecularPaletteB,
+
+		&PaletteA,
+		&DiffuseIndexA,
+		&SpecularIndexA,
+
+		&PaletteB,
+		&DiffuseIndexB,
+		&SpecularIndexB,
+		
 		&BlendFactor,
 		&WorldMatrix,
 		&wvMatrix,

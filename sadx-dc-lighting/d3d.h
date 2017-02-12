@@ -19,11 +19,17 @@ namespace d3d
 
 namespace param
 {
-	extern EffectParameter<IDirect3DTexture9*> BaseTexture;
-	extern EffectParameter<IDirect3DTexture9*> DiffusePalette;
-	extern EffectParameter<IDirect3DTexture9*> DiffusePaletteB;
-	extern EffectParameter<IDirect3DTexture9*> SpecularPalette;
-	extern EffectParameter<IDirect3DTexture9*> SpecularPaletteB;
+	extern EffectParameter<Texture> BaseTexture;
+
+	extern EffectParameter<Texture> PaletteA;
+	extern EffectParameter<float> DiffuseIndexA;
+	extern EffectParameter<float> SpecularIndexA;
+
+
+	extern EffectParameter<Texture> PaletteB;
+	extern EffectParameter<float> DiffuseIndexB;
+	extern EffectParameter<float> SpecularIndexB;
+
 	extern EffectParameter<float> BlendFactor;
 	extern EffectParameter<D3DXMATRIX> WorldMatrix;
 	extern EffectParameter<D3DXMATRIX> wvMatrix;

@@ -1,6 +1,8 @@
 #include "stdafx.h"
 
+#include <atlbase.h>
 #include <d3d9.h>
+
 #include <exception>
 #include <string>
 #include <sstream>
@@ -41,76 +43,6 @@ void EffectParameter<SourceLight_t>::Commit()
 		(*effect)->SetValue(handle, &current, sizeof(SourceLight_t));
 		Clear();
 	}
-}
-
-/// <summary>
-/// Get the pixel data of the specified texture.
-/// </summary>
-/// <param name="texture">The texture to lock.</param>
-/// <returns>The locked rect.</returns>
-inline D3DLOCKED_RECT GetTextureRect(IDirect3DTexture9* texture)
-{
-	D3DLOCKED_RECT result;
-	HRESULT hresult = texture->LockRect(0, &result, nullptr, 0);
-	if (FAILED(hresult))
-	{
-		throw std::exception("Failed to lock texture rect!");
-	}
-	return result;
-}
-
-/// <summary>
-/// Creates a 1x256 image to be used as a palette.
-/// </summary>
-/// <param name="texture">Destination texture.</param>
-inline void CreateTexture(IDirect3DTexture9*& texture)
-{
-	if (texture)
-	{
-		texture->Release();
-		texture = nullptr;
-	}
-
-	if (FAILED(d3d::device->CreateTexture(256, 1, 1, 0, D3DFMT_X8R8G8B8, D3DPOOL_MANAGED, &texture, nullptr)))
-	{
-		throw std::exception("Failed to create palette texture!");
-	}
-}
-
-/// <summary>
-/// Creates a pair of texture palettes from the provided color pairs.
-/// </summary>
-/// <param name="palette">The destination palette structure.</param>
-/// <param name="pairs">Array of 256 color pairs. (512 total)</param>
-static void CreatePaletteTexturePair(LanternPalette& palette, const ColorPair* pairs)
-{
-	using namespace d3d;
-	if (device == nullptr)
-	{
-		throw std::exception("Device is null.");
-	}
-
-	CreateTexture(palette.diffuse);
-	CreateTexture(palette.specular);
-
-	auto diffuse_rect = GetTextureRect(palette.diffuse);
-	auto diffuse_data = (NJS_COLOR*)diffuse_rect.pBits;
-
-	auto specular_rect = GetTextureRect(palette.specular);
-	auto specular_data = (NJS_COLOR*)specular_rect.pBits;
-
-	for (size_t i = 0; i < 256; i++)
-	{
-		const auto& pair = pairs[i];
-		auto& diffuse = diffuse_data[i];
-		auto& specular = specular_data[i];
-
-		diffuse = pair.diffuse;
-		specular = pair.specular;
-	}
-
-	palette.diffuse->UnlockRect(0);
-	palette.specular->UnlockRect(0);
 }
 
 /*
@@ -345,64 +277,32 @@ std::string LanternInstance::PaletteId(Sint32 level, Sint32 act)
 	return result.str();
 }
 
-LanternInstance::LanternInstance(EffectParameter<IDirect3DTexture9*>* diffuse, EffectParameter<IDirect3DTexture9*>* specular)
-	: diffuse_param(diffuse), specular_param(specular),
-	  blend_type(-1), last_time(-1), last_act(-1), last_level(-1)
+LanternInstance::LanternInstance(EffectParameter<Texture>* atlas, EffectParameter<float>* diffuse_param, EffectParameter<float>* specular_param)
+	: atlas(atlas), diffuse_param(diffuse_param), specular_param(specular_param), blend_type(-1), last_time(-1), last_act(-1), last_level(-1)
 {
-	for (auto& i : palette)
-	{
-		i = {};
-	}
 }
 
 LanternInstance::LanternInstance(LanternInstance&& inst) noexcept
-	: diffuse_param(inst.diffuse_param), specular_param(inst.specular_param),
-	  blend_type(inst.blend_type), last_time(inst.last_time), last_act(inst.last_act), last_level(inst.last_level)
+	: atlas(inst.atlas), diffuse_param(inst.diffuse_param), specular_param(inst.specular_param),
+	blend_type(inst.blend_type), last_time(inst.last_time), last_act(inst.last_act), last_level(inst.last_level)
 {
-	for (int i = 0; i < 8; i++)
-	{
-		palette[i] = inst.palette[i];
-		inst.palette[i] = {};
-	}
 }
 
 LanternInstance& LanternInstance::operator=(LanternInstance&& inst) noexcept
 {
-	diffuse_param  = inst.diffuse_param;
-	specular_param = inst.specular_param;
+	atlas          = inst.atlas;
 	last_time      = inst.last_time;
 	last_act       = inst.last_act;
 	last_level     = inst.last_level;
 	blend_type     = inst.blend_type;
 
-	inst.diffuse_param = nullptr;
-	inst.specular_param = nullptr;
-
-	for (int i = 0; i < 8; i++)
-	{
-		palette[i] = inst.palette[i];
-		inst.palette[i] = {};
-	}
+	inst.atlas = nullptr;
 
 	return *this;
 }
 
 LanternInstance::~LanternInstance()
 {
-	for (auto& i : palette)
-	{
-		if (i.diffuse)
-		{
-			i.diffuse->Release();
-			i.diffuse = nullptr;
-		}
-
-		if (i.specular)
-		{
-			i.specular->Release();
-			i.specular = nullptr;
-		}
-	}
 }
 
 void LanternInstance::SetLastLevel(Sint32 level, Sint32 act)
@@ -486,7 +386,7 @@ bool LanternInstance::LoadFiles()
 /// <returns><c>true</c> on success.</returns>
 bool LanternInstance::LoadPalette(const std::string& path)
 {
-	auto file = std::ifstream(path, std::ios::binary);
+	std::ifstream file(path, std::ios::binary);
 
 	if (!file.is_open())
 	{
@@ -508,30 +408,43 @@ bool LanternInstance::LoadPalette(const std::string& path)
 
 	file.close();
 
+	Texture texture = nullptr;
+
+	if (FAILED(d3d::device->CreateTexture(256, 16, 1, 0, D3DFMT_X8R8G8B8, D3DPOOL_MANAGED, &texture, nullptr)))
+	{
+		throw std::exception("Failed to create palette texture!");
+	}
+
+	*atlas = texture;
+
+	D3DLOCKED_RECT rect;
+	if (FAILED(texture->LockRect(0, &rect, nullptr, 0)))
+	{
+		throw std::exception("Failed to lock texture rect!");
+	}
+
+	auto pixels = (NJS_COLOR*)rect.pBits;
+
 	for (size_t i = 0; i < 8; i++)
 	{
 		auto index = i * 256;
-		if (index < colorData.size() && index + 256 < colorData.size())
+		if (index >= colorData.size() || index + 256 >= colorData.size())
 		{
-			CreatePaletteTexturePair(palette[i], &colorData[index]);
+			break;
 		}
-		else
+
+		auto y = 512 * i;
+		for (size_t x = 0; x < 256; x++)
 		{
-			auto& pair = palette[i];
-
-			if (pair.diffuse)
-			{
-				pair.diffuse->Release();
-				pair.diffuse = nullptr;
-			}
-
-			if (pair.specular)
-			{
-				pair.specular->Release();
-				pair.specular = nullptr;
-			}
+			auto& diffuse = pixels[y + x];
+			auto& specular = pixels[256 + y + x];
+			const auto& color = colorData[index + x];
+			diffuse = color.diffuse;
+			specular = color.specular;
 		}
 	}
+
+	texture->UnlockRect(0);
 
 	return true;
 }
@@ -605,11 +518,16 @@ void LanternInstance::SetBlendFactor(float f)
 	blend_factor = f;
 }
 
+inline float _index(Sint32 i, Sint32 offset)
+{
+	return ((float)(2 * i + offset) + 0.5f) / 16.0f;
+}
+
 void LanternInstance::set_diffuse(Sint32 diffuse) const
 {
 	if (diffuse >= 0)
 	{
-		*diffuse_param = palette[diffuse].diffuse;
+		*diffuse_param = _index(diffuse, 0);
 	}
 }
 
@@ -617,7 +535,7 @@ void LanternInstance::set_specular(Sint32 specular) const
 {
 	if (specular >= 0)
 	{
-		*specular_param = palette[specular].specular;
+		*specular_param = _index(specular, 1);
 	}
 }
 
@@ -711,21 +629,21 @@ void LanternInstance::SetSelfBlend(Sint32 type, Sint32 diffuse, Sint32 specular)
 	if (type < 0)
 	{
 		blend_type = -1;
-		param::DiffusePaletteB = nullptr;
-		param::SpecularPaletteB = nullptr;
+		param::PaletteB = nullptr;
 		return;
 	}
 
 	blend_type = type;
+	param::PaletteB = param::PaletteA;
 
 	if (diffuse > -1)
 	{
-		param::DiffusePaletteB = palette[diffuse].diffuse;
+		param::DiffuseIndexB = _index(diffuse, 0);
 	}
 
 	if (specular > -1)
 	{
-		param::SpecularPaletteB = palette[specular].specular;
+		param::SpecularIndexB = _index(specular, 1);
 	}
 }
 
@@ -805,7 +723,7 @@ bool LanternCollection::LoadFiles()
 
 	if (instances.empty())
 	{
-		instances.push_back(LanternInstance(&param::DiffusePalette, &param::SpecularPalette));
+		instances.emplace_back(&param::PaletteA, &param::DiffuseIndexA, &param::SpecularIndexA);
 	}
 
 	for (auto& i : instances)

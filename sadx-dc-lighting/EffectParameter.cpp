@@ -3,28 +3,6 @@
 #include "EffectParameter.h"
 
 template<>
-void EffectParameter<IDirect3DTexture9*>::operator=(IDirect3DTexture9* const& value)
-{
-	// Comparing pointers is almost certainly faster
-	// than just making the add/release calls.
-	if (value != current)
-	{
-		if (value)
-		{
-			value->AddRef();
-		}
-
-		if (current)
-		{
-			current->Release();
-		}
-	}
-
-	assigned = true;
-	current = value;
-}
-
-template<>
 void EffectParameter<bool>::Commit()
 {
 	if (Modified())
@@ -97,7 +75,7 @@ void EffectParameter<D3DXMATRIX>::Commit()
 }
 
 template<>
-void EffectParameter<IDirect3DTexture9*>::Commit()
+void EffectParameter<Texture>::Commit()
 {
 	if (Modified())
 	{

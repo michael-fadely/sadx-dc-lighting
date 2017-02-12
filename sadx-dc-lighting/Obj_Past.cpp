@@ -2,6 +2,7 @@
 
 #include "d3d.h"
 #include <SADXModLoader.h>
+#include <Trampoline.h>
 
 #include "lantern.h"
 #include "globals.h"
