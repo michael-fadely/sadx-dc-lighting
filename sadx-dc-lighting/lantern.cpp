@@ -518,16 +518,16 @@ void LanternInstance::SetBlendFactor(float f)
 	blend_factor = f;
 }
 
-inline float _index(Sint32 i, float offset)
+inline float _index(Sint32 i, Sint32 offset)
 {
-	return (2.0f * (float)i + offset) / 15.5f;
+	return ((float)(2 * i + offset) + 0.5f) / 16.0f;
 }
 
 void LanternInstance::set_diffuse(Sint32 diffuse) const
 {
 	if (diffuse >= 0)
 	{
-		*diffuse_param = _index(diffuse, 0.0f);
+		*diffuse_param = _index(diffuse, 0);
 	}
 }
 
@@ -535,7 +535,7 @@ void LanternInstance::set_specular(Sint32 specular) const
 {
 	if (specular >= 0)
 	{
-		*specular_param = _index(specular, 1.0f);
+		*specular_param = _index(specular, 1);
 	}
 }
 
@@ -637,12 +637,12 @@ void LanternInstance::SetSelfBlend(Sint32 type, Sint32 diffuse, Sint32 specular)
 
 	if (diffuse > -1)
 	{
-		param::DiffuseIndexB = _index(diffuse, 0.0f);
+		param::DiffuseIndexB = _index(diffuse, 0);
 	}
 
 	if (specular > -1)
 	{
-		param::SpecularIndexB = _index(specular, 1.0f);
+		param::SpecularIndexB = _index(specular, 1);
 	}
 }
 
