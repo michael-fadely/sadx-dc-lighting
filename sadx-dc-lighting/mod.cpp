@@ -221,6 +221,8 @@ static void __cdecl SetLevelAndAct_r(Uint8 level, Uint8 act)
 static void __cdecl GoToNextChaoStage_r()
 {
 	TARGET_DYNAMIC(GoToNextChaoStage)();
+
+	auto level = CurrentLevel;
 	switch (GetCurrentChaoStage())
 	{
 		case SADXChaoStage_StationSquare:
@@ -240,6 +242,7 @@ static void __cdecl GoToNextChaoStage_r()
 	}
 
 	globals::palettes.LoadFiles();
+	CurrentLevel = level;
 }
 
 static void __cdecl GoToNextLevel_r()
