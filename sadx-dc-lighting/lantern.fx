@@ -29,35 +29,22 @@ struct PS_IN
 	float  fogDist : FOG;
 };
 
+// This never changes
+static float AlphaRef = 16.0f / 255.0f;
+
+shared float4x4 WorldMatrix;
+shared float4x4 wvMatrix;
+shared float4x4 ProjectionMatrix;
+
+shared float4 MaterialDiffuse = float4(1.0f, 1.0f, 1.0f, 1.0f);
+shared uint   DiffuseSource = (uint)D3DMCS_COLOR1;
+
 shared Texture2D BaseTexture;
 sampler2D baseSampler = sampler_state
 {
 	Texture = <BaseTexture>;
 };
 
-shared Texture2D PaletteA;
-sampler2D atlasSamplerA = sampler_state
-{
-	Texture = <PaletteA>;
-	MinFilter = Point;
-	MagFilter = Point;
-	AddressU = Clamp;
-	AddressV = Clamp;
-};
-
-shared Texture2D PaletteB;
-sampler2D atlasSamplerB = sampler_state
-{
-	Texture = <PaletteB>;
-	MinFilter = Point;
-	MagFilter = Point;
-	AddressU = Clamp;
-	AddressV = Clamp;
-};
-
-shared float4x4 WorldMatrix;
-shared float4x4 wvMatrix;
-shared float4x4 ProjectionMatrix;
 // The inverse transpose of the world view matrix - used for environment mapping.
 shared float4x4 wvMatrixInvT;
 // Used primarily for environment mapping.
@@ -68,8 +55,25 @@ shared float4x4 TextureTransform = {
 	 0.5, 0.5, 0.0, 1.0
 };
 
-// This never changes
-static float AlphaRef = 16.0f / 255.0f;
+shared Texture2D PaletteA;
+sampler2D atlasSamplerA = sampler_state
+{
+	Texture   = <PaletteA>;
+	MinFilter = Point;
+	MagFilter = Point;
+	AddressU  = Clamp;
+	AddressV  = Clamp;
+};
+
+shared Texture2D PaletteB;
+sampler2D atlasSamplerB = sampler_state
+{
+	Texture   = <PaletteB>;
+	MinFilter = Point;
+	MagFilter = Point;
+	AddressU  = Clamp;
+	AddressV  = Clamp;
+};
 
 // Pre-adjusted on the CPU before being sent to the shader.
 shared float DiffuseIndexA  = 0;
@@ -77,17 +81,14 @@ shared float DiffuseIndexB  = 0;
 shared float SpecularIndexA = 0;
 shared float SpecularIndexB = 0;
 
+shared float3 LightDirection = float3(0.0f, -1.0f, 0.0f);
+shared float3 NormalScale = float3(1, 1, 1);
+
 shared uint   FogMode = (uint)FOGMODE_NONE;
 shared float  FogStart;
 shared float  FogEnd;
 shared float  FogDensity;
 shared float4 FogColor;
-
-shared float3 LightDirection  = float3(0.0f, -1.0f, 0.0f);
-shared float4 MaterialDiffuse = float4(1.0f, 1.0f, 1.0f, 1.0f);
-shared uint   DiffuseSource   = (uint)D3DMCS_COLOR1;
-
-shared float3 NormalScale = float3(1, 1, 1);
 
 shared float BlendFactor = 0.0f;
 
@@ -126,6 +127,7 @@ float4 GetDiffuse(in float4 vcolor)
 }
 
 #ifdef USE_FOG
+
 float CalcFogFactor(float d)
 {
 	float fogCoeff;
