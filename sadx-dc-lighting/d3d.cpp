@@ -558,6 +558,11 @@ static auto __stdcall SetTransformHijack(Direct3DDevice8* _device, D3DTRANSFORMS
 
 void releaseShaders()
 {
+	for (auto& i : param::parameters)
+	{
+		i->Release();
+	}
+
 	effect = nullptr;
 
 	for (auto& e : shaders)

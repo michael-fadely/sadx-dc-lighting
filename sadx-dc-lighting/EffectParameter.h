@@ -16,6 +16,7 @@ public:
 	virtual bool Modified() = 0;
 	virtual void Clear() = 0;
 	virtual void Commit(Effect effect) = 0;
+	virtual void Release() = 0;
 };
 
 template<typename T>
@@ -38,6 +39,7 @@ public:
 	bool Modified() override;
 	void Clear() override;
 	void Commit(Effect effect) override;
+	void Release() override;
 	void operator=(const T& value);
 	void operator=(const EffectParameter<T>& value);
 };
@@ -65,6 +67,12 @@ void EffectParameter<T>::Clear()
 }
 
 template <typename T>
+void EffectParameter<T>::Release()
+{
+	Clear();
+}
+
+template <typename T>
 void EffectParameter<T>::operator=(const T& value)
 {
 	assigned = true;
@@ -85,3 +93,4 @@ template<> void EffectParameter<D3DXVECTOR3>::Commit(Effect effect);
 template<> void EffectParameter<D3DXCOLOR>::Commit(Effect effect);
 template<> void EffectParameter<D3DXMATRIX>::Commit(Effect effect);
 template<> void EffectParameter<Texture>::Commit(Effect effect);
+template<> void EffectParameter<Texture>::Release();

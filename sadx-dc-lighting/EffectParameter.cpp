@@ -83,3 +83,11 @@ void EffectParameter<Texture>::Commit(Effect effect)
 		Clear();
 	}
 }
+
+template<>
+void EffectParameter<Texture>::Release()
+{
+	Clear();
+	current = nullptr;
+	last = nullptr;
+}
