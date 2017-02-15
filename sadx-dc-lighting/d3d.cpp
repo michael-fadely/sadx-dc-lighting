@@ -9,8 +9,6 @@
 // Mod loader
 #include <Trampoline.h>
 
-#include <map>
-
 // Local
 #include "d3d.h"
 #include "datapointers.h"
@@ -46,7 +44,9 @@ constexpr auto DEFAULT_OPTIONS = d3d::UseAlpha | d3d::UseFog | d3d::UseLight | d
 
 static Uint32 shader_options = DEFAULT_OPTIONS;
 static Uint32 last_options = DEFAULT_OPTIONS;
-static std::map<Uint32, Effect> shaders = {};
+
+static Uint32 shaderCount = 0;
+static Effect shaders[d3d::ShaderOptions::Count] = {};
 
 static UINT passes       = 0;
 static bool initialized  = false;
@@ -76,9 +76,9 @@ DataPointer(int, TransformAndViewportInvalid, 0x03D0FD1C);
 namespace d3d
 {
 	IDirect3DDevice9* device = nullptr;
-	Effect effect            = nullptr;
-	ID3DXEffectPool* pool    = nullptr;
-	bool do_effect           = false;
+	Effect effect = nullptr;
+	CComPtr<ID3DXEffectPool> pool = nullptr;
+	bool do_effect = false;
 
 }
 
@@ -166,7 +166,8 @@ static void UpdateParameterHandles()
 
 static Effect compileShader(Uint32 options)
 {
-	PrintDebug("[lantern] Compiling shader #%02d: %08X\n", shaders.size() + 1, options);
+	options &= d3d::ShaderOptions::Mask;
+	PrintDebug("[lantern] Compiling shader #%02d: %08X\n", ++shaderCount, options);
 
 	ID3DXBuffer* pCompilationErrors = nullptr;
 
@@ -268,20 +269,17 @@ static void begin()
 		return;
 	}
 
-	SetShaderOptions(UseLight, globals::light);
-	SetShaderOptions(UseFog, globals::fog);
-
 	if (shader_options != last_options)
 	{
 		last_options = shader_options;
-		auto it = shaders.find(shader_options);
-		if (it == shaders.end())
+		auto e = shaders[shader_options & ShaderOptions::Mask];
+		if (e == nullptr)
 		{
 			effect = compileShader(shader_options);
 		}
 		else
 		{
-			effect = it->second;
+			effect = e;
 		}
 
 		UpdateParameterHandles();
@@ -488,7 +486,7 @@ static void __cdecl Direct3D_PerformLighting_r(int type)
 	// This specifically force light type 0 to prevent
 	// the light direction from being overwritten.
 	target(0);
-	globals::light = true;
+	SetShaderOptions(ShaderOptions::UseLight, true);
 
 	if (type != globals::light_type)
 	{
@@ -557,12 +555,27 @@ static auto __stdcall SetTransformHijack(Direct3DDevice8* _device, D3DTRANSFORMS
 	return device->SetTransform(type, matrix);
 }
 
+void releaseShaders()
+{
+	effect = nullptr;
+
+	for (auto& e : shaders)
+	{
+		e = nullptr;
+	}
+
+	shaderCount = 0;
+	pool = nullptr;
+}
+
 void d3d::LoadShader()
 {
 	if (!initialized)
 	{
 		return;
 	}
+
+	releaseShaders();
 
 	try
 	{
@@ -618,19 +631,30 @@ extern "C"
 {
 	EXPORT void __cdecl OnRenderDeviceLost()
 	{
-		for (auto& it : shaders)
+		for (auto& e : shaders)
 		{
-			it.second->OnLostDevice();
+			if (e != nullptr)
+			{
+				e->OnLostDevice();
+			}
 		}
 	}
 
 	EXPORT void __cdecl OnRenderDeviceReset()
 	{
-		for (auto& it : shaders)
+		for (auto& e : shaders)
 		{
-			it.second->OnResetDevice();
+			if (e != nullptr)
+			{
+				e->OnResetDevice();
+			}
 		}
 
 		UpdateParameterHandles();
+	}
+
+	EXPORT void __cdecl OnExit()
+	{
+		releaseShaders();
 	}
 }

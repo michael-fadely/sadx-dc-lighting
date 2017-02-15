@@ -19,6 +19,9 @@ namespace d3d
 		UseLight    = 1 << 3,
 		UseBlending = 1 << 4,
 		UseFog      = 1 << 5,
+
+		Mask = 0x3F,
+		Count = 64
 	};
 
 	extern IDirect3DDevice9* device;
