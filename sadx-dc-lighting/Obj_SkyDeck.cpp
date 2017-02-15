@@ -32,7 +32,7 @@ static void __cdecl SkyDeck_SimulateAltitude_r(Uint16 act)
 
 static void __cdecl SkyBox_SkyDeck_Delete(ObjectMaster*)
 {
-	LanternInstance::SetBlendFactor(0.0f);
+	SetShaderOptions(d3d::ShaderOptions::UseBlending, false);
 }
 static void __cdecl SkyBox_SkyDeck_r(ObjectMaster* _this)
 {
@@ -47,7 +47,7 @@ static void __cdecl SkyBox_SkyDeck_r(ObjectMaster* _this)
 static void __cdecl Obj_SkyDeck_Delete(ObjectMaster* _this)
 {
 	globals::palettes.Remove(handle);
-	LanternInstance::SetBlendFactor(0.0f);
+	SetShaderOptions(d3d::ShaderOptions::UseBlending, false);
 	handle = 0;
 }
 static void __cdecl Obj_SkyDeck_r(ObjectMaster* _this)
@@ -68,6 +68,7 @@ static void __cdecl Obj_SkyDeck_r(ObjectMaster* _this)
 	lantern.LoadPalette(LevelIDs_SkyDeck, 1);
 	handle = globals::palettes.Add(lantern);
 	globals::palettes.SetLastLevel(-1, -1);
+	SetShaderOptions(d3d::ShaderOptions::UseBlending, true);
 }
 
 void SkyDeck_Init()
