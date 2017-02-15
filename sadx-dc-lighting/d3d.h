@@ -14,7 +14,7 @@ namespace d3d
 	{
 		None,
 		UseTexture  = 1 << 0,
-		UseEnv      = 1 << 1,
+		UseEnvMap   = 1 << 1,
 		UseAlpha    = 1 << 2,
 		UseLight    = 1 << 3,
 		UseBlending = 1 << 4,
@@ -48,9 +48,6 @@ namespace param
 	extern EffectParameter<D3DXMATRIX> ProjectionMatrix;
 	extern EffectParameter<D3DXMATRIX> wvMatrixInvT;
 	extern EffectParameter<D3DXMATRIX> TextureTransform;
-	extern EffectParameter<bool> TextureEnabled;
-	extern EffectParameter<bool> EnvironmentMapped;
-	extern EffectParameter<bool> AlphaEnabled;
 	extern EffectParameter<int> FogMode;
 	extern EffectParameter<float> FogStart;
 	extern EffectParameter<float> FogEnd;
@@ -67,7 +64,6 @@ namespace param
 #ifdef USE_SL
 	extern EffectParameter<D3DXCOLOR> MaterialSpecular;
 	extern EffectParameter<float> MaterialPower;
-	extern EffectParameter<bool> UseSourceLight;
 	extern EffectParameter<SourceLight_t> SourceLight;
 #endif
 }

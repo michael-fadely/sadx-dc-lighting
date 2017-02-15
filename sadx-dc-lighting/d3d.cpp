@@ -44,8 +44,8 @@ constexpr auto VERTEX_SHADER_BITS = 0xFF << 16;
 constexpr auto PIXEL_SHADER_BITS = 0xFF << 24;
 constexpr auto DEFAULT_OPTIONS = d3d::UseAlpha | d3d::UseFog | d3d::UseLight | d3d::UseTexture;
 
-static Uint32 shader_options = d3d::None;
-static Uint32 last_options = d3d::None;
+static Uint32 shader_options = DEFAULT_OPTIONS;
+static Uint32 last_options = DEFAULT_OPTIONS;
 static std::map<Uint32, Effect> shaders = {};
 
 static UINT passes       = 0;
@@ -100,9 +100,6 @@ namespace param
 	EffectParameter<D3DXMATRIX> ProjectionMatrix("ProjectionMatrix", {});
 	EffectParameter<D3DXMATRIX> wvMatrixInvT("wvMatrixInvT", {});
 	EffectParameter<D3DXMATRIX> TextureTransform("TextureTransform", {});
-	EffectParameter<bool> TextureEnabled("TextureEnabled", true);
-	EffectParameter<bool> EnvironmentMapped("EnvironmentMapped", false);
-	EffectParameter<bool> AlphaEnabled("AlphaEnabled", true);
 	EffectParameter<int> FogMode("FogMode", 0);
 	EffectParameter<float> FogStart("FogStart", 0.0f);
 	EffectParameter<float> FogEnd("FogEnd", 0.0f);
@@ -116,7 +113,6 @@ namespace param
 #ifdef USE_SL
 	EffectParameter<D3DXCOLOR> MaterialSpecular("MaterialSpecular", {});
 	EffectParameter<float> MaterialPower("MaterialPower", 1.0f);
-	EffectParameter<bool> UseSourceLight("UseSourceLight", false);
 	EffectParameter<SourceLight_t> SourceLight("SourceLight", {});
 #endif
 
@@ -140,9 +136,6 @@ namespace param
 		&ProjectionMatrix,
 		&wvMatrixInvT,
 		&TextureTransform,
-		&TextureEnabled,
-		&EnvironmentMapped,
-		&AlphaEnabled,
 		&FogMode,
 		&FogStart,
 		&FogEnd,
@@ -163,15 +156,23 @@ namespace param
 	};
 }
 
-using namespace d3d;
+static void UpdateParameterHandles()
+{
+	for (auto i : param::parameters)
+	{
+		i->UpdateHandle(d3d::effect);
+	}
+}
 
 static Effect compileShader(Uint32 options)
 {
+	PrintDebug("[lantern] Compiling shader #%02d: %08X\n", shaders.size() + 1, options);
+
 	ID3DXBuffer* pCompilationErrors = nullptr;
 
-	if (pool == nullptr)
+	if (d3d::pool == nullptr)
 	{
-		if (FAILED(D3DXCreateEffectPool(&pool)))
+		if (FAILED(D3DXCreateEffectPool(&d3d::pool)))
 		{
 			throw std::runtime_error("Failed to create effect pool?!");
 		}
@@ -182,44 +183,44 @@ static Effect compileShader(Uint32 options)
 
 	while (o != 0)
 	{
-		if (o & UseTexture)
+		if (o & d3d::UseTexture)
 		{
-			o &= ~UseTexture;
+			o &= ~d3d::UseTexture;
 			macros.push_back({ "USE_TEXTURE", "1" });
 			continue;
 		}
 
-		if (o & UseEnv)
+		if (o & d3d::UseEnvMap)
 		{
-			o &= ~UseEnv;
+			o &= ~d3d::UseEnvMap;
 			macros.push_back({ "USE_ENVMAP", "1" });
 			continue;
 		}
 
-		if (o & UseLight)
+		if (o & d3d::UseLight)
 		{
-			o &= ~UseLight;
+			o &= ~d3d::UseLight;
 			macros.push_back({ "USE_LIGHT", "1" });
 			continue;
 		}
 
-		if (o & UseBlending)
+		if (o & d3d::UseBlending)
 		{
-			o &= ~UseBlending;
+			o &= ~d3d::UseBlending;
 			macros.push_back({ "USE_BLENDING", "1" });
 			continue;
 		}
 
-		if (o & UseAlpha)
+		if (o & d3d::UseAlpha)
 		{
-			o &= ~UseAlpha;
+			o &= ~d3d::UseAlpha;
 			macros.push_back({ "USE_ALPHA", "1" });
 			continue;
 		}
 
-		if (o & UseFog)
+		if (o & d3d::UseFog)
 		{
-			o &= ~UseFog;
+			o &= ~d3d::UseFog;
 			macros.push_back({ "USE_FOG", "1" });
 			continue;
 		}
@@ -232,9 +233,9 @@ static Effect compileShader(Uint32 options)
 	Effect effect;
 
 	auto path = globals::system + "lantern.fx";
-	auto result = D3DXCreateEffectFromFileA(device, path.c_str(), macros.data(), nullptr,
+	auto result = D3DXCreateEffectFromFileA(d3d::device, path.c_str(), macros.data(), nullptr,
 		D3DXFX_NOT_CLONEABLE | D3DXFX_DONOTSAVESTATE | D3DXFX_DONOTSAVESAMPLERSTATE,
-		pool, &effect, &pCompilationErrors);
+		d3d::pool, &effect, &pCompilationErrors);
 
 	if (FAILED(result) || pCompilationErrors)
 	{
@@ -248,11 +249,6 @@ static Effect compileShader(Uint32 options)
 		}
 	}
 
-	if (pCompilationErrors)
-	{
-		pCompilationErrors->Release();
-	}
-
 	if (effect == nullptr)
 	{
 		throw std::runtime_error("Shader creation failed with an unknown error. (Does " + path + " exist?)");
@@ -263,12 +259,17 @@ static Effect compileShader(Uint32 options)
 	return effect;
 }
 
+using namespace d3d;
+
 static void begin()
 {
 	if (!do_effect || began_effect || effect == nullptr)
 	{
 		return;
 	}
+
+	SetShaderOptions(UseLight, globals::light);
+	SetShaderOptions(UseFog, globals::fog);
 
 	if (shader_options != last_options)
 	{
@@ -282,6 +283,8 @@ static void begin()
 		{
 			effect = it->second;
 		}
+
+		UpdateParameterHandles();
 	}
 
 	for (auto i : param::parameters)
@@ -289,14 +292,21 @@ static void begin()
 		i->Commit(effect);
 	}
 
-	effect->Begin(&passes, 0);
+	if (FAILED(effect->Begin(&passes, 0)))
+	{
+		throw std::runtime_error("Failed to begin shader!");
+	}
 
 	if (passes > 1)
 	{
 		throw std::runtime_error("Multi-pass shaders are not supported.");
 	}
 
-	effect->BeginPass(0);
+	if (FAILED(effect->BeginPass(0)))
+	{
+		throw std::runtime_error("Failed to begin pass!");
+	}
+
 	began_effect = true;
 }
 static void end()
@@ -545,14 +555,6 @@ static auto __stdcall SetTransformHijack(Direct3DDevice8* _device, D3DTRANSFORMS
 	}
 
 	return device->SetTransform(type, matrix);
-}
-
-static void UpdateParameterHandles()
-{
-	for (auto i : param::parameters)
-	{
-		i->UpdateHandle(effect);
-	}
 }
 
 void d3d::LoadShader()
