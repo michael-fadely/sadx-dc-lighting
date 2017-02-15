@@ -11,8 +11,6 @@
 #include "mrgarden.h"
 #include "mrgarden_night.h"
 
-DataArray(HMODULE, ModuleHandles, 0x03CA6E60, 4);
-
 static Trampoline* ChaoGardenMR_SetLandTable_Day_t     = nullptr;
 static Trampoline* ChaoGardenMR_SetLandTable_Evening_t = nullptr;
 static Trampoline* ChaoGardenMR_SetLandTable_Night_t   = nullptr;
