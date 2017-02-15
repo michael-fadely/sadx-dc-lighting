@@ -38,8 +38,6 @@ struct PolyBuff
 };
 #pragma pack(pop)
 
-constexpr auto VERTEX_SHADER_BITS = 0xFF << 16;
-constexpr auto PIXEL_SHADER_BITS = 0xFF << 24;
 constexpr auto DEFAULT_OPTIONS = d3d::UseAlpha | d3d::UseFog | d3d::UseLight | d3d::UseTexture;
 
 static Uint32 shader_options = DEFAULT_OPTIONS;
