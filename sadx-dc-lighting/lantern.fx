@@ -29,13 +29,13 @@ struct PS_IN
 	float  fogDist : FOG;
 };
 
-Texture2D BaseTexture;
+shared Texture2D BaseTexture;
 sampler2D baseSampler = sampler_state
 {
 	Texture = <BaseTexture>;
 };
 
-Texture2D PaletteA;
+shared Texture2D PaletteA;
 sampler2D atlasSamplerA = sampler_state
 {
 	Texture = <PaletteA>;
@@ -45,7 +45,7 @@ sampler2D atlasSamplerA = sampler_state
 	AddressV = Clamp;
 };
 
-Texture2D PaletteB;
+shared Texture2D PaletteB;
 sampler2D atlasSamplerB = sampler_state
 {
 	Texture = <PaletteB>;
@@ -55,13 +55,13 @@ sampler2D atlasSamplerB = sampler_state
 	AddressV = Clamp;
 };
 
-float4x4 WorldMatrix;
-float4x4 wvMatrix;
-float4x4 ProjectionMatrix;
+shared float4x4 WorldMatrix;
+shared float4x4 wvMatrix;
+shared float4x4 ProjectionMatrix;
 // The inverse transpose of the world view matrix - used for environment mapping.
-float4x4 wvMatrixInvT;
+shared float4x4 wvMatrixInvT;
 // Used primarily for environment mapping.
-float4x4 TextureTransform = {
+shared float4x4 TextureTransform = {
 	-0.5, 0.0, 0.0, 0.0,
 	 0.0, 0.5, 0.0, 0.0,
 	 0.0, 0.0, 1.0, 0.0,
@@ -72,24 +72,24 @@ float4x4 TextureTransform = {
 static float AlphaRef = 16.0f / 255.0f;
 
 // Pre-adjusted on the CPU before being sent to the shader.
-float DiffuseIndexA = 0;
-float DiffuseIndexB = 0;
-float SpecularIndexA = 0;
-float SpecularIndexB = 0;
+shared float DiffuseIndexA  = 0;
+shared float DiffuseIndexB  = 0;
+shared float SpecularIndexA = 0;
+shared float SpecularIndexB = 0;
 
-uint   FogMode = (uint)FOGMODE_NONE;
-float  FogStart;
-float  FogEnd;
-float  FogDensity;
-float4 FogColor;
+shared uint   FogMode = (uint)FOGMODE_NONE;
+shared float  FogStart;
+shared float  FogEnd;
+shared float  FogDensity;
+shared float4 FogColor;
 
-float3 LightDirection = float3(0.0f, -1.0f, 0.0f);
-float4 MaterialDiffuse = float4(1.0f, 1.0f, 1.0f, 1.0f);
-uint   DiffuseSource = (uint)D3DMCS_COLOR1;
+shared float3 LightDirection  = float3(0.0f, -1.0f, 0.0f);
+shared float4 MaterialDiffuse = float4(1.0f, 1.0f, 1.0f, 1.0f);
+shared uint   DiffuseSource   = (uint)D3DMCS_COLOR1;
 
-float3 NormalScale = float3(1, 1, 1);
+shared float3 NormalScale = float3(1, 1, 1);
 
-float BlendFactor = 0.0f;
+shared float BlendFactor = 0.0f;
 
 #ifdef USE_SL
 
@@ -101,10 +101,11 @@ struct SourceLight_t
 	float power;
 };
 
-bool          UseSourceLight   = false;
-float4        MaterialSpecular = float4(0.0f, 0.0f, 0.0f, 0.0f);
-float         MaterialPower    = 1.0f;
-SourceLight_t SourceLight;
+shared bool   UseSourceLight   = false;
+shared float4 MaterialSpecular = float4(0.0f, 0.0f, 0.0f, 0.0f);
+shared float  MaterialPower    = 1.0f;
+
+shared SourceLight_t SourceLight;
 
 #endif
 

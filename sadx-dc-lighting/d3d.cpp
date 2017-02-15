@@ -46,7 +46,6 @@ static Uint32 last_options = DEFAULT_OPTIONS;
 static Uint32 shaderCount = 0;
 static Effect shaders[d3d::ShaderOptions::Count] = {};
 
-static UINT passes       = 0;
 static bool initialized  = false;
 static bool began_effect = false;
 static Uint32 drawing    = 0;
@@ -107,15 +106,14 @@ namespace param
 	EffectParameter<int> DiffuseSource("DiffuseSource", 0);
 
 	EffectParameter<D3DXCOLOR> MaterialDiffuse("MaterialDiffuse", {});
+	EffectParameter<float> AlphaRef("AlphaRef", 0.0f);
+	EffectParameter<D3DXVECTOR3> NormalScale("NormalScale", { 1.0f, 1.0f, 1.0f });
 
 #ifdef USE_SL
 	EffectParameter<D3DXCOLOR> MaterialSpecular("MaterialSpecular", {});
 	EffectParameter<float> MaterialPower("MaterialPower", 1.0f);
 	EffectParameter<SourceLight_t> SourceLight("SourceLight", {});
 #endif
-
-	EffectParameter<float> AlphaRef("AlphaRef", 0.0f);
-	EffectParameter<D3DXVECTOR3> NormalScale("NormalScale", { 1.0f, 1.0f, 1.0f });
 
 	static IEffectParameter* const parameters[] = {
 		&BaseTexture,
@@ -166,8 +164,6 @@ static Effect compileShader(Uint32 options)
 {
 	options &= d3d::ShaderOptions::Mask;
 	PrintDebug("[lantern] Compiling shader #%02d: %08X\n", ++shaderCount, options);
-
-	ID3DXBuffer* pCompilationErrors = nullptr;
 
 	if (d3d::pool == nullptr)
 	{
@@ -229,21 +225,22 @@ static Effect compileShader(Uint32 options)
 
 	macros.push_back({});
 
+	ID3DXBuffer* errors = nullptr;
 	Effect effect;
 
 	auto path = globals::system + "lantern.fx";
 	auto result = D3DXCreateEffectFromFileA(d3d::device, path.c_str(), macros.data(), nullptr,
 		D3DXFX_NOT_CLONEABLE | D3DXFX_DONOTSAVESTATE | D3DXFX_DONOTSAVESAMPLERSTATE,
-		d3d::pool, &effect, &pCompilationErrors);
+		d3d::pool, &effect, &errors);
 
-	if (FAILED(result) || pCompilationErrors)
+	if (FAILED(result) || errors)
 	{
-		if (pCompilationErrors)
+		if (errors)
 		{
 			std::string compilationErrors(static_cast<const char*>(
-				pCompilationErrors->GetBufferPointer()));
+				errors->GetBufferPointer()));
 
-			pCompilationErrors->Release();
+			errors->Release();
 			throw std::runtime_error(compilationErrors);
 		}
 	}
@@ -267,27 +264,33 @@ static void begin()
 		return;
 	}
 
+	for (auto i : param::parameters)
+	{
+		i->Commit(effect);
+	}
+
 	if (shader_options != last_options)
 	{
 		last_options = shader_options;
 		auto e = shaders[shader_options & ShaderOptions::Mask];
 		if (e == nullptr)
 		{
-			effect = compileShader(shader_options);
-		}
-		else
-		{
-			effect = e;
+			try
+			{
+				e = compileShader(shader_options);
+			}
+			catch (std::exception& ex)
+			{
+				effect = nullptr;
+				MessageBoxA(WindowHandle, ex.what(), "Shader creation failed", MB_OK | MB_ICONERROR);
+				return;
+			}
 		}
 
-		UpdateParameterHandles();
+		effect = e;
 	}
 
-	for (auto i : param::parameters)
-	{
-		i->Commit(effect);
-	}
-
+	UINT passes = 0;
 	if (FAILED(effect->Begin(&passes, 0)))
 	{
 		throw std::runtime_error("Failed to begin shader!");
