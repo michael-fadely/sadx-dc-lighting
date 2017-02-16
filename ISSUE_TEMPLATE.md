@@ -67,6 +67,6 @@ Write a brief description of the behavior you expected here.
   If this is not applicable (like for example, if Emerald Coast always loads the wrong palette),
   just go ahead and delete this whole section.
 -->
-- [ ] Steal Burger Shop statue
-- [ ] Place him in traffic
-- [ ] ???
+1. Steal Burger Shop statue
+2. Place him in traffic
+3. ???
