@@ -3,6 +3,8 @@
 #include <Trampoline.h>
 #include "FixChaoGardenMaterials.h"
 
+#include "datapointers.h"
+
 // Static materials (in the main exe)
 #include "ssgarden.h"
 #include "ecgarden.h"

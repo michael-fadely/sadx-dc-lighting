@@ -7,7 +7,11 @@
 #include <d3d8to9.hpp>
 
 // Mod loader
+#include <SADXModLoader/SADXFunctions.h>
 #include <Trampoline.h>
+
+// Standard library
+#include <vector>
 
 // Local
 #include "d3d.h"
@@ -43,8 +47,10 @@ constexpr auto DEFAULT_OPTIONS = d3d::UseAlpha | d3d::UseFog | d3d::UseLight | d
 static Uint32 shader_options = DEFAULT_OPTIONS;
 static Uint32 last_options = DEFAULT_OPTIONS;
 
+static std::vector<Uint8> shaderFile;
 static Uint32 shaderCount = 0;
 static Effect shaders[d3d::ShaderOptions::Count] = {};
+static CComPtr<ID3DXEffectPool> pool = nullptr;
 
 static bool initialized  = false;
 static bool began_effect = false;
@@ -74,9 +80,7 @@ namespace d3d
 {
 	IDirect3DDevice9* device = nullptr;
 	Effect effect = nullptr;
-	CComPtr<ID3DXEffectPool> pool = nullptr;
 	bool do_effect = false;
-
 }
 
 namespace param
@@ -165,9 +169,9 @@ static Effect compileShader(Uint32 options)
 	options &= d3d::ShaderOptions::Mask;
 	PrintDebug("[lantern] Compiling shader #%02d: %08X\n", ++shaderCount, options);
 
-	if (d3d::pool == nullptr)
+	if (pool == nullptr)
 	{
-		if (FAILED(D3DXCreateEffectPool(&d3d::pool)))
+		if (FAILED(D3DXCreateEffectPool(&pool)))
 		{
 			throw std::runtime_error("Failed to create effect pool?!");
 		}
@@ -229,19 +233,38 @@ static Effect compileShader(Uint32 options)
 	Effect effect;
 
 	auto path = globals::system + "lantern.fx";
-	auto result = D3DXCreateEffectFromFileA(d3d::device, path.c_str(), macros.data(), nullptr,
-		D3DXFX_NOT_CLONEABLE | D3DXFX_DONOTSAVESTATE | D3DXFX_DONOTSAVESAMPLERSTATE,
-		d3d::pool, &effect, &errors);
 
-	if (FAILED(result) || errors)
+	if (shaderFile.empty())
 	{
-		if (errors)
-		{
-			std::string compilationErrors(static_cast<const char*>(
-				errors->GetBufferPointer()));
+		std::ifstream file(path, std::ios::ate);
+		auto size = file.tellg();
+		file.seekg(0);
 
-			errors->Release();
-			throw std::runtime_error(compilationErrors);
+		if (file.is_open() && size > 0)
+		{
+			shaderFile.resize((size_t)size);
+			file.read((char*)shaderFile.data(), size);
+		}
+
+		file.close();
+	}
+
+	if (!shaderFile.empty())
+	{
+		auto result = D3DXCreateEffect(d3d::device, shaderFile.data(), shaderFile.size(), macros.data(), nullptr,
+			D3DXFX_NOT_CLONEABLE | D3DXFX_DONOTSAVESTATE | D3DXFX_DONOTSAVESAMPLERSTATE,
+			pool, &effect, &errors);
+
+		if (FAILED(result) || errors)
+		{
+			if (errors)
+			{
+				std::string compilationErrors(static_cast<const char*>(
+					errors->GetBufferPointer()));
+
+				errors->Release();
+				throw std::runtime_error(compilationErrors);
+			}
 		}
 	}
 
@@ -556,13 +579,17 @@ static auto __stdcall SetTransformHijack(Direct3DDevice8* _device, D3DTRANSFORMS
 	return device->SetTransform(type, matrix);
 }
 
-void releaseShaders()
+void releaseParameters()
 {
 	for (auto& i : param::parameters)
 	{
 		i->Release();
 	}
+}
 
+void releaseShaders()
+{
+	shaderFile.clear();
 	effect = nullptr;
 
 	for (auto& e : shaders)
@@ -661,6 +688,7 @@ extern "C"
 
 	EXPORT void __cdecl OnExit()
 	{
+		releaseParameters();
 		releaseShaders();
 	}
 }
