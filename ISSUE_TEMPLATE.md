@@ -33,8 +33,8 @@
     with sadx-dc-lighting and should be reported to the author of those mods through 
     appropriate channels.
 
-  - Enable sadx-dc-lighting and one other mod, and try again. Add and test one aditional mod at
-    a time until the issue can be reproduced.
+  - Enable sadx-dc-lighting and one other mod, and try again. Add and test one additional mod
+    at a time until the issue can be reproduced.
 
   If the bug cannot be reproduced under these conditions, it is UNLIKELY that sadx-dc-lighting
   is the cause.
