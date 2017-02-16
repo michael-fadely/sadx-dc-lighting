@@ -179,18 +179,6 @@ static auto sanitize(Uint32& options)
 static Effect compileShader(Uint32 options)
 {
 	sanitize(options);
-
-	if (!options)
-	{
-		return nullptr;
-	}
-
-	auto effect = shaders[options];
-	if (effect)
-	{
-		return effect;
-	}
-
 	PrintDebug("[lantern] Compiling shader #%02d: %08X\n", ++shaderCount, options);
 
 	if (pool == nullptr)
@@ -254,10 +242,12 @@ static Effect compileShader(Uint32 options)
 	macros.push_back({});
 
 	ID3DXBuffer* errors = nullptr;
+	Effect effect;
+
+	auto path = globals::system + "lantern.fx";
 
 	if (shaderFile.empty())
 	{
-		auto path = globals::system + "lantern.fx";
 		std::ifstream file(path, std::ios::ate);
 		auto size = file.tellg();
 		file.seekg(0);
@@ -292,7 +282,7 @@ static Effect compileShader(Uint32 options)
 
 	if (effect == nullptr)
 	{
-		throw std::runtime_error("Shader creation failed with an unknown error. (Does lantern.fx exist?)");
+		throw std::runtime_error("Shader creation failed with an unknown error. (Does " + path + " exist?)");
 	}
 
 	effect->SetTechnique("Main");
@@ -316,16 +306,23 @@ static void begin()
 
 	if (sanitize(shader_options) && shader_options != last_options)
 	{
-		try
+		last_options = shader_options;
+		auto e = shaders[shader_options];
+		if (e == nullptr)
 		{
-			effect = compileShader(shader_options);
+			try
+			{
+				e = compileShader(shader_options);
+			}
+			catch (std::exception& ex)
+			{
+				effect = nullptr;
+				MessageBoxA(WindowHandle, ex.what(), "Shader creation failed", MB_OK | MB_ICONERROR);
+				return;
+			}
 		}
-		catch (std::exception& ex)
-		{
-			effect = nullptr;
-			MessageBoxA(WindowHandle, ex.what(), "Shader creation failed", MB_OK | MB_ICONERROR);
-			return;
-		}
+
+		effect = e;
 	}
 
 	UINT passes = 0;
