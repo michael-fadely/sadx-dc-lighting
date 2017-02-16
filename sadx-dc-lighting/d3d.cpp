@@ -164,9 +164,33 @@ static void UpdateParameterHandles()
 	}
 }
 
+static auto sanitize(Uint32& options)
+{
+	options &= d3d::Mask;
+
+	if (!(options & d3d::UseLight))
+	{
+		options &= ~d3d::UseBlending;
+	}
+
+	return options;
+}
+
 static Effect compileShader(Uint32 options)
 {
-	options &= d3d::ShaderOptions::Mask;
+	sanitize(options);
+
+	if (!options)
+	{
+		return nullptr;
+	}
+
+	auto effect = shaders[options];
+	if (effect)
+	{
+		return effect;
+	}
+
 	PrintDebug("[lantern] Compiling shader #%02d: %08X\n", ++shaderCount, options);
 
 	if (pool == nullptr)
@@ -230,12 +254,10 @@ static Effect compileShader(Uint32 options)
 	macros.push_back({});
 
 	ID3DXBuffer* errors = nullptr;
-	Effect effect;
-
-	auto path = globals::system + "lantern.fx";
 
 	if (shaderFile.empty())
 	{
+		auto path = globals::system + "lantern.fx";
 		std::ifstream file(path, std::ios::ate);
 		auto size = file.tellg();
 		file.seekg(0);
@@ -270,7 +292,7 @@ static Effect compileShader(Uint32 options)
 
 	if (effect == nullptr)
 	{
-		throw std::runtime_error("Shader creation failed with an unknown error. (Does " + path + " exist?)");
+		throw std::runtime_error("Shader creation failed with an unknown error. (Does lantern.fx exist?)");
 	}
 
 	effect->SetTechnique("Main");
@@ -292,25 +314,18 @@ static void begin()
 		i->Commit(effect);
 	}
 
-	if (shader_options != last_options)
+	if (sanitize(shader_options) && shader_options != last_options)
 	{
-		last_options = shader_options;
-		auto e = shaders[shader_options & ShaderOptions::Mask];
-		if (e == nullptr)
+		try
 		{
-			try
-			{
-				e = compileShader(shader_options);
-			}
-			catch (std::exception& ex)
-			{
-				effect = nullptr;
-				MessageBoxA(WindowHandle, ex.what(), "Shader creation failed", MB_OK | MB_ICONERROR);
-				return;
-			}
+			effect = compileShader(shader_options);
 		}
-
-		effect = e;
+		catch (std::exception& ex)
+		{
+			effect = nullptr;
+			MessageBoxA(WindowHandle, ex.what(), "Shader creation failed", MB_OK | MB_ICONERROR);
+			return;
+		}
 	}
 
 	UINT passes = 0;
