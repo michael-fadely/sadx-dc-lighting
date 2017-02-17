@@ -8,8 +8,6 @@
 namespace globals
 {
 	Sint32 light_type = 0;
-	bool fog          = true;
-	bool light        = true;
 	bool no_specular  = false;
 
 #ifdef _DEBUG

@@ -10,10 +10,25 @@
 
 namespace d3d
 {
+	enum ShaderOptions : Uint32
+	{
+		None,
+		UseTexture  = 1 << 0,
+		UseEnvMap   = 1 << 1,
+		UseAlpha    = 1 << 2,
+		UseLight    = 1 << 3,
+		UseBlending = 1 << 4,
+		UseFog      = 1 << 5,
+
+		Mask = 0x3F,
+		Count = 64
+	};
+
 	extern IDirect3DDevice9* device;
-	extern ID3DXEffect* effect;
+	extern Effect effect;
 	extern bool do_effect;
 	void LoadShader();
+	void SetShaderOptions(Uint32 options, bool add = true);
 	void InitTrampolines();
 }
 
@@ -36,9 +51,6 @@ namespace param
 	extern EffectParameter<D3DXMATRIX> ProjectionMatrix;
 	extern EffectParameter<D3DXMATRIX> wvMatrixInvT;
 	extern EffectParameter<D3DXMATRIX> TextureTransform;
-	extern EffectParameter<bool> TextureEnabled;
-	extern EffectParameter<bool> EnvironmentMapped;
-	extern EffectParameter<bool> AlphaEnabled;
 	extern EffectParameter<int> FogMode;
 	extern EffectParameter<float> FogStart;
 	extern EffectParameter<float> FogEnd;
@@ -55,7 +67,6 @@ namespace param
 #ifdef USE_SL
 	extern EffectParameter<D3DXCOLOR> MaterialSpecular;
 	extern EffectParameter<float> MaterialPower;
-	extern EffectParameter<bool> UseSourceLight;
 	extern EffectParameter<SourceLight_t> SourceLight;
 #endif
 }

@@ -7,7 +7,11 @@
 #include <d3d8to9.hpp>
 
 // Mod loader
+#include <SADXModLoader/SADXFunctions.h>
 #include <Trampoline.h>
+
+// Standard library
+#include <vector>
 
 // Local
 #include "d3d.h"
@@ -38,21 +42,19 @@ struct PolyBuff
 };
 #pragma pack(pop)
 
-enum TechniqueIndex : Uint32
-{
-	Standard = 0,
-	NoLight  = 1 << 0,
-	NoFog    = 1 << 1,
-	Neither  = NoFog | NoLight
-};
+constexpr auto DEFAULT_OPTIONS = d3d::UseAlpha | d3d::UseFog | d3d::UseLight | d3d::UseTexture;
 
-static UINT passes       = 0;
+static Uint32 shader_options = DEFAULT_OPTIONS;
+static Uint32 last_options = DEFAULT_OPTIONS;
+
+static std::vector<Uint8> shaderFile;
+static Uint32 shaderCount = 0;
+static Effect shaders[d3d::ShaderOptions::Count] = {};
+static CComPtr<ID3DXEffectPool> pool = nullptr;
+
 static bool initialized  = false;
 static bool began_effect = false;
 static Uint32 drawing    = 0;
-
-static TechniqueIndex last_technique = Standard;
-static D3DXHANDLE techniques[4] = {};
 
 static Trampoline* Direct3D_PerformLighting_t         = nullptr;
 static Trampoline* sub_77EAD0_t                       = nullptr;
@@ -77,50 +79,45 @@ DataPointer(int, TransformAndViewportInvalid, 0x03D0FD1C);
 namespace d3d
 {
 	IDirect3DDevice9* device = nullptr;
-	ID3DXEffect* effect      = nullptr;
-	bool do_effect           = false;
+	Effect effect = nullptr;
+	bool do_effect = false;
 }
 
 namespace param
 {
-	EffectParameter<Texture> BaseTexture(&d3d::effect, "BaseTexture", nullptr);
+	EffectParameter<Texture> BaseTexture("BaseTexture", nullptr);
 
-	EffectParameter<Texture> PaletteA(&d3d::effect, "PaletteA", nullptr);
-	EffectParameter<float> DiffuseIndexA(&d3d::effect, "DiffuseIndexA", 0.0f);
-	EffectParameter<float> SpecularIndexA(&d3d::effect, "SpecularIndexA", 0.0f);
+	EffectParameter<Texture> PaletteA("PaletteA", nullptr);
+	EffectParameter<float> DiffuseIndexA("DiffuseIndexA", 0.0f);
+	EffectParameter<float> SpecularIndexA("SpecularIndexA", 0.0f);
 
-	EffectParameter<Texture> PaletteB(&d3d::effect, "PaletteB", nullptr);
-	EffectParameter<float> DiffuseIndexB(&d3d::effect, "DiffuseIndexB", 0.0f);
-	EffectParameter<float> SpecularIndexB(&d3d::effect, "SpecularIndexB", 0.0f);
+	EffectParameter<Texture> PaletteB("PaletteB", nullptr);
+	EffectParameter<float> DiffuseIndexB("DiffuseIndexB", 0.0f);
+	EffectParameter<float> SpecularIndexB("SpecularIndexB", 0.0f);
 
-	EffectParameter<float> BlendFactor(&d3d::effect, "BlendFactor", 0.0f);
-	EffectParameter<D3DXMATRIX> WorldMatrix(&d3d::effect, "WorldMatrix", {});
-	EffectParameter<D3DXMATRIX> wvMatrix(&d3d::effect, "wvMatrix", {});
-	EffectParameter<D3DXMATRIX> ProjectionMatrix(&d3d::effect, "ProjectionMatrix", {});
-	EffectParameter<D3DXMATRIX> wvMatrixInvT(&d3d::effect, "wvMatrixInvT", {});
-	EffectParameter<D3DXMATRIX> TextureTransform(&d3d::effect, "TextureTransform", {});
-	EffectParameter<bool> TextureEnabled(&d3d::effect, "TextureEnabled", true);
-	EffectParameter<bool> EnvironmentMapped(&d3d::effect, "EnvironmentMapped", false);
-	EffectParameter<bool> AlphaEnabled(&d3d::effect, "AlphaEnabled", true);
-	EffectParameter<int> FogMode(&d3d::effect, "FogMode", 0);
-	EffectParameter<float> FogStart(&d3d::effect, "FogStart", 0.0f);
-	EffectParameter<float> FogEnd(&d3d::effect, "FogEnd", 0.0f);
-	EffectParameter<float> FogDensity(&d3d::effect, "FogDensity", 0.0f);
-	EffectParameter<D3DXCOLOR> FogColor(&d3d::effect, "FogColor", {});
-	EffectParameter<D3DXVECTOR3> LightDirection(&d3d::effect, "LightDirection", {});
-	EffectParameter<int> DiffuseSource(&d3d::effect, "DiffuseSource", 0);
+	EffectParameter<float> BlendFactor("BlendFactor", 0.0f);
+	EffectParameter<D3DXMATRIX> WorldMatrix("WorldMatrix", {});
+	EffectParameter<D3DXMATRIX> wvMatrix("wvMatrix", {});
+	EffectParameter<D3DXMATRIX> ProjectionMatrix("ProjectionMatrix", {});
+	EffectParameter<D3DXMATRIX> wvMatrixInvT("wvMatrixInvT", {});
+	EffectParameter<D3DXMATRIX> TextureTransform("TextureTransform", {});
+	EffectParameter<int> FogMode("FogMode", 0);
+	EffectParameter<float> FogStart("FogStart", 0.0f);
+	EffectParameter<float> FogEnd("FogEnd", 0.0f);
+	EffectParameter<float> FogDensity("FogDensity", 0.0f);
+	EffectParameter<D3DXCOLOR> FogColor("FogColor", {});
+	EffectParameter<D3DXVECTOR3> LightDirection("LightDirection", {});
+	EffectParameter<int> DiffuseSource("DiffuseSource", 0);
 
-	EffectParameter<D3DXCOLOR> MaterialDiffuse(&d3d::effect, "MaterialDiffuse", {});
+	EffectParameter<D3DXCOLOR> MaterialDiffuse("MaterialDiffuse", {});
+	EffectParameter<float> AlphaRef("AlphaRef", 0.0f);
+	EffectParameter<D3DXVECTOR3> NormalScale("NormalScale", { 1.0f, 1.0f, 1.0f });
 
 #ifdef USE_SL
-	EffectParameter<D3DXCOLOR> MaterialSpecular(&d3d::effect, "MaterialSpecular", {});
-	EffectParameter<float> MaterialPower(&d3d::effect, "MaterialPower", 1.0f);
-	EffectParameter<bool> UseSourceLight(&d3d::effect, "UseSourceLight", false);
-	EffectParameter<SourceLight_t> SourceLight(&d3d::effect, "SourceLight", {});
+	EffectParameter<D3DXCOLOR> MaterialSpecular("MaterialSpecular", {});
+	EffectParameter<float> MaterialPower("MaterialPower", 1.0f);
+	EffectParameter<SourceLight_t> SourceLight("SourceLight", {});
 #endif
-
-	EffectParameter<float> AlphaRef(&d3d::effect, "AlphaRef", 0.0f);
-	EffectParameter<D3DXVECTOR3> NormalScale(&d3d::effect, "NormalScale", { 1.0f, 1.0f, 1.0f });
 
 	static IEffectParameter* const parameters[] = {
 		&BaseTexture,
@@ -139,9 +136,6 @@ namespace param
 		&ProjectionMatrix,
 		&wvMatrixInvT,
 		&TextureTransform,
-		&TextureEnabled,
-		&EnvironmentMapped,
-		&AlphaEnabled,
 		&FogMode,
 		&FogStart,
 		&FogEnd,
@@ -162,6 +156,140 @@ namespace param
 	};
 }
 
+static void UpdateParameterHandles()
+{
+	for (auto i : param::parameters)
+	{
+		i->UpdateHandle(d3d::effect);
+	}
+}
+
+static auto sanitize(Uint32& options)
+{
+	options &= d3d::Mask;
+
+	if (!(options & d3d::UseLight))
+	{
+		options &= ~d3d::UseBlending;
+	}
+
+	return options;
+}
+
+static Effect compileShader(Uint32 options)
+{
+	sanitize(options);
+	PrintDebug("[lantern] Compiling shader #%02d: %08X\n", ++shaderCount, options);
+
+	if (pool == nullptr)
+	{
+		if (FAILED(D3DXCreateEffectPool(&pool)))
+		{
+			throw std::runtime_error("Failed to create effect pool?!");
+		}
+	}
+
+	auto o = options;
+	std::vector<D3DXMACRO> macros;
+
+	while (o != 0)
+	{
+		if (o & d3d::UseTexture)
+		{
+			o &= ~d3d::UseTexture;
+			macros.push_back({ "USE_TEXTURE", "1" });
+			continue;
+		}
+
+		if (o & d3d::UseEnvMap)
+		{
+			o &= ~d3d::UseEnvMap;
+			macros.push_back({ "USE_ENVMAP", "1" });
+			continue;
+		}
+
+		if (o & d3d::UseLight)
+		{
+			o &= ~d3d::UseLight;
+			macros.push_back({ "USE_LIGHT", "1" });
+			continue;
+		}
+
+		if (o & d3d::UseBlending)
+		{
+			o &= ~d3d::UseBlending;
+			macros.push_back({ "USE_BLENDING", "1" });
+			continue;
+		}
+
+		if (o & d3d::UseAlpha)
+		{
+			o &= ~d3d::UseAlpha;
+			macros.push_back({ "USE_ALPHA", "1" });
+			continue;
+		}
+
+		if (o & d3d::UseFog)
+		{
+			o &= ~d3d::UseFog;
+			macros.push_back({ "USE_FOG", "1" });
+			continue;
+		}
+
+		break;
+	}
+
+	macros.push_back({});
+
+	ID3DXBuffer* errors = nullptr;
+	Effect effect;
+
+	auto path = globals::system + "lantern.fx";
+
+	if (shaderFile.empty())
+	{
+		std::ifstream file(path, std::ios::ate);
+		auto size = file.tellg();
+		file.seekg(0);
+
+		if (file.is_open() && size > 0)
+		{
+			shaderFile.resize((size_t)size);
+			file.read((char*)shaderFile.data(), size);
+		}
+
+		file.close();
+	}
+
+	if (!shaderFile.empty())
+	{
+		auto result = D3DXCreateEffect(d3d::device, shaderFile.data(), shaderFile.size(), macros.data(), nullptr,
+			D3DXFX_NOT_CLONEABLE | D3DXFX_DONOTSAVESTATE | D3DXFX_DONOTSAVESAMPLERSTATE,
+			pool, &effect, &errors);
+
+		if (FAILED(result) || errors)
+		{
+			if (errors)
+			{
+				std::string compilationErrors(static_cast<const char*>(
+					errors->GetBufferPointer()));
+
+				errors->Release();
+				throw std::runtime_error(compilationErrors);
+			}
+		}
+	}
+
+	if (effect == nullptr)
+	{
+		throw std::runtime_error("Shader creation failed with an unknown error. (Does " + path + " exist?)");
+	}
+
+	effect->SetTechnique("Main");
+	shaders[options] = effect;
+	return effect;
+}
+
 using namespace d3d;
 
 static void begin()
@@ -171,26 +299,48 @@ static void begin()
 		return;
 	}
 
-	TechniqueIndex technique = (TechniqueIndex)((char)!globals::light | (char)!globals::fog << 1 & 2);
-	if (technique != last_technique)
-	{
-		effect->SetTechnique(techniques[technique]);
-		last_technique = technique;
-	}
-
 	for (auto i : param::parameters)
 	{
-		i->Commit();
+		i->Commit(effect);
 	}
 
-	effect->Begin(&passes, 0);
+	if (sanitize(shader_options) && shader_options != last_options)
+	{
+		last_options = shader_options;
+		auto e = shaders[shader_options];
+		if (e == nullptr)
+		{
+			try
+			{
+				e = compileShader(shader_options);
+			}
+			catch (std::exception& ex)
+			{
+				effect = nullptr;
+				MessageBoxA(WindowHandle, ex.what(), "Shader creation failed", MB_OK | MB_ICONERROR);
+				return;
+			}
+		}
+
+		effect = e;
+	}
+
+	UINT passes = 0;
+	if (FAILED(effect->Begin(&passes, 0)))
+	{
+		throw std::runtime_error("Failed to begin shader!");
+	}
 
 	if (passes > 1)
 	{
 		throw std::runtime_error("Multi-pass shaders are not supported.");
 	}
 
-	effect->BeginPass(0);
+	if (FAILED(effect->BeginPass(0)))
+	{
+		throw std::runtime_error("Failed to begin pass!");
+	}
+
 	began_effect = true;
 }
 static void end()
@@ -372,7 +522,7 @@ static void __cdecl Direct3D_PerformLighting_r(int type)
 	// This specifically force light type 0 to prevent
 	// the light direction from being overwritten.
 	target(0);
-	globals::light = true;
+	SetShaderOptions(ShaderOptions::UseLight, true);
 
 	if (type != globals::light_type)
 	{
@@ -441,69 +591,58 @@ static auto __stdcall SetTransformHijack(Direct3DDevice8* _device, D3DTRANSFORMS
 	return device->SetTransform(type, matrix);
 }
 
-static void UpdateParameterHandles()
+void releaseParameters()
 {
-	for (auto i : param::parameters)
+	for (auto& i : param::parameters)
 	{
-		i->UpdateHandle();
+		i->Release();
 	}
+}
+
+void releaseShaders()
+{
+	shaderFile.clear();
+	effect = nullptr;
+
+	for (auto& e : shaders)
+	{
+		e = nullptr;
+	}
+
+	shaderCount = 0;
+	pool = nullptr;
 }
 
 void d3d::LoadShader()
 {
 	if (!initialized)
+	{
 		return;
+	}
 
-	ID3DXBuffer* pCompilationErrors = nullptr;
+	releaseShaders();
 
 	try
 	{
-		if (effect != nullptr)
-		{
-			effect->Release();
-			effect = nullptr;
-		}
-
-		auto path = globals::system + "lantern.fx";
-
-		auto result = D3DXCreateEffectFromFileA(device, path.c_str(), nullptr, nullptr,
-			D3DXFX_NOT_CLONEABLE, nullptr, &effect, &pCompilationErrors);
-
-		if (FAILED(result))
-		{
-			if (pCompilationErrors)
-			{
-				std::string compilationErrors(static_cast<const char*>(
-					pCompilationErrors->GetBufferPointer()));
-
-				pCompilationErrors->Release();
-				throw std::runtime_error(compilationErrors);
-			}
-		}
-
-		if (pCompilationErrors)
-		{
-			pCompilationErrors->Release();
-		}
-
-		if (effect == nullptr)
-		{
-			throw std::runtime_error("Shader creation failed with an unknown error. (Does " + path + " exist?)");
-		}
-
+		effect = compileShader(DEFAULT_OPTIONS);
 		UpdateParameterHandles();
-
-		techniques[0] = effect->GetTechniqueByName("Standard");
-		techniques[1] = effect->GetTechniqueByName("NoLight");
-		techniques[2] = effect->GetTechniqueByName("NoFog");
-		techniques[3] = effect->GetTechniqueByName("Neither");
-
-		effect->SetTechnique(techniques[0]);
 	}
 	catch (std::exception& ex)
 	{
 		effect = nullptr;
 		MessageBoxA(WindowHandle, ex.what(), "Shader creation failed", MB_OK | MB_ICONERROR);
+	}
+}
+
+void d3d::SetShaderOptions(Uint32 options, bool add)
+{
+	if (add)
+	{
+		shader_options |= options;
+	}
+	else
+	{
+		shader_options &= ~options;
 	}
 }
 
@@ -537,18 +676,31 @@ extern "C"
 {
 	EXPORT void __cdecl OnRenderDeviceLost()
 	{
-		if (effect != nullptr)
+		for (auto& e : shaders)
 		{
-			effect->OnLostDevice();
+			if (e != nullptr)
+			{
+				e->OnLostDevice();
+			}
 		}
 	}
 
 	EXPORT void __cdecl OnRenderDeviceReset()
 	{
-		if (effect != nullptr)
+		for (auto& e : shaders)
 		{
-			effect->OnResetDevice();
-			UpdateParameterHandles();
+			if (e != nullptr)
+			{
+				e->OnResetDevice();
+			}
 		}
+
+		UpdateParameterHandles();
+	}
+
+	EXPORT void __cdecl OnExit()
+	{
+		releaseParameters();
+		releaseShaders();
 	}
 }

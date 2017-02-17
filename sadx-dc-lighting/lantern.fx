@@ -26,16 +26,36 @@ struct PS_IN
 	float4 diffuse  : COLOR0;
 	float4 specular : COLOR1;
 	float2 tex      : TEXCOORD0;
-	float  fogDist  : FOG;
+	float  fogDist : FOG;
 };
 
-Texture2D BaseTexture;
+// This never changes
+static float AlphaRef = 16.0f / 255.0f;
+
+shared float4x4 WorldMatrix;
+shared float4x4 wvMatrix;
+shared float4x4 ProjectionMatrix;
+
+shared float4 MaterialDiffuse = float4(1.0f, 1.0f, 1.0f, 1.0f);
+shared uint   DiffuseSource = (uint)D3DMCS_COLOR1;
+
+shared Texture2D BaseTexture;
 sampler2D baseSampler = sampler_state
 {
 	Texture = <BaseTexture>;
 };
 
-Texture2D PaletteA;
+// The inverse transpose of the world view matrix - used for environment mapping.
+shared float4x4 wvMatrixInvT;
+// Used primarily for environment mapping.
+shared float4x4 TextureTransform = {
+	-0.5, 0.0, 0.0, 0.0,
+	 0.0, 0.5, 0.0, 0.0,
+	 0.0, 0.0, 1.0, 0.0,
+	 0.5, 0.5, 0.0, 1.0
+};
+
+shared Texture2D PaletteA;
 sampler2D atlasSamplerA = sampler_state
 {
 	Texture   = <PaletteA>;
@@ -45,7 +65,7 @@ sampler2D atlasSamplerA = sampler_state
 	AddressV  = Clamp;
 };
 
-Texture2D PaletteB;
+shared Texture2D PaletteB;
 sampler2D atlasSamplerB = sampler_state
 {
 	Texture   = <PaletteB>;
@@ -55,45 +75,22 @@ sampler2D atlasSamplerB = sampler_state
 	AddressV  = Clamp;
 };
 
-float4x4 WorldMatrix;
-float4x4 wvMatrix;
-float4x4 ProjectionMatrix;
-// The inverse transpose of the world view matrix - used for environment mapping.
-float4x4 wvMatrixInvT;
-// Used primarily for environment mapping.
-float4x4 TextureTransform = {
-	-0.5, 0.0, 0.0, 0.0,
-	 0.0, 0.5, 0.0, 0.0,
-	 0.0, 0.0, 1.0, 0.0,
-	 0.5, 0.5, 0.0, 1.0
-};
-
-// This never changes
-static float AlphaRef = 16.0f / 255.0f;
-
 // Pre-adjusted on the CPU before being sent to the shader.
-float DiffuseIndexA = 0;
-float DiffuseIndexB = 0;
-float SpecularIndexA = 0;
-float SpecularIndexB = 0;
+shared float DiffuseIndexA  = 0;
+shared float DiffuseIndexB  = 0;
+shared float SpecularIndexA = 0;
+shared float SpecularIndexB = 0;
 
-bool TextureEnabled    = true;
-bool EnvironmentMapped = false;
-bool AlphaEnabled      = true;
+shared float3 LightDirection = float3(0.0f, -1.0f, 0.0f);
+shared float3 NormalScale = float3(1, 1, 1);
 
-uint   FogMode = (uint)FOGMODE_NONE;
-float  FogStart;
-float  FogEnd;
-float  FogDensity;
-float4 FogColor;
+shared uint   FogMode = (uint)FOGMODE_NONE;
+shared float  FogStart;
+shared float  FogEnd;
+shared float  FogDensity;
+shared float4 FogColor;
 
-float3 LightDirection   = float3(0.0f, -1.0f, 0.0f);
-float4 MaterialDiffuse  = float4(1.0f, 1.0f, 1.0f, 1.0f);
-uint   DiffuseSource    = (uint)D3DMCS_COLOR1;
-
-float3 NormalScale = float3(1, 1, 1);
-
-float BlendFactor = 0.0f;
+shared float BlendFactor = 0.0f;
 
 #ifdef USE_SL
 
@@ -105,10 +102,11 @@ struct SourceLight_t
 	float power;
 };
 
-bool          UseSourceLight   = false;
-float4        MaterialSpecular = float4(0.0f, 0.0f, 0.0f, 0.0f);
-float         MaterialPower    = 1.0f;
-SourceLight_t SourceLight;
+shared bool   UseSourceLight   = false;
+shared float4 MaterialSpecular = float4(0.0f, 0.0f, 0.0f, 0.0f);
+shared float  MaterialPower    = 1.0f;
+
+shared SourceLight_t SourceLight;
 
 #endif
 
@@ -127,6 +125,9 @@ float4 GetDiffuse(in float4 vcolor)
 
 	return color;
 }
+
+#ifdef USE_FOG
+
 float CalcFogFactor(float d)
 {
 	float fogCoeff;
@@ -151,10 +152,11 @@ float CalcFogFactor(float d)
 
 	return clamp(fogCoeff, 0, 1);
 }
+#endif
 
 // Vertex shaders
 
-PS_IN vs_main(VS_IN input, uniform bool lightEnabled, uniform bool interpolate = true)
+PS_IN vs_main(VS_IN input)
 {
 	PS_IN output;
 
@@ -166,17 +168,14 @@ PS_IN vs_main(VS_IN input, uniform bool lightEnabled, uniform bool interpolate =
 
 	output.position = position;
 
-	if (TextureEnabled && EnvironmentMapped)
-	{
-		output.tex = (float2)mul(float4(input.normal, 1), wvMatrixInvT);
-		output.tex = (float2)mul(float4(output.tex, 0, 1), TextureTransform);
-	}
-	else
-	{
-		output.tex = input.tex;
-	}
+#if defined USE_TEXTURE && USE_ENVMAP
+	output.tex = (float2)mul(float4(input.normal, 1), wvMatrixInvT);
+	output.tex = (float2)mul(float4(output.tex, 0, 1), TextureTransform);
+#else
+	output.tex = input.tex;
+#endif
 
-	if (lightEnabled == true)
+#ifdef USE_LIGHT
 	{
 		float3 worldNormal = mul(input.normal * NormalScale, (float3x3)WorldMatrix);
 
@@ -192,125 +191,64 @@ PS_IN vs_main(VS_IN input, uniform bool lightEnabled, uniform bool interpolate =
 		// HACK: This clamp prevents a visual bug in the Mystic Ruins past (shrine on fire)
 		float i = floor(clamp(1 - (_dot + 1) / 2, 0, 0.99) * 255) / 255;
 
-#ifdef USE_SL
-		if (UseSourceLight == true)
-		{
-			output.diffuse = max(0, float4(diffuse.rgb * SourceLight.ambient * _dot, diffuse.a));
-			output.specular = max(0, float4(1, 1, 1, 0.0f) * pow(_dot, MaterialPower));
-		}
-		else
-		{
-#endif
-			float4 pdiffuse = tex2Dlod(atlasSamplerA, float4(i, DiffuseIndexA, 0, 0));
-			float4 pspecular = tex2Dlod(atlasSamplerA, float4(i, SpecularIndexA, 0, 0));
+	#ifdef USE_SL
+		output.diffuse = max(0, float4(diffuse.rgb * SourceLight.ambient * _dot, diffuse.a));
+		output.specular = max(0, float4(1, 1, 1, 0.0f) * pow(_dot, MaterialPower));
+	#else
+		float4 pdiffuse = tex2Dlod(atlasSamplerA, float4(i, DiffuseIndexA, 0, 0));
+		float4 pspecular = tex2Dlod(atlasSamplerA, float4(i, SpecularIndexA, 0, 0));
 
-			if (interpolate)
-			{
-				float4 bdiffuse = tex2Dlod(atlasSamplerB, float4(i, DiffuseIndexB, 0, 0));
-				float4 bspecular = tex2Dlod(atlasSamplerB, float4(i, SpecularIndexB, 0, 0));
+	#ifdef USE_BLENDING
+		float4 bdiffuse = tex2Dlod(atlasSamplerB, float4(i, DiffuseIndexB, 0, 0));
+		float4 bspecular = tex2Dlod(atlasSamplerB, float4(i, SpecularIndexB, 0, 0));
 
-				pdiffuse = lerp(pdiffuse, bdiffuse, BlendFactor);
-				pspecular = lerp(pspecular, bspecular, BlendFactor);
-			}
+		pdiffuse = lerp(pdiffuse, bdiffuse, BlendFactor);
+		pspecular = lerp(pspecular, bspecular, BlendFactor);
+	#endif
 
-			output.diffuse = float4((diffuse * pdiffuse).rgb, diffuse.a);
-			output.specular = float4(pspecular.rgb, 0.0f);
-#ifdef USE_SL
-		}
-#endif
+		output.diffuse = float4((diffuse * pdiffuse).rgb, diffuse.a);
+		output.specular = float4(pspecular.rgb, 0.0f);
+	#endif
 	}
-	else
+#else
 	{
 		// Just spit out the vertex or material color if lighting is off.
 		output.diffuse = GetDiffuse(input.color);
 		output.specular = 0;
 	}
+#endif
 
 	return output;
 }
 
-PS_IN vs_light(VS_IN input)
-{
-	return vs_main(input, true, true);
-}
-PS_IN vs_nolight(VS_IN input)
-{
-	return vs_main(input, false, true);
-}
-
-// Pixel shaders
-
-float4 ps_main(PS_IN input, uniform bool useFog)
+float4 ps_main(PS_IN input) : COLOR
 {
 	float4 result;
 
-	if (TextureEnabled)
-	{
-		result = tex2D(baseSampler, input.tex);
-		result = result * input.diffuse + input.specular;
-	}
-	else
-	{
-		result = input.diffuse + input.specular;
-	}
+#ifdef USE_TEXTURE
+	result = tex2D(baseSampler, input.tex);
+	result = result * input.diffuse + input.specular;
+#else
+	result = input.diffuse + input.specular;
+#endif
 
-	if (AlphaEnabled)
-	{
-		clip(result.a < AlphaRef ? -1 : 1);
-	}
+#ifdef USE_ALPHA
+	clip(result.a < AlphaRef ? -1 : 1);
+#endif
 
-	if (useFog)
-	{
-		float factor = CalcFogFactor(input.fogDist);
-		result.rgb = (factor * result + (1.0 - factor) * FogColor).rgb;
-	}
+#ifdef USE_FOG
+	float factor = CalcFogFactor(input.fogDist);
+	result.rgb = (factor * result + (1.0 - factor) * FogColor).rgb;
+#endif
 
 	return result;
 }
 
-float4 ps_fog(PS_IN input) : COLOR
+technique Main
 {
-	return ps_main(input, true);
-}
-float4 ps_nofog(PS_IN input) : COLOR
-{
-	return ps_main(input, false);
-}
-
-// Standard techniques
-
-technique Standard
-{
-	pass
+	pass p0
 	{
-		VertexShader = compile vs_3_0 vs_light();
-		PixelShader  = compile ps_3_0 ps_fog();
-	}
-}
-
-technique NoLight
-{
-	pass
-	{
-		VertexShader = compile vs_3_0 vs_nolight();
-		PixelShader  = compile ps_3_0 ps_fog();
-	}
-}
-
-technique NoFog
-{
-	pass
-	{
-		VertexShader = compile vs_3_0 vs_light();
-		PixelShader  = compile ps_3_0 ps_nofog();
-	}
-}
-
-technique Neither
-{
-	pass
-	{
-		VertexShader = compile vs_3_0 vs_nolight();
-		PixelShader  = compile ps_3_0 ps_nofog();
+		VertexShader = compile vs_3_0 vs_main();
+		PixelShader  = compile ps_3_0 ps_main();
 	}
 }

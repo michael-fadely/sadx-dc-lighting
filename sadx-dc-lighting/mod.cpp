@@ -159,19 +159,19 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 
 	Uint32 flags = material->attrflags;
 	Uint32 texid = material->attr_texId & 0xFFFF;
-	bool use_texture = (flags & NJD_FLAG_USE_TEXTURE) != 0;
 
 	if (_nj_control_3d_flag_ & NJD_CONTROL_3D_CONSTANT_ATTR)
 	{
 		flags = _nj_constant_attr_or_ | _nj_constant_attr_and_ & flags;
 	}
 
-	globals::light = (flags & NJD_FLAG_IGNORE_LIGHT) == 0;
-
 	globals::palettes.SetPalettes(globals::light_type, globals::no_specular ? flags | NJD_FLAG_IGNORE_SPECULAR : flags);
-	param::EnvironmentMapped = (flags & NJD_FLAG_USE_ENV) != 0;
-	param::AlphaEnabled = (flags & NJD_FLAG_USE_ALPHA) != 0;
-	param::TextureEnabled = use_texture;
+
+	bool use_texture = (flags & NJD_FLAG_USE_TEXTURE) != 0;
+	SetShaderOptions(ShaderOptions::UseTexture, use_texture);
+	SetShaderOptions(ShaderOptions::UseAlpha, (flags & NJD_FLAG_USE_ALPHA) != 0);
+	SetShaderOptions(ShaderOptions::UseEnvMap, (flags & NJD_FLAG_USE_ENV) != 0);
+	SetShaderOptions(ShaderOptions::UseLight, (flags & NJD_FLAG_IGNORE_LIGHT) == 0);
 
 	// Environment map matrix
 	param::TextureTransform = *(D3DXMATRIX*)0x038A5DD0;

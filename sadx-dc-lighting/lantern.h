@@ -29,7 +29,7 @@ union SourceLight
 #pragma pack(pop)
 
 static_assert(sizeof(SourceLight) == 0x60, "SourceLight size mismatch");
-template<> void EffectParameter<SourceLight_t>::Commit();
+template<> void EffectParameter<SourceLight_t>::Commit(Effect effect);
 
 class LanternInstance;
 
