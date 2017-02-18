@@ -166,7 +166,7 @@ static void UpdateParameterHandles()
 
 static auto sanitize(Uint32& options)
 {
-	return options & d3d::Mask;
+	return options &= d3d::Mask;
 }
 
 static Effect compileShader(Uint32 options)
