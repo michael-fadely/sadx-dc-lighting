@@ -26,7 +26,7 @@ struct PS_IN
 	float4 diffuse  : COLOR0;
 	float4 specular : COLOR1;
 	float2 tex      : TEXCOORD0;
-	float  fogDist : FOG;
+	float  fogDist  : FOG;
 };
 
 // This never changes
@@ -198,7 +198,7 @@ PS_IN vs_main(VS_IN input)
 		float4 pdiffuse = tex2Dlod(atlasSamplerA, float4(i, DiffuseIndexA, 0, 0));
 		float4 pspecular = tex2Dlod(atlasSamplerA, float4(i, SpecularIndexA, 0, 0));
 
-	#ifdef USE_BLENDING
+	#ifdef USE_BLEND
 		float4 bdiffuse = tex2Dlod(atlasSamplerB, float4(i, DiffuseIndexB, 0, 0));
 		float4 bspecular = tex2Dlod(atlasSamplerB, float4(i, SpecularIndexB, 0, 0));
 

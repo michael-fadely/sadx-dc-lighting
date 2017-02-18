@@ -166,14 +166,7 @@ static void UpdateParameterHandles()
 
 static auto sanitize(Uint32& options)
 {
-	options &= d3d::Mask;
-
-	if (!(options & d3d::UseLight))
-	{
-		options &= ~d3d::UseBlending;
-	}
-
-	return options;
+	return options & d3d::Mask;
 }
 
 static Effect compileShader(Uint32 options)
@@ -215,10 +208,10 @@ static Effect compileShader(Uint32 options)
 			continue;
 		}
 
-		if (o & d3d::UseBlending)
+		if (o & d3d::UseBlend)
 		{
-			o &= ~d3d::UseBlending;
-			macros.push_back({ "USE_BLENDING", "1" });
+			o &= ~d3d::UseBlend;
+			macros.push_back({ "USE_BLEND", "1" });
 			continue;
 		}
 

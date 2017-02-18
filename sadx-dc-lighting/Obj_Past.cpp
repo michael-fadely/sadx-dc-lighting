@@ -18,7 +18,7 @@ static Trampoline* Obj_Past_t = nullptr;
 
 static void __cdecl Obj_Past_Delete_r(ObjectMaster* _this)
 {
-	SetShaderOptions(d3d::ShaderOptions::UseBlending, false);
+	SetShaderOptions(d3d::ShaderOptions::UseBlend, false);
 	Obj_Past_Delete(_this);
 }
 
@@ -28,7 +28,7 @@ static void __cdecl Obj_Past_r(ObjectMaster *_this)
 	switch (entity->Action)
 	{
 		case 0:
-			SetShaderOptions(d3d::ShaderOptions::UseBlending, true);
+			SetShaderOptions(d3d::ShaderOptions::UseBlend, true);
 
 			entity->InvulnerableTime = CurrentAct;
 			sub_543F20();
