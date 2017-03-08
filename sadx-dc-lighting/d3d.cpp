@@ -563,7 +563,7 @@ static void __stdcall DrawMeshSetBuffer_c(MeshSetBuffer* buffer)
 	end();
 }
 
-constexpr auto loc_77EF09 = (void*)0x0077EF09;
+static const auto loc_77EF09 = (void*)0x0077EF09;
 static void __declspec(naked) DrawMeshSetBuffer_asm()
 {
 	__asm
