@@ -381,7 +381,7 @@ extern "C"
 		NormalScaleMultiplier = { 1.0f, 1.0f, 1.0f };
 	}
 
-#ifdef _DEBUG
+#if 0
 	EXPORT void __cdecl OnFrame()
 	{
 		auto pad = ControllerPointers[0];

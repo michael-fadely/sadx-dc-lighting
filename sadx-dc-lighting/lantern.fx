@@ -26,9 +26,7 @@ struct PS_IN
 	float4 diffuse  : COLOR0;
 	float4 specular : COLOR1;
 	float2 tex      : TEXCOORD0;
-#ifdef USE_OIT
 	float2 depth    : TEXCOORD1;
-#endif
 	float  fogDist  : FOG;
 };
 
@@ -80,6 +78,7 @@ sampler2D atlasSamplerB = sampler_state
 
 shared Texture2D AlphaDepth;
 shared Texture2D OpaqueDepth;
+shared Texture2D BackBuffer;
 
 sampler alphaDepthSampler = sampler_state
 {
@@ -99,8 +98,20 @@ sampler opaqueDepthSampler = sampler_state
 	AddressV  = Clamp;
 };
 
+sampler backBufferSampler = sampler_state
+{
+	Texture   = <BackBuffer>;
+	MinFilter = Point;
+	MagFilter = Point;
+	AddressU  = Clamp;
+	AddressV  = Clamp;
+};
+
 // Enables or disables depth tests against the previous alpha depth buffer.
 shared bool AlphaDepthTest;
+
+// garbage I hate it
+shared bool DestBlendOne;
 
 // This will likely need to be non-static for more robust control.
 // Enabled or disabled depth tests against the opaque-only depth buffer.
@@ -208,9 +219,7 @@ PS_IN vs_main(VS_IN input)
 	output.tex = input.tex;
 #endif
 
-#ifdef USE_OIT
 	output.depth = output.position.zw;
-#endif
 
 #ifdef USE_LIGHT
 	{
@@ -229,22 +238,26 @@ PS_IN vs_main(VS_IN input)
 		float i = floor(clamp(1 - (_dot + 1) / 2, 0, 0.99) * 255) / 255;
 
 	#ifdef USE_SL
-		output.diffuse = max(0, float4(diffuse.rgb * SourceLight.ambient * _dot, diffuse.a));
-		output.specular = max(0, float4(1, 1, 1, 0.0f) * pow(_dot, MaterialPower));
+		{
+			output.diffuse = max(0, float4(diffuse.rgb * SourceLight.ambient * _dot, diffuse.a));
+			output.specular = max(0, float4(1, 1, 1, 0.0f) * pow(_dot, MaterialPower));
+		}
 	#else
-		float4 pdiffuse = tex2Dlod(atlasSamplerA, float4(i, DiffuseIndexA, 0, 0));
-		float4 pspecular = tex2Dlod(atlasSamplerA, float4(i, SpecularIndexA, 0, 0));
+		{
+			float4 pdiffuse = tex2Dlod(atlasSamplerA, float4(i, DiffuseIndexA, 0, 0));
+			float4 pspecular = tex2Dlod(atlasSamplerA, float4(i, SpecularIndexA, 0, 0));
 
-	#ifdef USE_BLEND
-		float4 bdiffuse = tex2Dlod(atlasSamplerB, float4(i, DiffuseIndexB, 0, 0));
-		float4 bspecular = tex2Dlod(atlasSamplerB, float4(i, SpecularIndexB, 0, 0));
+		#ifdef USE_BLEND
+			float4 bdiffuse = tex2Dlod(atlasSamplerB, float4(i, DiffuseIndexB, 0, 0));
+			float4 bspecular = tex2Dlod(atlasSamplerB, float4(i, SpecularIndexB, 0, 0));
 
-		pdiffuse = lerp(pdiffuse, bdiffuse, BlendFactor);
-		pspecular = lerp(pspecular, bspecular, BlendFactor);
-	#endif
+			pdiffuse = lerp(pdiffuse, bdiffuse, BlendFactor);
+			pspecular = lerp(pspecular, bspecular, BlendFactor);
+		#endif
 
-		output.diffuse = float4((diffuse * pdiffuse).rgb, diffuse.a);
-		output.specular = float4(pspecular.rgb, 0.0f);
+			output.diffuse = float4((diffuse * pdiffuse).rgb, diffuse.a);
+			output.specular = float4(pspecular.rgb, 0.0f);
+		}
 	#endif
 	}
 #else
@@ -302,7 +315,11 @@ float4 ps_main(PS_IN input) : COLOR
 #endif
 
 #ifdef USE_ALPHA
-	clip(result.a < AlphaRef ? -1 : 1);
+	#ifdef USE_OIT
+		clip(result.a < 1E-5 ? -1 : 1);
+	#else
+		clip(result.a < AlphaRef ? -1 : 1);
+	#endif
 #endif
 
 #ifdef USE_FOG

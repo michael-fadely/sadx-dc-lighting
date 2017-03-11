@@ -69,7 +69,9 @@ namespace param
 #ifdef USE_OIT
 	extern EffectParameter<Texture> AlphaDepth;
 	extern EffectParameter<Texture> OpaqueDepth;
+	extern EffectParameter<Texture> BackBuffer;
 	extern EffectParameter<bool> AlphaDepthTest;
+	extern EffectParameter<bool> DestBlendOne;
 	extern EffectParameter<D3DXVECTOR2> ViewPort;
 #endif
 

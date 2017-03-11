@@ -19,6 +19,7 @@
 #include "globals.h"
 #include "lantern.h"
 #include "EffectParameter.h"
+#include "modelqueue.h"
 
 #pragma pack(push, 1)
 struct __declspec(align(2)) PolyBuff_RenderArgs
@@ -117,7 +118,10 @@ namespace param
 #ifdef USE_OIT
 	EffectParameter<Texture> AlphaDepth("AlphaDepth", nullptr);
 	EffectParameter<Texture> OpaqueDepth("OpaqueDepth", nullptr);
+	// TODO: remove
+	EffectParameter<Texture> BackBuffer("BackBuffer", nullptr);
 	EffectParameter<bool> AlphaDepthTest("AlphaDepthTest", false);
+	EffectParameter<bool> DestBlendOne("DestBlendOne", false);
 	EffectParameter<D3DXVECTOR2> ViewPort("ViewPort", {});
 #endif
 
@@ -158,7 +162,9 @@ namespace param
 #ifdef USE_OIT
 		&AlphaDepth,
 		&OpaqueDepth,
+		&BackBuffer,
 		&AlphaDepthTest,
+		&DestBlendOne,
 		&ViewPort,
 #endif
 
@@ -171,12 +177,15 @@ namespace param
 	};
 }
 
-static const int numUnits = 2;
-static const int numPasses = 4;
-static Texture depthUnits[numUnits] = {};
+static const int numPasses             = 4;
+static Texture depthUnits[numPasses]   = {};
 static Texture renderLayers[numPasses] = {};
-static Texture depthBuffer = nullptr;
-static Surface depthSurface = nullptr;
+static Texture depthBuffer             = nullptr;
+static Surface depthSurface            = nullptr;
+static Texture backBuffer              = nullptr;
+static Surface backBufferSurface       = nullptr;
+static Surface origRenderTarget        = nullptr;
+static bool peeling                    = false;
 
 static void createDepthTextures()
 {
@@ -201,6 +210,14 @@ static void createDepthTextures()
 
 	device->CreateTexture(present.BackBufferWidth, present.BackBufferHeight,
 		1, D3DUSAGE_DEPTHSTENCIL, (D3DFORMAT)'ZTNI', D3DPOOL_DEFAULT, &depthBuffer, nullptr);
+
+	device->CreateTexture(present.BackBufferWidth, present.BackBufferHeight,
+		1, D3DUSAGE_RENDERTARGET, present.BackBufferFormat, D3DPOOL_DEFAULT, &backBuffer, nullptr);
+
+	backBuffer->GetSurfaceLevel(0, &backBufferSurface);
+
+	device->GetRenderTarget(0, &origRenderTarget);
+	device->SetRenderTarget(0, backBufferSurface);
 
 	depthBuffer->GetSurfaceLevel(0, &depthSurface);
 	device->SetDepthStencilSurface(depthSurface);
@@ -355,15 +372,16 @@ static void begin()
 
 	if (!do_effect || began_effect)
 	{
-		if (shader_options & UseOit)
+		if ((peeling || shader_options & UseOit) && shader_options != last_options)
 		{
 			end();
-			do_effect = true;
 		}
 		else
 		{
 			return;
 		}
+
+		do_effect = true;
 	}
 
 	for (auto i : param::parameters)
@@ -460,7 +478,7 @@ static void DrawPolyBuff(PolyBuff* _this, D3DPRIMITIVETYPE type)
 			}
 			else
 			{
-				effect->CommitChanges();
+				//effect->CommitChanges();
 			}
 		}
 
@@ -552,6 +570,10 @@ static void __cdecl Direct3D_SetWorldTransform_r()
 	D3DXMatrixTranspose(&wvMatrix, &wvMatrix);
 	// The inverse transpose matrix is used for environment mapping.
 	param::wvMatrixInvT = wvMatrix;
+
+	param::WorldMatrix.Commit(effect);
+	param::wvMatrix.Commit(effect);
+	param::wvMatrixInvT.Commit(effect);
 }
 
 static void __stdcall Direct3D_SetProjectionMatrix_r(float hfov, float nearPlane, float farPlane)
@@ -718,6 +740,25 @@ void d3d::SetShaderOptions(Uint32 options, bool add)
 
 #ifdef USE_OIT
 
+static Sint32 show_layer = 0;
+
+const char* strings[14] = {
+	"nope",
+	"D3DBLEND_ZERO",
+	"D3DBLEND_ONE",
+	"D3DBLEND_SRCCOLOR",
+	"D3DBLEND_INVSRCCOLOR",
+	"D3DBLEND_SRCALPHA",
+	"D3DBLEND_INVSRCALPHA",
+	"D3DBLEND_DESTALPHA",
+	"D3DBLEND_INVDESTALPHA",
+	"D3DBLEND_DESTCOLOR",
+	"D3DBLEND_INVDESTCOLOR",
+	"D3DBLEND_SRCALPHASAT",
+	"D3DBLEND_BOTHSRCALPHA",
+	"D3DBLEND_BOTHINVSRCALPHA"
+};
+
 struct QuadVertex
 {
 	static const UINT Format = D3DFVF_XYZRHW | D3DFVF_TEX1;
@@ -757,35 +798,78 @@ static void DrawQuad()
 
 static void __cdecl Direct3D_EnableZWrite_r(DWORD enable)
 {
-	device->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
+	if (peeling)
+	{
+		device->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
+		return;
+	}
+
+	device->SetRenderState(D3DRS_ZWRITEENABLE, enable);
+}
+static void __cdecl Direct3D_SetZFunc_r(Uint8 index)
+{
+	if (peeling)
+	{
+		device->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESS);
+		return;
+	}
+
+	device->SetRenderState(D3DRS_ZFUNC, index + 1);
 }
 
+static void layer_debug()
+{
+	auto pad = ControllerPointers[0];
+
+	if (pad)
+	{
+		auto pressed = pad->PressedButtons;
+
+		if (pressed & Buttons_Down)
+		{
+			++show_layer %= numPasses + 1;
+		}
+		else if (pressed & Buttons_Up)
+		{
+			if (--show_layer < 0)
+			{
+				show_layer = numPasses;
+			}
+		}
+	}
+
+	DisplayDebugStringFormatted(NJM_LOCATION(1, 1), "LAYER: %d", show_layer);
+}
+
+static bool final_blend = false;
 static void __cdecl DrawQueuedModels_r();
 static Trampoline DrawQueuedModels_t(0x004086F0, 0x004086F6, DrawQueuedModels_r);
-static void __cdecl DrawQueuedModels_r()
+
+static void renderLayerPasses(void(*draw)(), bool clearZ)
 {
 	using namespace param;
-	using namespace d3d;
 
-	auto draw = TARGET_STATIC(DrawQueuedModels);
-	Surface origTarget = nullptr;
-
-	OpaqueDepth = depthBuffer;
-	device->GetRenderTarget(0, &origTarget);
-
-	do_effect = true;
 	SetShaderOptions(UseOit, true);
+	OpaqueDepth = depthBuffer;
+	peeling = true;
+	do_effect = true;
+	BackBuffer = backBuffer;
+
 	begin();
 
 	for (int i = 0; i < numPasses; i++)
 	{
-		int currId = i % 2;
-		int lastId = (i + 1) % 2;
+		int currId = i % numPasses;
+		int lastId = currId - 1;
+		if (lastId < 0)
+		{
+			lastId = numPasses - 1;
+		}
 
 		Texture currUnit = depthUnits[currId];
 		Texture lastUnit = depthUnits[lastId];
 
-		Surface unit = nullptr;
+		Surface unit   = nullptr;
 		Surface target = nullptr;
 
 		currUnit->GetSurfaceLevel(0, &unit);
@@ -797,8 +881,8 @@ static void __cdecl DrawQueuedModels_r()
 		// Always use LESS comparison with the native d3d depth test.
 		device->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESS);
 		// Clear old crap
-		// TODO: fix
-		device->Clear(0, nullptr, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0xFF000000, 1.0f, 0);
+		auto clearFlags = D3DCLEAR_TARGET;
+		device->Clear(0, nullptr, clearZ ? (clearFlags | D3DCLEAR_ZBUFFER) : clearFlags, 0, 1.0f, 0);
 
 		// Only enable manual alpha depth tests on the second pass.
 		// If not, the depth test will fail and nothing will render
@@ -806,11 +890,14 @@ static void __cdecl DrawQueuedModels_r()
 		// The shader performs a manual GREATER depth test on
 		// transparent things.
 		AlphaDepthTest = i != 0;
+		AlphaDepthTest.Commit(effect);
 		// Set the depth buffer to test against if above stuff.
 		AlphaDepth = lastUnit;
-		effect->CommitChanges();
+		AlphaDepth.Commit(effect);
 
+		auto last = *(int*)0x3AB98AC;
 		draw();
+		*(int*)0x3AB98AC = last;
 
 		currUnit = nullptr;
 		lastUnit = nullptr;
@@ -818,24 +905,21 @@ static void __cdecl DrawQueuedModels_r()
 		target   = nullptr;
 
 		AlphaDepth = nullptr;
+		AlphaDepth.Commit(effect);
 	}
 
 	end();
+
+	peeling = false;
+	OpaqueDepth = nullptr;
+	BackBuffer = nullptr;
 	SetShaderOptions(UseOit, false);
-	device->SetRenderTarget(0, origTarget);
-	device->SetDepthStencilSurface(depthSurface);
-	origTarget = nullptr;
+}
 
-	// HACK:
-	auto pad = ControllerPointers[0];
-	if (!pad || !!(pad->HeldButtons & Buttons_Y))
-	{
-		// TODO: fix
-		device->Clear(0, nullptr, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
-	}
-
+static void renderBackBuffer(bool populate, D3DBLEND layerBlend)
+{
 	DWORD zenable, lighting, alphablendenable, alphatestenable,
-		srcblend, dstblend;
+	      srcblend, dstblend;
 
 	device->GetRenderState(D3DRS_ZENABLE, &zenable);
 	device->GetRenderState(D3DRS_LIGHTING, &lighting);
@@ -846,15 +930,45 @@ static void __cdecl DrawQueuedModels_r()
 
 	device->SetRenderState(D3DRS_ZENABLE, false);
 	device->SetRenderState(D3DRS_LIGHTING, false);
-	device->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
 	device->SetRenderState(D3DRS_ALPHATESTENABLE, false);
 
-	// TODO: fix
+	device->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+	device->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTOP_SELECTARG1);
+	device->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTOP_DISABLE);
+	device->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
+	device->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTOP_SELECTARG1);
+	device->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTOP_DISABLE);
+
+	device->SetRenderTarget(0, origRenderTarget);
+	device->SetDepthStencilSurface(depthSurface);
+
+	if (populate)
+	{
+		device->Clear(0, nullptr, D3DCLEAR_TARGET, 0, 1.0f, 0);
+	}
+
+	// draw the custom backbuffer to the real backbuffer
+	auto pad = ControllerPointers[0];
+	if (!pad || !(pad->HeldButtons & Buttons_C))
+	{
+		if (populate)
+		{
+			device->SetRenderState(D3DRS_ALPHABLENDENABLE, false);
+			device->SetTexture(0, backBuffer);
+			DrawQuad();
+			device->SetTexture(0, nullptr);
+		}
+	}
+
+	device->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
 	device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-	device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+	device->SetRenderState(D3DRS_DESTBLEND, layerBlend);
 
 	for (int i = numPasses; i > 0; i--)
 	{
+		if (show_layer >= 1 && i != show_layer)
+			continue;
+
 		device->SetTexture(0, renderLayers[i - 1]);
 		DrawQuad();
 	}
@@ -865,12 +979,112 @@ static void __cdecl DrawQueuedModels_r()
 	device->SetRenderState(D3DRS_ALPHATESTENABLE, alphatestenable);
 	device->SetRenderState(D3DRS_SRCBLEND, srcblend);
 	device->SetRenderState(D3DRS_DESTBLEND, dstblend);
+}
+
+static void __cdecl DrawQueuedModels_r()
+{
+	using namespace param;
+	using namespace d3d;
+	auto draw = TARGET_STATIC(DrawQueuedModels);
+	device->SetRenderTarget(0, nullptr);
+
+	renderLayerPasses(draw, true);
+	renderBackBuffer(true, D3DBLEND_INVSRCALPHA);
+
+	final_blend = true;
+
+	renderLayerPasses(draw, false);
+	renderBackBuffer(false, D3DBLEND_ONE);
+
+	final_blend = false;
+
+	// draw hud and stuff
+	layer_debug();
+	draw();
 
 	device->SetTexture(0, nullptr);
-	
-	Direct3D_SetDefaultRenderState();
-	Direct3D_SetDefaultTextureStageState();
+	device->SetRenderTarget(0, backBufferSurface);
 }
+
+static NJS_MODEL_SADX* __last = nullptr;
+bool __stdcall MyCoolFunction(QueuedModelNode* node, NJS_TEXLIST* texlist)
+{
+	switch ((QueuedModelType)(node->Type & 0xF))
+	{
+		case QueuedModelType_BasicModel:
+		{
+			if (!peeling)
+			{
+				return false;
+			}
+
+			if (!texlist)
+			{
+				return true;
+			}
+
+			auto m = (QueuedModelPointer*)node;
+			auto model = m->Model;
+
+			if (!model->nbMat || !model->nbMeshset)
+			{
+				return true;
+			}
+
+			constexpr auto MASK = NJD_FLAG_USE_ALPHA;
+
+			for (int i = 0; i < model->nbMat; i++)
+			{
+				const NJS_MATERIAL& mat = model->mats[i];
+				auto flags = mat.attrflags;
+
+				if (_nj_control_3d_flag_ & NJD_CONTROL_3D_CONSTANT_ATTR)
+				{
+					flags = _nj_constant_attr_or_ | _nj_constant_attr_and_ & flags;
+				}
+
+				if ((flags & MASK) == MASK && (flags & NJD_DA_MASK) == NJD_DA_ONE)
+				{
+					return final_blend;
+				}
+			}
+
+			return !final_blend;
+		}
+
+		// TODO: actually handle 3D sprites (particles etc)
+		case QueuedModelType_Sprite3D:
+			return final_blend;
+
+		default:
+			return !peeling;
+	}
+}
+
+const auto continue_draw = (void*)0x00408986;
+const auto skip_draw = (void*)0x00408F17;
+void __declspec(naked) saveyourself()
+{
+	__asm
+	{
+		call njColorBlendingMode_
+		push ebx
+		push esi
+		call MyCoolFunction
+		test al, al
+		jnz  wangis
+
+		// skip the type evaluation & drawing
+		// (also correct the stack from all those function calls)
+		add  esp, 14h
+		jmp	 skip_draw
+
+		// continue to type evaluation & draw
+	wangis:
+		jmp  continue_draw
+	}
+}
+
 #endif
 
 void d3d::InitTrampolines()
@@ -887,7 +1101,11 @@ void d3d::InitTrampolines()
 	PolyBuff_DrawTriangleStrip_t       = new Trampoline(0x00794760, 0x00794767, PolyBuff_DrawTriangleStrip_r);
 	PolyBuff_DrawTriangleList_t        = new Trampoline(0x007947B0, 0x007947B7, PolyBuff_DrawTriangleList_r);
 
-	//WriteJump(Direct3D_EnableZWrite, Direct3D_EnableZWrite_r);
+
+	// HACK: DIRTY HACKS
+	WriteJump(Direct3D_EnableZWrite, Direct3D_EnableZWrite_r);
+	WriteJump((void*)0x0077ED00, Direct3D_SetZFunc_r);
+	WriteJump((void*)0x00408981, saveyourself);
 
 	WriteJump((void*)0x0077EE45, DrawMeshSetBuffer_asm);
 
@@ -900,7 +1118,7 @@ void d3d::InitTrampolines()
 	WriteCall((void*)0x00403236, SetTransformHijack);
 }
 
-void releasePeelTextures()
+void releaseDepthTextures()
 {
 	for (auto& it : depthUnits)
 	{
@@ -912,8 +1130,11 @@ void releasePeelTextures()
 		it = nullptr;
 	}
 
-	depthSurface = nullptr;
-	depthBuffer = nullptr;
+	depthSurface      = nullptr;
+	depthBuffer       = nullptr;
+	backBufferSurface = nullptr;
+	backBuffer        = nullptr;
+	origRenderTarget  = nullptr;
 }
 
 // These exports are for the window resize branch of the mod loader.
@@ -929,7 +1150,7 @@ extern "C"
 			}
 		}
 
-		releasePeelTextures();
+		releaseDepthTextures();
 	}
 
 	EXPORT void __cdecl OnRenderDeviceReset()
@@ -947,7 +1168,7 @@ extern "C"
 
 	EXPORT void __cdecl OnExit()
 	{
-		releasePeelTextures();
+		releaseDepthTextures();
 		releaseParameters();
 		releaseShaders();
 	}
