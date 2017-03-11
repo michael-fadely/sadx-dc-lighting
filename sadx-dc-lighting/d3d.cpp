@@ -195,20 +195,18 @@ static void createDepthTextures()
 			1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &it, nullptr);
 	}
 
-	HRESULT h = 0;
-
 	depthSurface = nullptr;
-	h = device->SetDepthStencilSurface(nullptr);
+	device->SetDepthStencilSurface(nullptr);
 	depthBuffer = nullptr;
 
-	h = device->CreateTexture(present.BackBufferWidth, present.BackBufferHeight,
+	device->CreateTexture(present.BackBufferWidth, present.BackBufferHeight,
 		1, D3DUSAGE_DEPTHSTENCIL, (D3DFORMAT)'ZTNI', D3DPOOL_DEFAULT, &depthBuffer, nullptr);
 
 	depthBuffer->GetSurfaceLevel(0, &depthSurface);
-	h = device->SetDepthStencilSurface(depthSurface);
+	device->SetDepthStencilSurface(depthSurface);
 
-	h = device->SetRenderState(D3DRS_ZENABLE, TRUE);
-	h = device->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
+	device->SetRenderState(D3DRS_ZENABLE, TRUE);
+	device->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
 }
 
 static void UpdateParameterHandles()
@@ -757,6 +755,11 @@ static void DrawQuad()
 	device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, &quad, sizeof(QuadVertex));
 }
 
+static void __cdecl Direct3D_EnableZWrite_r(DWORD enable)
+{
+	device->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
+}
+
 static void __cdecl DrawQueuedModels_r();
 static Trampoline DrawQueuedModels_t(0x004086F0, 0x004086F6, DrawQueuedModels_r);
 static void __cdecl DrawQueuedModels_r()
@@ -794,7 +797,8 @@ static void __cdecl DrawQueuedModels_r()
 		// Always use LESS comparison with the native d3d depth test.
 		device->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESS);
 		// Clear old crap
-		device->Clear(0, nullptr, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
+		// TODO: fix
+		device->Clear(0, nullptr, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0xFF000000, 1.0f, 0);
 
 		// Only enable manual alpha depth tests on the second pass.
 		// If not, the depth test will fail and nothing will render
@@ -808,6 +812,11 @@ static void __cdecl DrawQueuedModels_r()
 
 		draw();
 
+		currUnit = nullptr;
+		lastUnit = nullptr;
+		unit     = nullptr;
+		target   = nullptr;
+
 		AlphaDepth = nullptr;
 	}
 
@@ -815,12 +824,34 @@ static void __cdecl DrawQueuedModels_r()
 	SetShaderOptions(UseOit, false);
 	device->SetRenderTarget(0, origTarget);
 	device->SetDepthStencilSurface(depthSurface);
+	origTarget = nullptr;
 
-	// TODO: fix
+	// HACK:
+	auto pad = ControllerPointers[0];
+	if (!pad || !!(pad->HeldButtons & Buttons_Y))
+	{
+		// TODO: fix
+		device->Clear(0, nullptr, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
+	}
+
+	DWORD zenable, lighting, alphablendenable, alphatestenable,
+		srcblend, dstblend;
+
+	device->GetRenderState(D3DRS_ZENABLE, &zenable);
+	device->GetRenderState(D3DRS_LIGHTING, &lighting);
+	device->GetRenderState(D3DRS_ALPHABLENDENABLE, &alphablendenable);
+	device->GetRenderState(D3DRS_ALPHATESTENABLE, &alphatestenable);
+	device->GetRenderState(D3DRS_SRCBLEND, &srcblend);
+	device->GetRenderState(D3DRS_DESTBLEND, &dstblend);
+
 	device->SetRenderState(D3DRS_ZENABLE, false);
 	device->SetRenderState(D3DRS_LIGHTING, false);
 	device->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
 	device->SetRenderState(D3DRS_ALPHATESTENABLE, false);
+
+	// TODO: fix
+	device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+	device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 
 	for (int i = numPasses; i > 0; i--)
 	{
@@ -828,7 +859,17 @@ static void __cdecl DrawQueuedModels_r()
 		DrawQuad();
 	}
 
+	device->SetRenderState(D3DRS_ZENABLE, zenable);
+	device->SetRenderState(D3DRS_LIGHTING, lighting);
+	device->SetRenderState(D3DRS_ALPHABLENDENABLE, alphablendenable);
+	device->SetRenderState(D3DRS_ALPHATESTENABLE, alphatestenable);
+	device->SetRenderState(D3DRS_SRCBLEND, srcblend);
+	device->SetRenderState(D3DRS_DESTBLEND, dstblend);
+
 	device->SetTexture(0, nullptr);
+	
+	Direct3D_SetDefaultRenderState();
+	Direct3D_SetDefaultTextureStageState();
 }
 #endif
 
@@ -845,6 +886,8 @@ void d3d::InitTrampolines()
 	CreateDirect3DDevice_t             = new Trampoline(0x00794000, 0x00794007, CreateDirect3DDevice_r);
 	PolyBuff_DrawTriangleStrip_t       = new Trampoline(0x00794760, 0x00794767, PolyBuff_DrawTriangleStrip_r);
 	PolyBuff_DrawTriangleList_t        = new Trampoline(0x007947B0, 0x007947B7, PolyBuff_DrawTriangleList_r);
+
+	//WriteJump(Direct3D_EnableZWrite, Direct3D_EnableZWrite_r);
 
 	WriteJump((void*)0x0077EE45, DrawMeshSetBuffer_asm);
 
