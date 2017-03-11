@@ -114,6 +114,13 @@ namespace param
 	EffectParameter<float> AlphaRef("AlphaRef", 0.0f);
 	EffectParameter<D3DXVECTOR3> NormalScale("NormalScale", { 1.0f, 1.0f, 1.0f });
 
+#ifdef USE_OIT
+	EffectParameter<Texture> AlphaDepth("AlphaDepth", nullptr);
+	EffectParameter<Texture> OpaqueDepth("OpaqueDepth", nullptr);
+	EffectParameter<bool> AlphaDepthTest("AlphaDepthTest", false);
+	EffectParameter<D3DXVECTOR2> ViewPort("ViewPort", {});
+#endif
+
 #ifdef USE_SL
 	EffectParameter<D3DXCOLOR> MaterialSpecular("MaterialSpecular", {});
 	EffectParameter<float> MaterialPower("MaterialPower", 1.0f);
@@ -147,6 +154,13 @@ namespace param
 		&MaterialDiffuse,
 		&AlphaRef,
 		&NormalScale,
+
+#ifdef USE_OIT
+		&AlphaDepth,
+		&OpaqueDepth,
+		&AlphaDepthTest,
+		&ViewPort,
+#endif
 
 #ifdef USE_SL
 		&SourceLight,
@@ -270,6 +284,13 @@ static Effect compileShader(Uint32 options)
 			continue;
 		}
 
+		if (o & d3d::UseOit)
+		{
+			o &= ~d3d::UseOit;
+			macros.push_back({ "USE_OIT", "1" });
+			continue;
+		}
+
 		break;
 	}
 
@@ -326,11 +347,25 @@ static Effect compileShader(Uint32 options)
 
 using namespace d3d;
 
+static void end();
 static void begin()
 {
-	if (!do_effect || began_effect || effect == nullptr)
+	if (effect == nullptr)
 	{
 		return;
+	}
+
+	if (!do_effect || began_effect)
+	{
+		if (shader_options & UseOit)
+		{
+			end();
+			do_effect = true;
+		}
+		else
+		{
+			return;
+		}
 	}
 
 	for (auto i : param::parameters)
@@ -682,6 +717,120 @@ void d3d::SetShaderOptions(Uint32 options, bool add)
 		shader_options &= ~options;
 	}
 }
+
+#ifdef USE_OIT
+
+struct QuadVertex
+{
+	static const UINT Format = D3DFVF_XYZRHW | D3DFVF_TEX1;
+	D3DXVECTOR4 Position;
+	D3DXVECTOR2 TexCoord;
+};
+
+static void DrawQuad()
+{
+	const auto& present = PresentParameters;
+	QuadVertex quad[4] = {};
+
+	auto fWidth5 = present.BackBufferWidth - 0.5f;
+	auto fHeight5 = present.BackBufferHeight - 0.5f;
+	const float left = 0.0f;
+	const float top = 0.0f;
+	const float right = 1.0f;
+	const float bottom = 1.0f;
+
+	param::ViewPort = D3DXVECTOR2(fWidth5, fHeight5);
+
+	quad[0].Position = D3DXVECTOR4(-0.5f, -0.5f, 0.5f, 1.0f);
+	quad[0].TexCoord = D3DXVECTOR2(left, top);
+
+	quad[1].Position = D3DXVECTOR4(fWidth5, -0.5f, 0.5f, 1.0f);
+	quad[1].TexCoord = D3DXVECTOR2(right, top);
+
+	quad[2].Position = D3DXVECTOR4(-0.5f, fHeight5, 0.5f, 1.0f);
+	quad[2].TexCoord = D3DXVECTOR2(left, bottom);
+
+	quad[3].Position = D3DXVECTOR4(fWidth5, fHeight5, 0.5f, 1.0f);
+	quad[3].TexCoord = D3DXVECTOR2(right, bottom);
+
+	device->SetFVF(QuadVertex::Format);
+	device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, &quad, sizeof(QuadVertex));
+}
+
+static void __cdecl DrawQueuedModels_r();
+static Trampoline DrawQueuedModels_t(0x004086F0, 0x004086F6, DrawQueuedModels_r);
+static void __cdecl DrawQueuedModels_r()
+{
+	using namespace param;
+	using namespace d3d;
+
+	auto draw = TARGET_STATIC(DrawQueuedModels);
+	Surface origTarget = nullptr;
+
+	OpaqueDepth = depthBuffer;
+	device->GetRenderTarget(0, &origTarget);
+
+	do_effect = true;
+	SetShaderOptions(UseOit, true);
+	begin();
+
+	for (int i = 0; i < numPasses; i++)
+	{
+		int currId = i % 2;
+		int lastId = (i + 1) % 2;
+
+		Texture currUnit = depthUnits[currId];
+		Texture lastUnit = depthUnits[lastId];
+
+		Surface unit = nullptr;
+		Surface target = nullptr;
+
+		currUnit->GetSurfaceLevel(0, &unit);
+		renderLayers[i]->GetSurfaceLevel(0, &target);
+
+		device->SetDepthStencilSurface(unit);
+		device->SetRenderTarget(0, target);
+
+		// Always use LESS comparison with the native d3d depth test.
+		device->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESS);
+		// Clear old crap
+		device->Clear(0, nullptr, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
+
+		// Only enable manual alpha depth tests on the second pass.
+		// If not, the depth test will fail and nothing will render
+		// as the "last" depth buffer has not been populated yet.
+		// The shader performs a manual GREATER depth test on
+		// transparent things.
+		AlphaDepthTest = i != 0;
+		// Set the depth buffer to test against if above stuff.
+		AlphaDepth = lastUnit;
+		effect->CommitChanges();
+
+		draw();
+
+		AlphaDepth = nullptr;
+	}
+
+	end();
+	SetShaderOptions(UseOit, false);
+	device->SetRenderTarget(0, origTarget);
+	device->SetDepthStencilSurface(depthSurface);
+
+	// TODO: fix
+	device->SetRenderState(D3DRS_ZENABLE, false);
+	device->SetRenderState(D3DRS_LIGHTING, false);
+	device->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
+	device->SetRenderState(D3DRS_ALPHATESTENABLE, false);
+
+	for (int i = numPasses; i > 0; i--)
+	{
+		device->SetTexture(0, renderLayers[i - 1]);
+		DrawQuad();
+	}
+
+	device->SetTexture(0, nullptr);
+}
+#endif
 
 void d3d::InitTrampolines()
 {

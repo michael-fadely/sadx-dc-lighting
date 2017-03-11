@@ -8,6 +8,8 @@
 #include "lantern.h"
 #include "EffectParameter.h"
 
+#define USE_OIT
+
 namespace d3d
 {
 	enum ShaderOptions : Uint32
@@ -19,7 +21,8 @@ namespace d3d
 		UseLight   = 1 << 3,
 		UseBlend   = 1 << 4,
 		UseFog     = 1 << 5,
-		Mask       = 0x3F,
+		UseOit     = 1 << 6,
+		Mask       = 0x7F,
 		Count
 	};
 
@@ -62,6 +65,13 @@ namespace param
 
 	extern EffectParameter<float> AlphaRef;
 	extern EffectParameter<D3DXVECTOR3> NormalScale;
+
+#ifdef USE_OIT
+	extern EffectParameter<Texture> AlphaDepth;
+	extern EffectParameter<Texture> OpaqueDepth;
+	extern EffectParameter<bool> AlphaDepthTest;
+	extern EffectParameter<D3DXVECTOR2> ViewPort;
+#endif
 
 #ifdef USE_SL
 	extern EffectParameter<D3DXCOLOR> MaterialSpecular;

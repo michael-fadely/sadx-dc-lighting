@@ -91,6 +91,7 @@ template<> void EffectParameter<int>::Commit(Effect effect);
 template<> void EffectParameter<float>::Commit(Effect effect);
 template<> void EffectParameter<D3DXVECTOR4>::Commit(Effect effect);
 template<> void EffectParameter<D3DXVECTOR3>::Commit(Effect effect);
+template<> void EffectParameter<D3DXVECTOR2>::Commit(Effect effect);
 template<> void EffectParameter<D3DXCOLOR>::Commit(Effect effect);
 template<> void EffectParameter<D3DXMATRIX>::Commit(Effect effect);
 template<> void EffectParameter<Texture>::Commit(Effect effect);

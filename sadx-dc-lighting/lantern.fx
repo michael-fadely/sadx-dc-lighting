@@ -26,6 +26,9 @@ struct PS_IN
 	float4 diffuse  : COLOR0;
 	float4 specular : COLOR1;
 	float2 tex      : TEXCOORD0;
+#ifdef USE_OIT
+	float2 depth    : TEXCOORD1;
+#endif
 	float  fogDist  : FOG;
 };
 
@@ -74,6 +77,36 @@ sampler2D atlasSamplerB = sampler_state
 	AddressU  = Clamp;
 	AddressV  = Clamp;
 };
+
+shared Texture2D AlphaDepth;
+shared Texture2D OpaqueDepth;
+
+sampler alphaDepthSampler = sampler_state
+{
+	Texture   = <AlphaDepth>;
+	MinFilter = Point;
+	MagFilter = Point;
+	AddressU  = Clamp;
+	AddressV  = Clamp;
+};
+
+sampler opaqueDepthSampler = sampler_state
+{
+	Texture   = <OpaqueDepth>;
+	MinFilter = Point;
+	MagFilter = Point;
+	AddressU  = Clamp;
+	AddressV  = Clamp;
+};
+
+// Enables or disables depth tests against the previous alpha depth buffer.
+shared bool AlphaDepthTest;
+
+// This will likely need to be non-static for more robust control.
+// Enabled or disabled depth tests against the opaque-only depth buffer.
+static shared bool OpaqueDepthTest = true;
+
+shared float2 ViewPort;
 
 // Pre-adjusted on the CPU before being sent to the shader.
 shared float DiffuseIndexA  = 0;
@@ -175,6 +208,10 @@ PS_IN vs_main(VS_IN input)
 	output.tex = input.tex;
 #endif
 
+#ifdef USE_OIT
+	output.depth = output.position.zw;
+#endif
+
 #ifdef USE_LIGHT
 	{
 		float3 worldNormal = mul(input.normal * NormalScale, (float3x3)WorldMatrix);
@@ -221,8 +258,40 @@ PS_IN vs_main(VS_IN input)
 	return output;
 }
 
+#ifdef USE_OIT
+float4 ps_main(PS_IN input, float2 vpos : VPOS) : COLOR
+#else
 float4 ps_main(PS_IN input) : COLOR
+#endif
 {
+#ifdef USE_OIT
+	float currentDepth = clamp(input.depth.x / input.depth.y, 0, 1);
+
+	// If opaque depth tests are enabled...
+	if (OpaqueDepthTest)
+	{
+		// ...exclude any fragment whose depth exceeds that of any opaque fragment.
+		// (equivalent to D3DCMP_LESS)
+		float baseDepth = tex2D(opaqueDepthSampler, vpos / ViewPort).r;
+		if (currentDepth - baseDepth > 1E-5)
+		{
+			discard;
+		}
+	}
+	
+	// If alpha depth tests are enabled...
+	if (AlphaDepthTest)
+	{
+		// ...discard any fragment whose depth is less than the last fragment depth.
+		// (equivalent to D3DCMP_GREATER)
+		float lastDepth = tex2D(alphaDepthSampler, vpos / ViewPort).r;
+		if (currentDepth - lastDepth < 1E-5)
+		{
+			discard;
+		}
+	}
+#endif
+
 	float4 result;
 
 #ifdef USE_TEXTURE

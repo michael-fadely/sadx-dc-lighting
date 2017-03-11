@@ -54,6 +54,17 @@ void EffectParameter<D3DXVECTOR3>::Commit(Effect effect)
 }
 
 template<>
+void EffectParameter<D3DXVECTOR2>::Commit(Effect effect)
+{
+	if (Modified())
+	{
+		D3DXVECTOR4 v = D3DXVECTOR4(current.x, current.y, 0.0f, 0.0f);
+		effect->SetVector(handle, &v);
+		Clear();
+	}
+}
+
+template<>
 void EffectParameter<D3DXCOLOR>::Commit(Effect effect)
 {
 	if (Modified())
