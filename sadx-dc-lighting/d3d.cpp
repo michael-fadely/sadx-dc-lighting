@@ -75,6 +75,7 @@ DataPointer(D3DXMATRIX, ViewMatrix, 0x0389D398);
 DataPointer(D3DXMATRIX, WorldMatrix, 0x03D12900);
 DataPointer(D3DXMATRIX, _ProjectionMatrix, 0x03D129C0);
 DataPointer(int, TransformAndViewportInvalid, 0x03D0FD1C);
+DataPointer(D3DPRESENT_PARAMETERS8, PresentParameters, 0x03D0FDC0);
 
 namespace d3d
 {
@@ -154,6 +155,46 @@ namespace param
 		&UseSourceLight,
 #endif
 	};
+}
+
+static const int numUnits = 2;
+static const int numPasses = 4;
+static Texture depthUnits[numUnits] = {};
+static Texture renderLayers[numPasses] = {};
+static Texture depthBuffer = nullptr;
+static Surface depthSurface = nullptr;
+
+static void createDepthTextures()
+{
+	using namespace d3d;
+	auto& present = PresentParameters;
+
+	for (auto& it : depthUnits)
+	{
+		device->CreateTexture(present.BackBufferWidth, present.BackBufferHeight,
+			1, D3DUSAGE_DEPTHSTENCIL, (D3DFORMAT)'ZTNI', D3DPOOL_DEFAULT, &it, nullptr);
+	}
+
+	for (auto &it : renderLayers)
+	{
+		device->CreateTexture(present.BackBufferWidth, present.BackBufferHeight,
+			1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &it, nullptr);
+	}
+
+	HRESULT h = 0;
+
+	depthSurface = nullptr;
+	h = device->SetDepthStencilSurface(nullptr);
+	depthBuffer = nullptr;
+
+	h = device->CreateTexture(present.BackBufferWidth, present.BackBufferHeight,
+		1, D3DUSAGE_DEPTHSTENCIL, (D3DFORMAT)'ZTNI', D3DPOOL_DEFAULT, &depthBuffer, nullptr);
+
+	depthBuffer->GetSurfaceLevel(0, &depthSurface);
+	h = device->SetDepthStencilSurface(depthSurface);
+
+	h = device->SetRenderState(D3DRS_ZENABLE, TRUE);
+	h = device->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
 }
 
 static void UpdateParameterHandles()
@@ -448,12 +489,15 @@ static void __fastcall PolyBuff_DrawTriangleList_r(PolyBuff* _this)
 
 static void __fastcall CreateDirect3DDevice_r(int a1, int behavior, int type)
 {
+	PresentParameters.EnableAutoDepthStencil = false;
+
 	TARGET_DYNAMIC(CreateDirect3DDevice)(a1, behavior, type);
 	if (Direct3D_Device != nullptr && !initialized)
 	{
 		device = Direct3D_Device->GetProxyInterface();
 		initialized = true;
 		LoadShader();
+		createDepthTextures();
 	}
 }
 
@@ -515,7 +559,7 @@ static void __cdecl Direct3D_PerformLighting_r(int type)
 	// This specifically force light type 0 to prevent
 	// the light direction from being overwritten.
 	target(0);
-	SetShaderOptions(ShaderOptions::UseLight, true);
+	SetShaderOptions(UseLight, true);
 
 	if (type != globals::light_type)
 	{
@@ -664,6 +708,22 @@ void d3d::InitTrampolines()
 	WriteCall((void*)0x00403236, SetTransformHijack);
 }
 
+void releasePeelTextures()
+{
+	for (auto& it : depthUnits)
+	{
+		it = nullptr;
+	}
+
+	for (auto& it : renderLayers)
+	{
+		it = nullptr;
+	}
+
+	depthSurface = nullptr;
+	depthBuffer = nullptr;
+}
+
 // These exports are for the window resize branch of the mod loader.
 extern "C"
 {
@@ -676,6 +736,8 @@ extern "C"
 				e->OnLostDevice();
 			}
 		}
+
+		releasePeelTextures();
 	}
 
 	EXPORT void __cdecl OnRenderDeviceReset()
@@ -693,6 +755,7 @@ extern "C"
 
 	EXPORT void __cdecl OnExit()
 	{
+		releasePeelTextures();
 		releaseParameters();
 		releaseShaders();
 	}
