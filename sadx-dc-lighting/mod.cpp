@@ -381,14 +381,14 @@ extern "C"
 		NormalScaleMultiplier = { 1.0f, 1.0f, 1.0f };
 	}
 
-#if 0
+#ifdef _DEBUG
 	EXPORT void __cdecl OnFrame()
 	{
 		auto pad = ControllerPointers[0];
 		if (pad)
 		{
 			auto pressed = pad->PressedButtons;
-			if (pressed & Buttons_C)
+			if (pressed & Buttons_D)
 			{
 				d3d::LoadShader();
 			}
@@ -401,10 +401,12 @@ extern "C"
 			{
 				globals::palettes.LoadPalette(globals::system + "specular test.bin");
 			}
+		#if 0
 			else if (pressed & Buttons_Down)
 			{
 				globals::palettes.LoadPalette(CurrentLevel, CurrentAct);
 			}
+		#endif
 		}
 
 		if (d3d::effect == nullptr)

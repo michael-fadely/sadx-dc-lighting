@@ -2,11 +2,15 @@
 // Copyright (c) 2005 Microsoft Corporation. All rights reserved.
 //
 
+// TODO: maybe convert all the preprocessor definitions to uniform booleans
+// the result would be the same, but it would be easier to maintain
+
 #define FOGMODE_NONE   0
 #define FOGMODE_EXP    1
 #define FOGMODE_EXP2   2
 #define FOGMODE_LINEAR 3
 #define E 2.71828
+#define EPSILON 1e-5
 
 #define D3DMCS_MATERIAL 0 // Color from material is used
 #define D3DMCS_COLOR1   1 // Diffuse vertex color is used
@@ -76,18 +80,8 @@ sampler2D atlasSamplerB = sampler_state
 	AddressV  = Clamp;
 };
 
-shared Texture2D AlphaDepth;
 shared Texture2D OpaqueDepth;
-shared Texture2D BackBuffer;
-
-sampler alphaDepthSampler = sampler_state
-{
-	Texture   = <AlphaDepth>;
-	MinFilter = Point;
-	MagFilter = Point;
-	AddressU  = Clamp;
-	AddressV  = Clamp;
-};
+shared Texture2D AlphaDepth;
 
 sampler opaqueDepthSampler = sampler_state
 {
@@ -98,25 +92,23 @@ sampler opaqueDepthSampler = sampler_state
 	AddressV  = Clamp;
 };
 
-sampler backBufferSampler = sampler_state
+sampler alphaDepthSampler = sampler_state
 {
-	Texture   = <BackBuffer>;
+	Texture   = <AlphaDepth>;
 	MinFilter = Point;
 	MagFilter = Point;
 	AddressU  = Clamp;
 	AddressV  = Clamp;
 };
 
+
 // Enables or disables depth tests against the previous alpha depth buffer.
 shared bool AlphaDepthTest;
-
-// garbage I hate it
-shared bool DestBlendOne;
 
 // This will likely need to be non-static for more robust control.
 // Enabled or disabled depth tests against the opaque-only depth buffer.
 static shared bool OpaqueDepthTest = true;
-
+// Used for correcting screen-space coordinates to sample the depth buffer.
 shared float2 ViewPort;
 
 // Pre-adjusted on the CPU before being sent to the shader.
@@ -272,39 +264,13 @@ PS_IN vs_main(VS_IN input)
 }
 
 #ifdef USE_OIT
+uniform float alpha_bias = 1 / 255;
+
 float4 ps_main(PS_IN input, float2 vpos : VPOS) : COLOR
 #else
 float4 ps_main(PS_IN input) : COLOR
 #endif
 {
-#ifdef USE_OIT
-	float currentDepth = clamp(input.depth.x / input.depth.y, 0, 1);
-
-	// If opaque depth tests are enabled...
-	if (OpaqueDepthTest)
-	{
-		// ...exclude any fragment whose depth exceeds that of any opaque fragment.
-		// (equivalent to D3DCMP_LESS)
-		float baseDepth = tex2D(opaqueDepthSampler, vpos / ViewPort).r;
-		if (currentDepth - baseDepth > 1E-5)
-		{
-			discard;
-		}
-	}
-	
-	// If alpha depth tests are enabled...
-	if (AlphaDepthTest)
-	{
-		// ...discard any fragment whose depth is less than the last fragment depth.
-		// (equivalent to D3DCMP_GREATER)
-		float lastDepth = tex2D(alphaDepthSampler, vpos / ViewPort).r;
-		if (currentDepth - lastDepth < 1E-5)
-		{
-			discard;
-		}
-	}
-#endif
-
 	float4 result;
 
 #ifdef USE_TEXTURE
@@ -315,11 +281,45 @@ float4 ps_main(PS_IN input) : COLOR
 #endif
 
 #ifdef USE_ALPHA
-	#ifdef USE_OIT
-		clip(result.a < 1E-5 ? -1 : 1);
-	#else
-		clip(result.a < AlphaRef ? -1 : 1);
-	#endif
+
+#ifdef USE_OIT
+	if (result.a - alpha_bias <= EPSILON)
+	{
+		discard;
+	}
+#else
+	clip(result.a < AlphaRef ? -1 : 1);
+#endif
+
+#endif
+
+#ifdef USE_OIT
+	float currentDepth = clamp(input.depth.x / input.depth.y, 0, 1);
+	float2 depthcoord = vpos / ViewPort;
+
+	// If opaque depth tests are enabled...
+	if (OpaqueDepthTest)
+	{
+		// ...exclude any fragment whose depth exceeds that of any opaque fragment.
+		// (equivalent to D3DCMP_LESS)
+		float baseDepth = tex2D(opaqueDepthSampler, depthcoord).r;
+		if (currentDepth - baseDepth >= EPSILON)
+		{
+			discard;
+		}
+	}
+
+	// If alpha depth tests are enabled...
+	if (AlphaDepthTest)
+	{
+		// ...discard any fragment whose depth is less than the last fragment depth.
+		// (equivalent to D3DCMP_GREATER)
+		float lastDepth = tex2D(alphaDepthSampler, depthcoord).r;
+		if (currentDepth - lastDepth < EPSILON)
+		{
+			discard;
+		}
+	}
 #endif
 
 #ifdef USE_FOG
@@ -335,6 +335,6 @@ technique Main
 	pass p0
 	{
 		VertexShader = compile vs_3_0 vs_main();
-		PixelShader  = compile ps_3_0 ps_main();
+		PixelShader = compile ps_3_0 ps_main();
 	}
 }

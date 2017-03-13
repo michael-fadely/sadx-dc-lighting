@@ -118,10 +118,7 @@ namespace param
 #ifdef USE_OIT
 	EffectParameter<Texture> AlphaDepth("AlphaDepth", nullptr);
 	EffectParameter<Texture> OpaqueDepth("OpaqueDepth", nullptr);
-	// TODO: remove
-	EffectParameter<Texture> BackBuffer("BackBuffer", nullptr);
 	EffectParameter<bool> AlphaDepthTest("AlphaDepthTest", false);
-	EffectParameter<bool> DestBlendOne("DestBlendOne", false);
 	EffectParameter<D3DXVECTOR2> ViewPort("ViewPort", {});
 #endif
 
@@ -162,9 +159,7 @@ namespace param
 #ifdef USE_OIT
 		&AlphaDepth,
 		&OpaqueDepth,
-		&BackBuffer,
 		&AlphaDepthTest,
-		&DestBlendOne,
 		&ViewPort,
 #endif
 
@@ -853,7 +848,6 @@ static void renderLayerPasses(void(*draw)(), bool clearZ)
 	OpaqueDepth = depthBuffer;
 	peeling = true;
 	do_effect = true;
-	BackBuffer = backBuffer;
 
 	begin();
 
@@ -912,7 +906,6 @@ static void renderLayerPasses(void(*draw)(), bool clearZ)
 
 	peeling = false;
 	OpaqueDepth = nullptr;
-	BackBuffer = nullptr;
 	SetShaderOptions(UseOit, false);
 }
 
