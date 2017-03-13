@@ -961,7 +961,7 @@ static void renderBackBuffer(bool populate, D3DBLEND layerBlend)
 	}
 
 	device->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
-	device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+	device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
 	device->SetRenderState(D3DRS_DESTBLEND, layerBlend);
 
 	for (int i = numPasses; i > 0; i--)
