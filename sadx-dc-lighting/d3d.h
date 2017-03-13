@@ -42,7 +42,6 @@ namespace param
 	extern EffectParameter<float> DiffuseIndexA;
 	extern EffectParameter<float> SpecularIndexA;
 
-
 	extern EffectParameter<Texture> PaletteB;
 	extern EffectParameter<float> DiffuseIndexB;
 	extern EffectParameter<float> SpecularIndexB;

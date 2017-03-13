@@ -1123,6 +1123,9 @@ void releaseDepthTextures()
 		it = nullptr;
 	}
 
+	param::AlphaDepth.Release();
+	param::OpaqueDepth.Release();
+
 	depthSurface      = nullptr;
 	depthBuffer       = nullptr;
 	backBufferSurface = nullptr;
@@ -1156,6 +1159,7 @@ extern "C"
 			}
 		}
 
+		createDepthTextures();
 		UpdateParameterHandles();
 	}
 
