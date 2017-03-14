@@ -30,6 +30,7 @@ static Trampoline* Direct3D_SetTexList_t      = nullptr;
 DataArray(PaletteLight, LightPaletteData, 0x00903E88, 256);
 DataArray(StageLightData, CurrentStageLights, 0x03ABD9F8, 4);
 DataArray(NJS_TEXLIST*, LevelObjTexlists, 0x03B290B4, 4);
+DataArray(D3DBLEND, NJD_FLAG_D3DBLEND, 0x0088AE1C, 9);
 
 DataPointer(EntityData1*, Camera_Data1, 0x03B2CBB0);
 DataPointer(NJS_COLOR, EntityVertexColor, 0x03D0848C);
@@ -172,6 +173,11 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 	SetShaderOptions(ShaderOptions::UseAlpha, (flags & NJD_FLAG_USE_ALPHA) != 0);
 	SetShaderOptions(ShaderOptions::UseEnvMap, (flags & NJD_FLAG_USE_ENV) != 0);
 	SetShaderOptions(ShaderOptions::UseLight, (flags & NJD_FLAG_IGNORE_LIGHT) == 0);
+
+	param::SourceBlend = NJD_FLAG_D3DBLEND[flags >> 29];
+	param::DestinationBlend = NJD_FLAG_D3DBLEND[(flags >> 26) & 7];
+	param::SourceBlend.Commit(effect);
+	param::DestinationBlend.Commit(effect);
 
 	// Environment map matrix
 	param::TextureTransform = *(D3DXMATRIX*)0x038A5DD0;
@@ -393,6 +399,7 @@ extern "C"
 				d3d::LoadShader();
 			}
 
+		#if 0
 			if (pressed & Buttons_Left)
 			{
 				globals::palettes.LoadPalette(globals::system + "diffuse test.bin");
@@ -401,7 +408,6 @@ extern "C"
 			{
 				globals::palettes.LoadPalette(globals::system + "specular test.bin");
 			}
-		#if 0
 			else if (pressed & Buttons_Down)
 			{
 				globals::palettes.LoadPalette(CurrentLevel, CurrentAct);

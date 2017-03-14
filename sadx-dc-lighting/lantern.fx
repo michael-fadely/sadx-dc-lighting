@@ -16,6 +16,18 @@
 #define D3DMCS_COLOR1   1 // Diffuse vertex color is used
 #define D3DMCS_COLOR2   2 // Specular vertex color is used
 
+#define D3DBLEND_ZERO            1
+#define D3DBLEND_ONE             2
+#define D3DBLEND_SRCCOLOR        3
+#define D3DBLEND_INVSRCCOLOR     4
+#define D3DBLEND_SRCALPHA        5
+#define D3DBLEND_INVSRCALPHA     6
+#define D3DBLEND_DESTALPHA       7
+#define D3DBLEND_INVDESTALPHA    8
+#define D3DBLEND_DESTCOLOR       9
+#define D3DBLEND_INVDESTCOLOR    10
+#define D3DBLEND_SRCALPHASAT     11
+
 struct VS_IN
 {
 	float3 position : POSITION;
@@ -82,6 +94,9 @@ sampler2D atlasSamplerB = sampler_state
 
 shared Texture2D OpaqueDepth;
 shared Texture2D AlphaDepth;
+shared Texture2D BackBuffer;
+shared Texture2D AlphaLayer;
+shared Texture2D BlendLayer;
 
 sampler opaqueDepthSampler = sampler_state
 {
@@ -91,7 +106,6 @@ sampler opaqueDepthSampler = sampler_state
 	AddressU  = Clamp;
 	AddressV  = Clamp;
 };
-
 sampler alphaDepthSampler = sampler_state
 {
 	Texture   = <AlphaDepth>;
@@ -100,7 +114,30 @@ sampler alphaDepthSampler = sampler_state
 	AddressU  = Clamp;
 	AddressV  = Clamp;
 };
-
+sampler backBufferSampler = sampler_state
+{
+	Texture   = <BackBuffer>;
+	MinFilter = Point;
+	MagFilter = Point;
+	AddressU  = Clamp;
+	AddressV  = Clamp;
+};
+sampler alphaLayerSampler = sampler_state
+{
+	Texture   = <AlphaLayer>;
+	MinFilter = Point;
+	MagFilter = Point;
+	AddressU  = Clamp;
+	AddressV  = Clamp;
+};
+sampler blendLayerSampler = sampler_state
+{
+	Texture   = <BlendLayer>;
+	MinFilter = Point;
+	MagFilter = Point;
+	AddressU  = Clamp;
+	AddressV  = Clamp;
+};
 
 // Enables or disables depth tests against the previous alpha depth buffer.
 shared bool AlphaDepthTest;
@@ -110,6 +147,8 @@ shared bool AlphaDepthTest;
 static shared bool OpaqueDepthTest = true;
 // Used for correcting screen-space coordinates to sample the depth buffer.
 shared float2 ViewPort;
+
+shared uint SourceBlend, DestinationBlend;
 
 // Pre-adjusted on the CPU before being sent to the shader.
 shared float DiffuseIndexA  = 0;
@@ -188,9 +227,8 @@ float CalcFogFactor(float d)
 
 	return clamp(fogCoeff, 0, 1);
 }
-#endif
 
-// Vertex shaders
+#endif
 
 PS_IN vs_main(VS_IN input)
 {
@@ -204,7 +242,7 @@ PS_IN vs_main(VS_IN input)
 
 	output.position = position;
 
-#if defined USE_TEXTURE && USE_ENVMAP
+#if defined(USE_TEXTURE) && defined(USE_ENVMAP)
 	output.tex = (float2)mul(float4(input.normal, 1), wvMatrixInvT);
 	output.tex = (float2)mul(float4(output.tex, 0, 1), TextureTransform);
 #else
@@ -263,12 +301,12 @@ PS_IN vs_main(VS_IN input)
 	return output;
 }
 
-#ifdef USE_OIT
 uniform float alpha_bias = 1 / 255;
 
-float4 ps_main(PS_IN input, float2 vpos : VPOS) : COLOR
+#ifdef USE_OIT
+float4 ps_main(PS_IN input, float2 vpos : VPOS, out float4 blend : COLOR1) : COLOR0
 #else
-float4 ps_main(PS_IN input) : COLOR
+float4 ps_main(PS_IN input) : COLOR0
 #endif
 {
 	float4 result;
@@ -282,14 +320,14 @@ float4 ps_main(PS_IN input) : COLOR
 
 #ifdef USE_ALPHA
 
-#ifdef USE_OIT
-	if (result.a - alpha_bias <= EPSILON)
-	{
-		discard;
-	}
-#else
-	clip(result.a < AlphaRef ? -1 : 1);
-#endif
+	#ifdef USE_OIT
+		if (result.a - alpha_bias <= EPSILON)
+		{
+			discard;
+		}
+	#else
+		clip(result.a < AlphaRef ? -1 : 1);
+	#endif
 
 #endif
 
@@ -320,6 +358,8 @@ float4 ps_main(PS_IN input) : COLOR
 			discard;
 		}
 	}
+
+	blend = float4((float)SourceBlend / 15.0f, (float)DestinationBlend / 15.0f, 0, 1);
 #endif
 
 #ifdef USE_FOG

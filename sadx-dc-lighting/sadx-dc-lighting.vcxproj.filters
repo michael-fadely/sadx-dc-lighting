@@ -121,5 +121,8 @@
     <None Include="mod.ini">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="blender.fx">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

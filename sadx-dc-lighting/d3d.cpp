@@ -118,6 +118,8 @@ namespace param
 #ifdef USE_OIT
 	EffectParameter<Texture> AlphaDepth("AlphaDepth", nullptr);
 	EffectParameter<Texture> OpaqueDepth("OpaqueDepth", nullptr);
+	EffectParameter<int> SourceBlend("SourceBlend", 0);
+	EffectParameter<int> DestinationBlend("DestinationBlend", 0);
 	EffectParameter<bool> AlphaDepthTest("AlphaDepthTest", false);
 	EffectParameter<D3DXVECTOR2> ViewPort("ViewPort", {});
 #endif
@@ -159,6 +161,8 @@ namespace param
 #ifdef USE_OIT
 		&AlphaDepth,
 		&OpaqueDepth,
+		&SourceBlend,
+		&DestinationBlend,
 		&AlphaDepthTest,
 		&ViewPort,
 #endif
@@ -172,44 +176,76 @@ namespace param
 	};
 }
 
-static const int numPasses             = 4;
-static Texture depthUnits[numPasses]   = {};
-static Texture renderLayers[numPasses] = {};
-static Texture depthBuffer             = nullptr;
-static Surface depthSurface            = nullptr;
-static Texture backBuffer              = nullptr;
-static Surface backBufferSurface       = nullptr;
-static Surface origRenderTarget        = nullptr;
-static bool peeling                    = false;
+static const int numPasses                = 4;
+static Effect blender                     = nullptr;
+static Texture depthUnits[2]              = {};
+static Texture renderLayers[numPasses]    = {};
+static Texture blendModeLayers[numPasses] = {};
+static Texture depthBuffer                = nullptr;
+static Surface depthSurface               = nullptr;
+static Texture backBuffers[2]             = {};
+static Surface backBufferSurface          = nullptr;
+static Surface origRenderTarget           = nullptr;
+static bool peeling                       = false;
 
 static void createDepthTextures()
 {
 	using namespace d3d;
 	auto& present = PresentParameters;
+	HRESULT h;
 
 	for (auto& it : depthUnits)
 	{
-		device->CreateTexture(present.BackBufferWidth, present.BackBufferHeight,
+		h = device->CreateTexture(present.BackBufferWidth, present.BackBufferHeight,
 			1, D3DUSAGE_DEPTHSTENCIL, (D3DFORMAT)'ZTNI', D3DPOOL_DEFAULT, &it, nullptr);
+
+		if (FAILED(h))
+		{
+			throw;
+		}
 	}
 
-	for (auto &it : renderLayers)
+	for (auto& it : renderLayers)
 	{
-		device->CreateTexture(present.BackBufferWidth, present.BackBufferHeight,
+		h = device->CreateTexture(present.BackBufferWidth, present.BackBufferHeight,
 			1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &it, nullptr);
+
+		if (FAILED(h))
+		{
+			throw;
+		}
 	}
 
-	depthSurface = nullptr;
+	for (auto& it : blendModeLayers)
+	{
+		h = device->CreateTexture(present.BackBufferWidth, present.BackBufferHeight,
+			1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &it, nullptr);
+
+		if (FAILED(h))
+		{
+			throw;
+		}
+	}
+
+	for (auto& it : backBuffers)
+	{
+		h = device->CreateTexture(present.BackBufferWidth, present.BackBufferHeight,
+			1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &it, nullptr);
+
+		if (FAILED(h))
+		{
+			throw;
+		}
+	}
+
 	device->SetDepthStencilSurface(nullptr);
+	depthSurface = nullptr;
 	depthBuffer = nullptr;
 
 	device->CreateTexture(present.BackBufferWidth, present.BackBufferHeight,
 		1, D3DUSAGE_DEPTHSTENCIL, (D3DFORMAT)'ZTNI', D3DPOOL_DEFAULT, &depthBuffer, nullptr);
 
-	device->CreateTexture(present.BackBufferWidth, present.BackBufferHeight,
-		1, D3DUSAGE_RENDERTARGET, present.BackBufferFormat, D3DPOOL_DEFAULT, &backBuffer, nullptr);
-
-	backBuffer->GetSurfaceLevel(0, &backBufferSurface);
+	backBuffers[0]->GetSurfaceLevel(0, &backBufferSurface);
 
 	device->GetRenderTarget(0, &origRenderTarget);
 	device->SetRenderTarget(0, backBufferSurface);
@@ -698,6 +734,8 @@ void releaseShaders()
 
 	shaderCount = 0;
 	pool = nullptr;
+
+	blender = nullptr;
 }
 
 void d3d::LoadShader()
@@ -711,6 +749,28 @@ void d3d::LoadShader()
 
 	try
 	{
+		ID3DXBuffer* errors = nullptr;
+		auto result = D3DXCreateEffectFromFileA(d3d::device, "blender.fx", nullptr, nullptr,
+			D3DXFX_NOT_CLONEABLE | D3DXFX_DONOTSAVESTATE | D3DXFX_DONOTSAVESAMPLERSTATE,
+			nullptr, &blender, &errors);
+
+		if (FAILED(result) || errors)
+		{
+			if (errors)
+			{
+				std::string compilationErrors(static_cast<const char*>(
+					errors->GetBufferPointer()));
+
+				errors->Release();
+				throw std::runtime_error(compilationErrors);
+			}
+		}
+
+		if (blender == nullptr)
+		{
+			throw std::runtime_error("Shader creation failed with an unknown error. (Does blender.fx exist?)");
+		}
+
 		effect = compileShader(DEFAULT_OPTIONS);
 		UpdateParameterHandles();
 	}
@@ -773,7 +833,9 @@ static void DrawQuad()
 	const float right = 1.0f;
 	const float bottom = 1.0f;
 
-	param::ViewPort = D3DXVECTOR2(fWidth5, fHeight5);
+	D3DXVECTOR2 v(fWidth5, fHeight5);
+	param::ViewPort = v;
+	blender->SetFloatArray("ViewPort", (float*)&v, 2);
 
 	quad[0].Position = D3DXVECTOR4(-0.5f, -0.5f, 0.5f, 1.0f);
 	quad[0].TexCoord = D3DXVECTOR2(left, top);
@@ -836,11 +898,10 @@ static void layer_debug()
 	DisplayDebugStringFormatted(NJM_LOCATION(1, 1), "LAYER: %d", show_layer);
 }
 
-static bool final_blend = false;
 static void __cdecl DrawQueuedModels_r();
 static Trampoline DrawQueuedModels_t(0x004086F0, 0x004086F6, DrawQueuedModels_r);
 
-static void renderLayerPasses(void(*draw)(), bool clearZ)
+static void renderLayerPasses(void(*draw)())
 {
 	using namespace param;
 
@@ -853,30 +914,29 @@ static void renderLayerPasses(void(*draw)(), bool clearZ)
 
 	for (int i = 0; i < numPasses; i++)
 	{
-		int currId = i % numPasses;
-		int lastId = currId - 1;
-		if (lastId < 0)
-		{
-			lastId = numPasses - 1;
-		}
+		int currId = i % 2;
+		int lastId = (i + 1) % 2;
 
 		Texture currUnit = depthUnits[currId];
 		Texture lastUnit = depthUnits[lastId];
 
-		Surface unit   = nullptr;
-		Surface target = nullptr;
+		Surface unit      = nullptr;
+		Surface target    = nullptr;
+		Surface blendmode = nullptr;
 
 		currUnit->GetSurfaceLevel(0, &unit);
 		renderLayers[i]->GetSurfaceLevel(0, &target);
+		blendModeLayers[i]->GetSurfaceLevel(0, &blendmode);
 
 		device->SetDepthStencilSurface(unit);
 		device->SetRenderTarget(0, target);
+		device->SetRenderTarget(1, blendmode);
 
 		// Always use LESS comparison with the native d3d depth test.
 		device->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESS);
 		// Clear old crap
-		auto clearFlags = D3DCLEAR_TARGET;
-		device->Clear(0, nullptr, clearZ ? (clearFlags | D3DCLEAR_ZBUFFER) : clearFlags, 0, 1.0f, 0);
+		device->Clear(0, nullptr, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
+		device->Clear(1, nullptr, D3DCLEAR_TARGET, 0, 1.0f, 0);
 
 		// Only enable manual alpha depth tests on the second pass.
 		// If not, the depth test will fail and nothing will render
@@ -893,10 +953,11 @@ static void renderLayerPasses(void(*draw)(), bool clearZ)
 		draw();
 		*(int*)0x3AB98AC = last;
 
-		currUnit = nullptr;
-		lastUnit = nullptr;
-		unit     = nullptr;
-		target   = nullptr;
+		currUnit  = nullptr;
+		lastUnit  = nullptr;
+		unit      = nullptr;
+		target    = nullptr;
+		blendmode = nullptr;
 
 		AlphaDepth = nullptr;
 		AlphaDepth.Commit(effect);
@@ -907,9 +968,11 @@ static void renderLayerPasses(void(*draw)(), bool clearZ)
 	peeling = false;
 	OpaqueDepth = nullptr;
 	SetShaderOptions(UseOit, false);
+	//device->SetRenderTarget(0, nullptr);
+	device->SetRenderTarget(1, nullptr);
 }
 
-static void renderBackBuffer(bool populate, D3DBLEND layerBlend)
+static void renderBackBuffer()
 {
 	DWORD zenable, lighting, alphablendenable, alphatestenable,
 	      srcblend, dstblend;
@@ -921,9 +984,12 @@ static void renderBackBuffer(bool populate, D3DBLEND layerBlend)
 	device->GetRenderState(D3DRS_SRCBLEND, &srcblend);
 	device->GetRenderState(D3DRS_DESTBLEND, &dstblend);
 
+	device->SetRenderState(D3DRS_ALPHABLENDENABLE, false);
+	device->SetRenderState(D3DRS_ALPHATESTENABLE, false);
+	device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
+	device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
 	device->SetRenderState(D3DRS_ZENABLE, false);
 	device->SetRenderState(D3DRS_LIGHTING, false);
-	device->SetRenderState(D3DRS_ALPHATESTENABLE, false);
 
 	device->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
 	device->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTOP_SELECTARG1);
@@ -934,44 +1000,75 @@ static void renderBackBuffer(bool populate, D3DBLEND layerBlend)
 
 	device->SetRenderTarget(0, origRenderTarget);
 	device->SetDepthStencilSurface(depthSurface);
-
-	if (populate)
-	{
-		device->Clear(0, nullptr, D3DCLEAR_TARGET, 0, 1.0f, 0);
-	}
+	device->Clear(0, nullptr, D3DCLEAR_TARGET, 0, 1.0f, 0);
 
 	// draw the custom backbuffer to the real backbuffer
 	auto pad = ControllerPointers[0];
 	if (!pad || !(pad->HeldButtons & Buttons_C))
 	{
-		if (populate)
+		device->SetTexture(0, backBuffers[0]);
+		DrawQuad();
+		device->SetTexture(0, nullptr);
+	}
+
+	unsigned int passes;
+	blender->Begin(&passes, 0);
+
+	int lastId = 0;
+	for (int i = numPasses; i > 0; i--)
+	{
+		int currId = i % 2;
+		lastId = (i + 1) % 2;
+
+		blender->SetTexture("BackBuffer", backBuffers[currId]);
+		blender->SetTexture("AlphaLayer", renderLayers[i - 1]);
+		blender->SetTexture("BlendLayer", blendModeLayers[i - 1]);
+
+		Surface surface = nullptr;
+		backBuffers[lastId]->GetSurfaceLevel(0, &surface);
+		device->SetRenderTarget(0, surface);
+		device->Clear(0, nullptr, D3DCLEAR_TARGET, 0, 0.0f, 0);
+
 		{
-			device->SetRenderState(D3DRS_ALPHABLENDENABLE, false);
-			device->SetTexture(0, backBuffer);
+			blender->BeginPass(0);
 			DrawQuad();
-			device->SetTexture(0, nullptr);
+			blender->EndPass();
+		}
+
+		surface = nullptr;
+		blender->SetTexture("BackBuffer", nullptr);
+		blender->SetTexture("AlphaLayer", nullptr);
+		blender->SetTexture("BlendLayer", nullptr);
+
+		if (pad && pad->PressedButtons & Buttons_Right)
+		{
+			std::string path = "wangis" + std::to_string(i) + ".png";
+			D3DXSaveTextureToFileA(path.c_str(), D3DXIFF_PNG, backBuffers[lastId], nullptr);
 		}
 	}
 
-	device->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
-	device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
-	device->SetRenderState(D3DRS_DESTBLEND, layerBlend);
+	blender->End();
 
-	for (int i = numPasses; i > 0; i--)
-	{
-		if (show_layer >= 1 && i != show_layer)
-			continue;
+	device->SetRenderTarget(0, origRenderTarget);
+	device->SetTexture(0, backBuffers[lastId]);
+	DrawQuad();
+	device->SetTexture(0, nullptr);
 
-		device->SetTexture(0, renderLayers[i - 1]);
-		DrawQuad();
-	}
+	blender->SetTexture("BackBuffer", nullptr);
+	blender->SetTexture("AlphaLayer", nullptr);
+	blender->SetTexture("BlendLayer", nullptr);
 
+	device->SetRenderTarget(0, backBufferSurface);
 	device->SetRenderState(D3DRS_ZENABLE, zenable);
 	device->SetRenderState(D3DRS_LIGHTING, lighting);
 	device->SetRenderState(D3DRS_ALPHABLENDENABLE, alphablendenable);
 	device->SetRenderState(D3DRS_ALPHATESTENABLE, alphatestenable);
 	device->SetRenderState(D3DRS_SRCBLEND, srcblend);
 	device->SetRenderState(D3DRS_DESTBLEND, dstblend);
+
+	// draw hud and stuff
+	//layer_debug();
+	//draw();
 }
 
 static void __cdecl DrawQueuedModels_r()
@@ -979,34 +1076,22 @@ static void __cdecl DrawQueuedModels_r()
 	using namespace param;
 	using namespace d3d;
 	auto draw = TARGET_STATIC(DrawQueuedModels);
-	device->SetRenderTarget(0, nullptr);
+	//device->SetRenderTarget(0, nullptr);
 
-	renderLayerPasses(draw, true);
-	renderBackBuffer(true, D3DBLEND_INVSRCALPHA);
-
-	final_blend = true;
-
-	renderLayerPasses(draw, false);
-	renderBackBuffer(false, D3DBLEND_ONE);
-
-	final_blend = false;
-
-	// draw hud and stuff
-	layer_debug();
-	draw();
+	renderLayerPasses(draw);
+	renderBackBuffer();
 
 	device->SetTexture(0, nullptr);
 	device->SetRenderTarget(0, backBufferSurface);
 }
 
-static NJS_MODEL_SADX* __last = nullptr;
 bool __stdcall MyCoolFunction(QueuedModelNode* node, NJS_TEXLIST* texlist)
 {
 	switch ((QueuedModelType)(node->Type & 0xF))
 	{
 		case QueuedModelType_BasicModel:
 		{
-			if (!peeling)
+			/*if (!peeling)
 			{
 				return false;
 			}
@@ -1040,17 +1125,20 @@ bool __stdcall MyCoolFunction(QueuedModelNode* node, NJS_TEXLIST* texlist)
 				{
 					return final_blend;
 				}
-			}
+			}*/
 
-			return !final_blend;
+			return peeling;
 		}
 
 		// TODO: actually handle 3D sprites (particles etc)
 		case QueuedModelType_Sprite3D:
-			return final_blend;
+			return false;
+
+		case QueuedModelType_Sprite2D:
+			return !peeling;
 
 		default:
-			return !peeling;
+			return false;
 	}
 }
 
@@ -1078,6 +1166,93 @@ void __declspec(naked) saveyourself()
 	}
 }
 
+DataArray(D3DBLEND, BlendModes, 0x0088AD6C, 12);
+void __cdecl njColorBlendingMode__r(Int target, Int mode);
+static Trampoline njColorBlendingMode__t(0x0077EC60, 0x0077EC66, njColorBlendingMode__r);
+void __cdecl njColorBlendingMode__r(Int target, Int mode)
+{
+	if (peeling)
+	{
+		//device->SetRenderState(D3DRS_ALPHABLENDENABLE, 0);
+		//device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
+		//device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
+	}
+	else
+	{
+		TARGET_STATIC(njColorBlendingMode_)(target, mode);
+	}
+
+	if (mode)
+	{
+		if (mode == 1)
+		{
+			param::SourceBlend = D3DBLEND_SRCALPHA;
+			param::DestinationBlend = D3DBLEND_INVSRCALPHA;
+		}
+		else
+		{
+			if (!target)
+			{
+				param::SourceBlend = BlendModes[mode];
+			}
+			else
+			{
+				param::DestinationBlend = BlendModes[mode];
+			}
+		}
+	}
+	else
+	{
+		param::SourceBlend = D3DBLEND_INVSRCALPHA;
+		param::DestinationBlend = D3DBLEND_SRCALPHA;
+	}
+
+	param::SourceBlend.Commit(effect);
+	param::DestinationBlend.Commit(effect);
+}
+
+static void __fastcall njAlphaMode_r(Int mode)
+{
+	if (peeling || mode == 0)
+	{
+		device->SetRenderState(D3DRS_ALPHABLENDENABLE, 0);
+		device->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG2);
+	}
+	else
+	{
+		device->SetRenderState(D3DRS_ALPHABLENDENABLE, 1);
+		device->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
+	}
+}
+
+static void __fastcall njTextureShadingMode_r(Int mode)
+{
+	if (!peeling && mode)
+	{
+		if (--mode)
+		{
+			if (mode == 1)
+			{
+				device->SetRenderState(D3DRS_ALPHABLENDENABLE, 1);
+				device->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
+				device->SetRenderState(D3DRS_ALPHAREF, 16);
+			}
+		}
+		else
+		{
+			device->SetRenderState(D3DRS_ALPHABLENDENABLE, 1);
+			device->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
+			device->SetRenderState(D3DRS_ALPHAREF, 0);
+		}
+	}
+	else
+	{
+		device->SetRenderState(D3DRS_ALPHABLENDENABLE, 0);
+		device->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG2);
+		device->SetRenderState(D3DRS_ALPHAREF, 0);
+	}
+}
+
 #endif
 
 void d3d::InitTrampolines()
@@ -1095,10 +1270,14 @@ void d3d::InitTrampolines()
 	PolyBuff_DrawTriangleList_t        = new Trampoline(0x007947B0, 0x007947B7, PolyBuff_DrawTriangleList_r);
 
 
+#ifdef USE_OIT
 	// HACK: DIRTY HACKS
 	WriteJump(Direct3D_EnableZWrite, Direct3D_EnableZWrite_r);
 	WriteJump((void*)0x0077ED00, Direct3D_SetZFunc_r);
 	WriteJump((void*)0x00408981, saveyourself);
+	WriteJump((void*)0x00791940, njAlphaMode_r);
+	WriteJump((void*)0x00791990, njTextureShadingMode_r);
+#endif
 
 	WriteJump((void*)0x0077EE45, DrawMeshSetBuffer_asm);
 
@@ -1123,13 +1302,22 @@ void releaseDepthTextures()
 		it = nullptr;
 	}
 
+	for (auto& it : blendModeLayers)
+	{
+		it = nullptr;
+	}
+
+	for (auto& it : backBuffers)
+	{
+		it = nullptr;
+	}
+
 	param::AlphaDepth.Release();
 	param::OpaqueDepth.Release();
 
 	depthSurface      = nullptr;
 	depthBuffer       = nullptr;
 	backBufferSurface = nullptr;
-	backBuffer        = nullptr;
 	origRenderTarget  = nullptr;
 }
 
@@ -1146,6 +1334,8 @@ extern "C"
 			}
 		}
 
+		blender->OnLostDevice();
+
 		releaseDepthTextures();
 	}
 
@@ -1158,6 +1348,8 @@ extern "C"
 				e->OnResetDevice();
 			}
 		}
+
+		blender->OnResetDevice();
 
 		createDepthTextures();
 		UpdateParameterHandles();
