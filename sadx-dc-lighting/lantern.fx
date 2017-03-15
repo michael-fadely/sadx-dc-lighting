@@ -94,9 +94,6 @@ sampler2D atlasSamplerB = sampler_state
 
 shared Texture2D OpaqueDepth;
 shared Texture2D AlphaDepth;
-shared Texture2D BackBuffer;
-shared Texture2D AlphaLayer;
-shared Texture2D BlendLayer;
 
 sampler opaqueDepthSampler = sampler_state
 {
@@ -114,37 +111,13 @@ sampler alphaDepthSampler = sampler_state
 	AddressU  = Clamp;
 	AddressV  = Clamp;
 };
-sampler backBufferSampler = sampler_state
-{
-	Texture   = <BackBuffer>;
-	MinFilter = Point;
-	MagFilter = Point;
-	AddressU  = Clamp;
-	AddressV  = Clamp;
-};
-sampler alphaLayerSampler = sampler_state
-{
-	Texture   = <AlphaLayer>;
-	MinFilter = Point;
-	MagFilter = Point;
-	AddressU  = Clamp;
-	AddressV  = Clamp;
-};
-sampler blendLayerSampler = sampler_state
-{
-	Texture   = <BlendLayer>;
-	MinFilter = Point;
-	MagFilter = Point;
-	AddressU  = Clamp;
-	AddressV  = Clamp;
-};
 
 // Enables or disables depth tests against the previous alpha depth buffer.
 shared bool AlphaDepthTest;
 
 // This will likely need to be non-static for more robust control.
 // Enabled or disabled depth tests against the opaque-only depth buffer.
-static shared bool OpaqueDepthTest = true;
+static bool OpaqueDepthTest = true;
 // Used for correcting screen-space coordinates to sample the depth buffer.
 shared float2 ViewPort;
 
