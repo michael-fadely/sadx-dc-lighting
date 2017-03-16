@@ -168,7 +168,7 @@ PS_IN vs_main(VS_IN input)
 
 	output.position = position;
 
-#if defined USE_TEXTURE && USE_ENVMAP
+#if defined(USE_TEXTURE) && defined(USE_ENVMAP)
 	output.tex = (float2)mul(float4(input.normal, 1), wvMatrixInvT);
 	output.tex = (float2)mul(float4(output.tex, 0, 1), TextureTransform);
 #else
