@@ -326,7 +326,7 @@ float4 ps_main(PS_IN input) : COLOR0
 		// ...discard any fragment whose depth is less than the last fragment depth.
 		// (equivalent to D3DCMP_GREATER)
 		float lastDepth = tex2D(alphaDepthSampler, depthcoord).r;
-		if (currentDepth - lastDepth < EPSILON)
+		if (currentDepth - lastDepth <= EPSILON)
 		{
 			discard;
 		}

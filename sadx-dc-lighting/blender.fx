@@ -18,27 +18,27 @@ Texture2D BlendLayer;
 
 sampler backBufferSampler = sampler_state
 {
-	Texture = <BackBuffer>;
+	Texture   = <BackBuffer>;
 	MinFilter = Point;
 	MagFilter = Point;
-	AddressU = Clamp;
-	AddressV = Clamp;
+	AddressU  = Clamp;
+	AddressV  = Clamp;
 };
 sampler alphaLayerSampler = sampler_state
 {
-	Texture = <AlphaLayer>;
+	Texture   = <AlphaLayer>;
 	MinFilter = Point;
 	MagFilter = Point;
-	AddressU = Clamp;
-	AddressV = Clamp;
+	AddressU  = Clamp;
+	AddressV  = Clamp;
 };
 sampler blendLayerSampler = sampler_state
 {
-	Texture = <BlendLayer>;
+	Texture   = <BlendLayer>;
 	MinFilter = Point;
 	MagFilter = Point;
-	AddressU = Clamp;
-	AddressV = Clamp;
+	AddressU  = Clamp;
+	AddressV  = Clamp;
 };
 
 

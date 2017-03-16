@@ -901,12 +901,12 @@ static void layer_debug()
 static void __cdecl DrawQueuedModels_r();
 static Trampoline DrawQueuedModels_t(0x004086F0, 0x004086F6, DrawQueuedModels_r);
 
-static void renderLayerPasses(void(*draw)())
+static void renderLayerPasses()
 {
-	using namespace param;
+	auto draw = TARGET_STATIC(DrawQueuedModels);
 
 	SetShaderOptions(UseOit, true);
-	OpaqueDepth = depthBuffer;
+	param::OpaqueDepth = depthBuffer;
 	peeling = true;
 	do_effect = true;
 
@@ -943,11 +943,12 @@ static void renderLayerPasses(void(*draw)())
 		// as the "last" depth buffer has not been populated yet.
 		// The shader performs a manual GREATER depth test on
 		// transparent things.
-		AlphaDepthTest = i != 0;
-		AlphaDepthTest.Commit(effect);
+		param::AlphaDepthTest = i != 0;
 		// Set the depth buffer to test against if above stuff.
-		AlphaDepth = lastUnit;
-		AlphaDepth.Commit(effect);
+		param::AlphaDepth = lastUnit;
+
+		param::AlphaDepthTest.Commit(effect);
+		param::AlphaDepth.Commit(effect);
 
 		auto last = *(int*)0x3AB98AC;
 		draw();
@@ -958,17 +959,14 @@ static void renderLayerPasses(void(*draw)())
 		unit      = nullptr;
 		target    = nullptr;
 		blendmode = nullptr;
-
-		AlphaDepth = nullptr;
-		AlphaDepth.Commit(effect);
 	}
 
 	end();
 
 	peeling = false;
-	OpaqueDepth = nullptr;
+	param::OpaqueDepth = nullptr;
+	param::AlphaDepth = nullptr;
 	SetShaderOptions(UseOit, false);
-	//device->SetRenderTarget(0, nullptr);
 	device->SetRenderTarget(1, nullptr);
 }
 
@@ -998,18 +996,8 @@ static void renderBackBuffer()
 	device->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTOP_SELECTARG1);
 	device->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTOP_DISABLE);
 
-	device->SetRenderTarget(0, origRenderTarget);
-	device->SetDepthStencilSurface(depthSurface);
-	device->Clear(0, nullptr, D3DCLEAR_TARGET, 0, 1.0f, 0);
-
 	// draw the custom backbuffer to the real backbuffer
 	auto pad = ControllerPointers[0];
-	if (!pad || !(pad->HeldButtons & Buttons_C))
-	{
-		device->SetTexture(0, backBuffers[0]);
-		DrawQuad();
-		device->SetTexture(0, nullptr);
-	}
 
 	unsigned int passes;
 	blender->Begin(&passes, 0);
@@ -1036,29 +1024,30 @@ static void renderBackBuffer()
 		}
 
 		surface = nullptr;
-		blender->SetTexture("BackBuffer", nullptr);
-		blender->SetTexture("AlphaLayer", nullptr);
-		blender->SetTexture("BlendLayer", nullptr);
 
 		if (pad && pad->PressedButtons & Buttons_Right)
 		{
-			std::string path = "wangis" + std::to_string(i) + ".png";
-			D3DXSaveTextureToFileA(path.c_str(), D3DXIFF_PNG, backBuffers[lastId], nullptr);
+			std::string path = "layer" + std::to_string(i) + ".png";
+			D3DXSaveTextureToFileA(path.c_str(), D3DXIFF_PNG, renderLayers[i - 1], nullptr);
+
+			path = "blend" + std::to_string(i) + ".png";
+			D3DXSaveTextureToFileA(path.c_str(), D3DXIFF_PNG, blendModeLayers[i - 1], nullptr);
 		}
 	}
 
 	blender->End();
-
-	device->SetRenderTarget(0, origRenderTarget);
-	device->SetTexture(0, backBuffers[lastId]);
-	DrawQuad();
-	device->SetTexture(0, nullptr);
-
 	blender->SetTexture("BackBuffer", nullptr);
 	blender->SetTexture("AlphaLayer", nullptr);
 	blender->SetTexture("BlendLayer", nullptr);
 
-	device->SetRenderTarget(0, backBufferSurface);
+	device->SetRenderTarget(0, origRenderTarget);
+	device->SetDepthStencilSurface(depthSurface);
+	device->Clear(0, nullptr, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
+
+	device->SetTexture(0, backBuffers[lastId]);
+	DrawQuad();
+	device->SetTexture(0, nullptr);
+
 	device->SetRenderState(D3DRS_ZENABLE, zenable);
 	device->SetRenderState(D3DRS_LIGHTING, lighting);
 	device->SetRenderState(D3DRS_ALPHABLENDENABLE, alphablendenable);
@@ -1067,22 +1056,21 @@ static void renderBackBuffer()
 	device->SetRenderState(D3DRS_DESTBLEND, dstblend);
 
 	// draw hud and stuff
-	//layer_debug();
-	//draw();
+	layer_debug();
+	auto draw = TARGET_STATIC(DrawQueuedModels);
+	draw();
+
+	device->SetRenderTarget(0, backBufferSurface);
 }
 
 static void __cdecl DrawQueuedModels_r()
 {
 	using namespace param;
 	using namespace d3d;
-	auto draw = TARGET_STATIC(DrawQueuedModels);
 	//device->SetRenderTarget(0, nullptr);
 
-	renderLayerPasses(draw);
+	renderLayerPasses();
 	renderBackBuffer();
-
-	device->SetTexture(0, nullptr);
-	device->SetRenderTarget(0, backBufferSurface);
 }
 
 bool __stdcall MyCoolFunction(QueuedModelNode* node, NJS_TEXLIST* texlist)
@@ -1132,13 +1120,28 @@ bool __stdcall MyCoolFunction(QueuedModelNode* node, NJS_TEXLIST* texlist)
 
 		// TODO: actually handle 3D sprites (particles etc)
 		case QueuedModelType_Sprite3D:
-			return false;
+			return peeling;
 
+		case QueuedModelType_Callback:
 		case QueuedModelType_Sprite2D:
+		case QueuedModelType_Rect:
 			return !peeling;
 
-		default:
+		case QueuedModelType_00:
+		case QueuedModelType_04:
+		case QueuedModelType_05:
+		case QueuedModelType_06:
+		case QueuedModelType_07:
+		case QueuedModelType_08:
+		case QueuedModelType_10:
+		case QueuedModelType_11:
+		case QueuedModelType_13:
+		case QueuedModelType_14:
+		case QueuedModelType_15:
 			return false;
+
+		default:
+			return !peeling;
 	}
 }
 
@@ -1167,15 +1170,15 @@ void __declspec(naked) saveyourself()
 }
 
 DataArray(D3DBLEND, BlendModes, 0x0088AD6C, 12);
-void __cdecl njColorBlendingMode__r(Int target, Int mode);
+static void __cdecl njColorBlendingMode__r(Int target, Int mode);
 static Trampoline njColorBlendingMode__t(0x0077EC60, 0x0077EC66, njColorBlendingMode__r);
-void __cdecl njColorBlendingMode__r(Int target, Int mode)
+static void __cdecl njColorBlendingMode__r(Int target, Int mode)
 {
 	if (peeling)
 	{
-		//device->SetRenderState(D3DRS_ALPHABLENDENABLE, 0);
-		//device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
-		//device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
+		device->SetRenderState(D3DRS_ALPHABLENDENABLE, 0);
+		device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
+		device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
 	}
 	else
 	{
