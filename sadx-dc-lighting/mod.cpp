@@ -337,8 +337,6 @@ extern "C"
 	EXPORT ModInfo SADXModInfo = { ModLoaderVer };
 	EXPORT void __cdecl Init(const char *path)
 	{
-		auto init = MH_Initialize();
-
 		auto handle = GetModuleHandle(L"d3d9.dll");
 		if (handle == nullptr)
 		{
@@ -346,6 +344,8 @@ extern "C"
 				"D3D9 not loaded", MB_OK | MB_ICONERROR);
 			return;
 		}
+
+		auto init = MH_Initialize();
 
 		LanternInstance base(&param::PaletteA, &param::DiffuseIndexA, &param::SpecularIndexA);
 		globals::palettes.Add(base);
