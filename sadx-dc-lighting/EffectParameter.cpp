@@ -1,5 +1,4 @@
 #include "stdafx.h"
-#include "lantern.h"
 #include "EffectParameter.h"
 
 template<>
@@ -59,8 +58,7 @@ bool EffectParameter<D3DXVECTOR3>::Commit(Effect effect)
 {
 	if (Modified())
 	{
-		D3DXVECTOR4 v = D3DXVECTOR4(current, 0.0f);
-		effect->SetVector(handle, &v);
+		effect->SetFloatArray(handle, &current[0], sizeof(float) * 3);
 		Clear();
 		return true;
 	}
