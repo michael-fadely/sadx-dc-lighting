@@ -97,4 +97,25 @@ struct MeshSetBuffer
 	int StartIndex;
 	int PrimitiveCount;
 };
+
+struct __declspec(align(2)) PolyBuff_RenderArgs
+{
+	Uint32 StartVertex;
+	Uint32 PrimitiveCount;
+	Uint32 CullMode;
+	Uint32 d;
+};
+
+struct PolyBuff
+{
+	Direct3DVertexBuffer8 *pStreamData;
+	Uint32 TotalSize;
+	Uint32 CurrentSize;
+	Uint32 Stride;
+	Uint32 FVF;
+	PolyBuff_RenderArgs *RenderArgs;
+	Uint32 LockCount;
+	const char *name;
+	int i;
+};
 #pragma pack(pop)

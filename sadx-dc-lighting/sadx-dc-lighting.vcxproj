@@ -59,15 +59,15 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;SADXDCLIGHTING_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\sadx-mod-loader\SADXModLoader\include;..\sadx-mod-loader\libmodutils;..\d3d8to9\source</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\sadx-mod-loader\SADXModLoader\include;..\minhook\include;..\sadx-mod-loader\libmodutils;..\d3d8to9\source</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3dx9.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3dx9.lib;libMinHook-$(PlatformTarget)-v$(PlatformToolsetVersion)-mdd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>
       </IgnoreSpecificDefaultLibraries>
-      <AdditionalLibraryDirectories>$(DXSDK_DIR)Lib\x86</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(DXSDK_DIR)Lib\x86;..\minhook\lib</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /C /Y /D "$(ProjectDir)mod.ini" "$(OutDir)"
@@ -83,7 +83,7 @@ xcopy /C /Y /D "$(ProjectDir)lantern.fx" "$(OutDir)system\"</Command>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;SADXDCLIGHTING_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\sadx-mod-loader\SADXModLoader\include;..\sadx-mod-loader\libmodutils;..\d3d8to9\source</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\sadx-mod-loader\SADXModLoader\include;..\minhook\include;..\sadx-mod-loader\libmodutils;..\d3d8to9\source</AdditionalIncludeDirectories>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
     </ClCompile>
     <Link>
@@ -91,10 +91,10 @@ xcopy /C /Y /D "$(ProjectDir)lantern.fx" "$(OutDir)system\"</Command>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3dx9.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3dx9.lib;libMinHook-$(PlatformTarget)-v$(PlatformToolsetVersion)-md.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>
       </IgnoreSpecificDefaultLibraries>
-      <AdditionalLibraryDirectories>$(DXSDK_DIR)Lib\x86</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(DXSDK_DIR)Lib\x86;..\minhook\lib</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /C /Y /D "$(ProjectDir)mod.ini" "$(OutDir)"

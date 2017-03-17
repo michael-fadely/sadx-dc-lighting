@@ -36,13 +36,16 @@ bool SourceLight_t::operator!=(const SourceLight_t& rhs) const
 }
 
 template<>
-void EffectParameter<SourceLight_t>::Commit(Effect effect)
+bool EffectParameter<SourceLight_t>::Commit(Effect effect)
 {
 	if (Modified())
 	{
 		effect->SetValue(handle, &current, sizeof(SourceLight_t));
 		Clear();
+		return true;
 	}
+
+	return false;
 }
 
 /*

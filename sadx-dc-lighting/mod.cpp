@@ -6,6 +6,9 @@
 #include <SADXModLoader.h>
 #include <Trampoline.h>
 
+// MinHook
+#include <MinHook.h>
+
 // Local
 #include "d3d.h"
 #include "datapointers.h"
@@ -347,6 +350,8 @@ extern "C"
 				"D3D9 not loaded", MB_OK | MB_ICONERROR);
 			return;
 		}
+
+		auto init = MH_Initialize();
 
 		LanternInstance base(&param::PaletteA, &param::DiffuseIndexA, &param::SpecularIndexA);
 		globals::palettes.Add(base);
