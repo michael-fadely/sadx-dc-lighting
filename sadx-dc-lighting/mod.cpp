@@ -6,6 +6,9 @@
 #include <SADXModLoader.h>
 #include <Trampoline.h>
 
+// MinHook
+#include <MinHook.h>
+
 // Local
 #include "d3d.h"
 #include "datapointers.h"
@@ -334,6 +337,8 @@ extern "C"
 	EXPORT ModInfo SADXModInfo = { ModLoaderVer };
 	EXPORT void __cdecl Init(const char *path)
 	{
+		auto init = MH_Initialize();
+
 		auto handle = GetModuleHandle(L"d3d9.dll");
 		if (handle == nullptr)
 		{

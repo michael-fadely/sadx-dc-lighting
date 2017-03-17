@@ -32,6 +32,9 @@
 #include <SADXModLoader.h>
 #include <Trampoline.h>
 
+// MinHook
+#include <MinHook.h>
+
 // Standard library
 #include <deque>
 #include <exception>

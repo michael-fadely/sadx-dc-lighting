@@ -10,6 +10,9 @@
 #include <SADXModLoader/SADXFunctions.h>
 #include <Trampoline.h>
 
+// MinHook
+#include <MinHook.h>
+
 // Standard library
 #include <vector>
 
@@ -19,6 +22,8 @@
 #include "globals.h"
 #include "lantern.h"
 #include "EffectParameter.h"
+
+// TODO: Organize/split this file.
 
 #pragma pack(push, 1)
 struct __declspec(align(2)) PolyBuff_RenderArgs
@@ -53,7 +58,6 @@ static Effect shaders[d3d::ShaderOptions::Count] = {};
 static CComPtr<ID3DXEffectPool> pool = nullptr;
 
 static bool initialized  = false;
-static bool began_effect = false;
 static Uint32 drawing    = 0;
 
 static Trampoline* Direct3D_PerformLighting_t         = nullptr;
@@ -169,6 +173,7 @@ static auto sanitize(Uint32& options)
 	return options &= d3d::Mask;
 }
 
+static std::vector<D3DXMACRO> macros;
 static Effect compileShader(Uint32 options)
 {
 	sanitize(options);
@@ -182,8 +187,8 @@ static Effect compileShader(Uint32 options)
 		}
 	}
 
+	macros.clear();
 	auto o = options;
-	std::vector<D3DXMACRO> macros;
 
 	while (o != 0)
 	{
@@ -287,18 +292,45 @@ using namespace d3d;
 
 static void begin()
 {
-	if (!do_effect || began_effect || effect == nullptr)
+	++drawing;
+}
+static void end()
+{
+	if (effect == nullptr || drawing > 0 && --drawing < 1)
 	{
+		drawing = 0;
+		do_effect = false;
+	}
+}
+
+static bool began_effect = false;
+static void end_effect()
+{
+	if (effect != nullptr && began_effect)
+	{
+		effect->EndPass();
+		effect->End();
+	}
+
+	began_effect = false;
+}
+
+static void start_effect()
+{
+	if (!do_effect || effect == nullptr
+		|| do_effect && !drawing)
+	{
+		end_effect();
 		return;
 	}
 
-	for (auto i : param::parameters)
-	{
-		i->Commit(effect);
-	}
+	bool changes = false;
 
 	if (sanitize(shader_options) && shader_options != last_options)
 	{
+		end_effect();
+		changes = true;
+
 		last_options = shader_options;
 		auto e = shaders[shader_options];
 		if (e == nullptr)
@@ -310,6 +342,7 @@ static void begin()
 			catch (std::exception& ex)
 			{
 				effect = nullptr;
+				end_effect();
 				MessageBoxA(WindowHandle, ex.what(), "Shader creation failed", MB_OK | MB_ICONERROR);
 				return;
 			}
@@ -318,48 +351,49 @@ static void begin()
 		effect = e;
 	}
 
-	UINT passes = 0;
-	if (FAILED(effect->Begin(&passes, 0)))
+	for (auto& it : param::parameters)
 	{
-		throw std::runtime_error("Failed to begin shader!");
+		if (it->Commit(effect))
+		{
+			changes = true;
+		}
 	}
 
-	if (passes > 1)
+	if (began_effect)
 	{
-		throw std::runtime_error("Multi-pass shaders are not supported.");
+		if (changes)
+		{
+			effect->CommitChanges();
+		}
 	}
-
-	if (FAILED(effect->BeginPass(0)))
+	else
 	{
-		throw std::runtime_error("Failed to begin pass!");
-	}
+		UINT passes = 0;
+		if (FAILED(effect->Begin(&passes, 0)))
+		{
+			throw std::runtime_error("Failed to begin shader!");
+		}
 
-	began_effect = true;
-}
-static void end()
-{
-	if (!began_effect || effect == nullptr)
-	{
-		return;
-	}
+		if (passes > 1)
+		{
+			throw std::runtime_error("Multi-pass shaders are not supported.");
+		}
 
-	effect->EndPass();
-	effect->End();
-	began_effect = false;
+		if (FAILED(effect->BeginPass(0)))
+		{
+			throw std::runtime_error("Failed to begin pass!");
+		}
+
+		began_effect = true;
+	}
 }
 
 template<typename T, typename... Args>
 void RunTrampoline(const T& original, Args... args)
 {
-	++drawing;
-
+	begin();
 	original(args...);
-
-	if (drawing > 0 && --drawing == 0)
-	{
-		end();
-		do_effect = false;
-	}
+	end();
 }
 
 static void DrawPolyBuff(PolyBuff* _this, D3DPRIMITIVETYPE type)
@@ -377,25 +411,15 @@ static void DrawPolyBuff(PolyBuff* _this, D3DPRIMITIVETYPE type)
 	{
 		if (args->CullMode != cullmode)
 		{
-			device->SetRenderState(D3DRS_CULLMODE, args->CullMode);
+			Direct3D_Device->SetRenderState(D3DRS_CULLMODE, args->CullMode);
 			cullmode = args->CullMode;
-
-			if (i == _this->LockCount)
-			{
-				begin();
-			}
-			else
-			{
-				effect->CommitChanges();
-			}
 		}
 
-		device->DrawPrimitive(type, args->StartVertex, args->PrimitiveCount);
+		Direct3D_Device->DrawPrimitive(type, args->StartVertex, args->PrimitiveCount);
 		++args;
 	}
 
 	_this->LockCount = 0;
-	end();
 }
 
 static void SetLightParameters()
@@ -428,24 +452,33 @@ static void __cdecl sub_77EBA0_r(void* a1, int a2, int a3)
 
 static void __cdecl njDrawModel_SADX_r(NJS_MODEL_SADX* a1)
 {
+	begin();
 	RunTrampoline(TARGET_DYNAMIC(njDrawModel_SADX), a1);
+	end();
 }
 
 static void __cdecl njDrawModel_SADX_B_r(NJS_MODEL_SADX* a1)
 {
+	begin();
 	RunTrampoline(TARGET_DYNAMIC(njDrawModel_SADX_B), a1);
+	end();
 }
 
 static void __fastcall PolyBuff_DrawTriangleStrip_r(PolyBuff* _this)
 {
+	begin();
 	DrawPolyBuff(_this, D3DPT_TRIANGLESTRIP);
+	end();
 }
 
 static void __fastcall PolyBuff_DrawTriangleList_r(PolyBuff* _this)
 {
+	begin();
 	DrawPolyBuff(_this, D3DPT_TRIANGLELIST);
+	end();
 }
 
+static void hookVtbl();
 static void __fastcall CreateDirect3DDevice_r(int a1, int behavior, int type)
 {
 	TARGET_DYNAMIC(CreateDirect3DDevice)(a1, behavior, type);
@@ -454,6 +487,7 @@ static void __fastcall CreateDirect3DDevice_r(int a1, int behavior, int type)
 		device = Direct3D_Device->GetProxyInterface();
 		initialized = true;
 		LoadShader();
+		hookVtbl();
 	}
 }
 
@@ -515,7 +549,7 @@ static void __cdecl Direct3D_PerformLighting_r(int type)
 	// This specifically force light type 0 to prevent
 	// the light direction from being overwritten.
 	target(0);
-	SetShaderOptions(ShaderOptions::UseLight, true);
+	SetShaderOptions(UseLight, true);
 
 	if (type != globals::light_type)
 	{
@@ -534,18 +568,18 @@ static void __stdcall DrawMeshSetBuffer_c(MeshSetBuffer* buffer)
 		return;
 	}
 
-	device->SetFVF(buffer->FVF);
-	device->SetStreamSource(0, buffer->VertexBuffer->GetProxyInterface(), 0, buffer->Size);
+	Direct3D_Device->SetVertexShader(buffer->FVF);
+	Direct3D_Device->SetStreamSource(0, buffer->VertexBuffer, buffer->Size);
 
 	auto indexBuffer = buffer->IndexBuffer;
 	if (indexBuffer)
 	{
-		device->SetIndices(indexBuffer->GetProxyInterface());
+		Direct3D_Device->SetIndices(indexBuffer, 0);
 
 		begin();
 
-		device->DrawIndexedPrimitive(
-			buffer->PrimitiveType, 0,
+		Direct3D_Device->DrawIndexedPrimitive(
+			buffer->PrimitiveType,
 			buffer->MinIndex,
 			buffer->NumVertecies,
 			buffer->StartIndex,
@@ -554,7 +588,8 @@ static void __stdcall DrawMeshSetBuffer_c(MeshSetBuffer* buffer)
 	else
 	{
 		begin();
-		device->DrawPrimitive(
+
+		Direct3D_Device->DrawPrimitive(
 			buffer->PrimitiveType,
 			buffer->StartIndex,
 			buffer->PrimitiveCount);
@@ -581,7 +616,7 @@ static auto __stdcall SetTransformHijack(Direct3DDevice8* _device, D3DTRANSFORMS
 		param::ProjectionMatrix = *matrix;
 	}
 
-	return device->SetTransform(type, matrix);
+	return Direct3D_Device->SetTransform(type, matrix);
 }
 
 void releaseParameters()
@@ -604,6 +639,71 @@ void releaseShaders()
 
 	shaderCount = 0;
 	pool = nullptr;
+}
+
+enum
+{
+	IndexOf_DrawPrimitive = 81,
+	IndexOf_DrawIndexedPrimitive,
+	IndexOf_DrawPrimitiveUP,
+	IndexOf_DrawIndexedPrimitiveUP
+};
+
+#define D3DORIG(NAME) \
+	NAME ## _orig
+
+HRESULT __stdcall DrawPrimitive(IDirect3DDevice9* _this, D3DPRIMITIVETYPE PrimitiveType, UINT StartVertex, UINT PrimitiveCount);
+HRESULT __stdcall DrawIndexedPrimitive(IDirect3DDevice9* _this, D3DPRIMITIVETYPE PrimitiveType, INT BaseVertexIndex, UINT MinVertexIndex, UINT NumVertices, UINT startIndex, UINT primCount);
+HRESULT __stdcall DrawPrimitiveUP(IDirect3DDevice9* _this, D3DPRIMITIVETYPE PrimitiveType, UINT PrimitiveCount, CONST void* pVertexStreamZeroData, UINT VertexStreamZeroStride);
+HRESULT __stdcall DrawIndexedPrimitiveUP(IDirect3DDevice9* _this, D3DPRIMITIVETYPE PrimitiveType, UINT MinVertexIndex, UINT NumVertices, UINT PrimitiveCount, CONST void* pIndexData, D3DFORMAT IndexDataFormat, CONST void* pVertexStreamZeroData, UINT VertexStreamZeroStride);
+
+decltype(DrawPrimitive)*          DrawPrimitive_orig          = nullptr;
+decltype(DrawIndexedPrimitive)*   DrawIndexedPrimitive_orig   = nullptr;
+decltype(DrawPrimitiveUP)*        DrawPrimitiveUP_orig        = nullptr;
+decltype(DrawIndexedPrimitiveUP)* DrawIndexedPrimitiveUP_orig = nullptr;
+
+HRESULT __stdcall DrawPrimitive(IDirect3DDevice9* _this, D3DPRIMITIVETYPE PrimitiveType, UINT StartVertex, UINT PrimitiveCount)
+{
+	start_effect();
+	auto result = D3DORIG(DrawPrimitive)(_this, PrimitiveType, StartVertex, PrimitiveCount);
+	end_effect();
+	return result;
+}
+HRESULT __stdcall DrawIndexedPrimitive(IDirect3DDevice9* _this, D3DPRIMITIVETYPE PrimitiveType, INT BaseVertexIndex, UINT MinVertexIndex, UINT NumVertices, UINT startIndex, UINT primCount)
+{
+	start_effect();
+	auto result = D3DORIG(DrawIndexedPrimitive)(_this, PrimitiveType, BaseVertexIndex, MinVertexIndex, NumVertices, startIndex, primCount);
+	end_effect();
+	return result;
+}
+HRESULT __stdcall DrawPrimitiveUP(IDirect3DDevice9* _this, D3DPRIMITIVETYPE PrimitiveType, UINT PrimitiveCount, CONST void* pVertexStreamZeroData, UINT VertexStreamZeroStride)
+{
+	start_effect();
+	auto result = D3DORIG(DrawPrimitiveUP)(_this, PrimitiveType, PrimitiveCount, pVertexStreamZeroData, VertexStreamZeroStride);
+	end_effect();
+	return result;
+}
+HRESULT __stdcall DrawIndexedPrimitiveUP(IDirect3DDevice9* _this, D3DPRIMITIVETYPE PrimitiveType, UINT MinVertexIndex, UINT NumVertices, UINT PrimitiveCount, CONST void* pIndexData, D3DFORMAT IndexDataFormat, CONST void* pVertexStreamZeroData, UINT VertexStreamZeroStride)
+{
+	start_effect();
+	auto result = D3DORIG(DrawIndexedPrimitiveUP)(_this, PrimitiveType, MinVertexIndex, NumVertices, PrimitiveCount, pIndexData, IndexDataFormat, pVertexStreamZeroData, VertexStreamZeroStride);
+	end_effect();
+	return result;
+}
+
+static void hookVtbl()
+{
+	auto vtbl = (void**)(*(void**)device);
+
+#define HOOK(NAME) \
+	MH_CreateHook(vtbl[IndexOf_ ## NAME], NAME, (LPVOID*)& ## NAME ## _orig)
+
+	HOOK(DrawPrimitive);
+	HOOK(DrawIndexedPrimitive);
+	HOOK(DrawPrimitiveUP);
+	HOOK(DrawIndexedPrimitiveUP);
+
+	MH_EnableHook(MH_ALL_HOOKS);
 }
 
 void d3d::LoadShader()
@@ -669,6 +769,8 @@ extern "C"
 {
 	EXPORT void __cdecl OnRenderDeviceLost()
 	{
+		end();
+
 		for (auto& e : shaders)
 		{
 			if (e != nullptr)

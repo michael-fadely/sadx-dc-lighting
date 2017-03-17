@@ -15,7 +15,7 @@ public:
 	virtual void UpdateHandle(Effect effect) = 0;
 	virtual bool Modified() = 0;
 	virtual void Clear() = 0;
-	virtual void Commit(Effect effect) = 0;
+	virtual bool Commit(Effect effect) = 0;
 	virtual void Release() = 0;
 };
 
@@ -38,7 +38,7 @@ public:
 	void UpdateHandle(Effect effect) override;
 	bool Modified() override;
 	void Clear() override;
-	void Commit(Effect effect) override;
+	bool Commit(Effect effect) override;
 	void Release() override;
 	void operator=(const T& value);
 	void operator=(const EffectParameter<T>& value);
@@ -85,12 +85,12 @@ void EffectParameter<T>::operator=(const EffectParameter<T>& value)
 	*this = value.current;
 }
 
-template<> void EffectParameter<bool>::Commit(Effect effect);
-template<> void EffectParameter<int>::Commit(Effect effect);
-template<> void EffectParameter<float>::Commit(Effect effect);
-template<> void EffectParameter<D3DXVECTOR4>::Commit(Effect effect);
-template<> void EffectParameter<D3DXVECTOR3>::Commit(Effect effect);
-template<> void EffectParameter<D3DXCOLOR>::Commit(Effect effect);
-template<> void EffectParameter<D3DXMATRIX>::Commit(Effect effect);
-template<> void EffectParameter<Texture>::Commit(Effect effect);
+template<> bool EffectParameter<bool>::Commit(Effect effect);
+template<> bool EffectParameter<int>::Commit(Effect effect);
+template<> bool EffectParameter<float>::Commit(Effect effect);
+template<> bool EffectParameter<D3DXVECTOR4>::Commit(Effect effect);
+template<> bool EffectParameter<D3DXVECTOR3>::Commit(Effect effect);
+template<> bool EffectParameter<D3DXCOLOR>::Commit(Effect effect);
+template<> bool EffectParameter<D3DXMATRIX>::Commit(Effect effect);
+template<> bool EffectParameter<Texture>::Commit(Effect effect);
 template<> void EffectParameter<Texture>::Release();
