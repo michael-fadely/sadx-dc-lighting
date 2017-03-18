@@ -291,7 +291,7 @@ float4 ps_main(PS_IN input) : COLOR0
 	result = input.diffuse + input.specular;
 #endif
 
-#ifdef USE_ALPHA
+#if defined(USE_ALPHA) && !defined(USE_OIT)
 
 	#ifdef USE_OIT
 		if (result.a - alpha_bias <= EPSILON)

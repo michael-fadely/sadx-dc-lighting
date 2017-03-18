@@ -122,6 +122,7 @@ namespace local
 	static Trampoline* PolyBuff_DrawTriangleStrip_t       = nullptr;
 	static Trampoline* PolyBuff_DrawTriangleList_t        = nullptr;
 
+	static HRESULT __stdcall SetTexture_r(IDirect3DDevice9* _this, DWORD Stage, IDirect3DBaseTexture9* pTexture);
 	static HRESULT __stdcall DrawPrimitive_r(IDirect3DDevice9* _this,
 		D3DPRIMITIVETYPE PrimitiveType,
 		UINT StartVertex,
@@ -148,6 +149,7 @@ namespace local
 		CONST void* pVertexStreamZeroData,
 		UINT VertexStreamZeroStride);
 
+	static decltype(SetTexture_r)*             SetTexture_t             = nullptr;
 	static decltype(DrawPrimitive_r)*          DrawPrimitive_t          = nullptr;
 	static decltype(DrawIndexedPrimitive_r)*   DrawIndexedPrimitive_t   = nullptr;
 	static decltype(DrawPrimitiveUP_r)*        DrawPrimitiveUP_t        = nullptr;
@@ -480,7 +482,7 @@ namespace local
 
 	static void startEffect()
 	{
-		if (!d3d::do_effect || d3d::effect == nullptr
+		if ((!d3d::do_effect && !peeling)|| d3d::effect == nullptr
 			|| d3d::do_effect && !drawing)
 		{
 			endEffect();
@@ -489,36 +491,39 @@ namespace local
 
 		bool changes = false;
 
-		if (sanitize(shader_options) && shader_options != last_options)
+		if (d3d::effect != blender)
 		{
-			endEffect();
-			changes = true;
-
-			last_options = shader_options;
-			auto e = shaders[shader_options];
-			if (e == nullptr)
+			if (sanitize(shader_options) && shader_options != last_options)
 			{
-				try
+				endEffect();
+				changes = true;
+
+				last_options = shader_options;
+				auto e = shaders[shader_options];
+				if (e == nullptr)
 				{
-					e = compileShader(shader_options);
+					try
+					{
+						e = compileShader(shader_options);
+					}
+					catch (std::exception& ex)
+					{
+						d3d::effect = nullptr;
+						endEffect();
+						MessageBoxA(WindowHandle, ex.what(), "Shader creation failed", MB_OK | MB_ICONERROR);
+						return;
+					}
 				}
-				catch (std::exception& ex)
-				{
-					d3d::effect = nullptr;
-					endEffect();
-					MessageBoxA(WindowHandle, ex.what(), "Shader creation failed", MB_OK | MB_ICONERROR);
-					return;
-				}
+
+				d3d::effect = e;
 			}
 
-			d3d::effect = e;
-		}
-
-		for (auto& it : param::parameters)
-		{
-			if (it->Commit(d3d::effect))
+			for (auto& it : param::parameters)
 			{
-				changes = true;
+				if (it->Commit(d3d::effect))
+				{
+					changes = true;
+				}
 			}
 		}
 
@@ -567,6 +572,7 @@ namespace local
 	{
 		enum
 		{
+			IndexOf_SetTexture = 65,
 			IndexOf_DrawPrimitive = 81,
 			IndexOf_DrawIndexedPrimitive,
 			IndexOf_DrawPrimitiveUP,
@@ -578,6 +584,7 @@ namespace local
 	#define HOOK(NAME) \
 	MH_CreateHook(vtbl[IndexOf_ ## NAME], NAME ## _r, (LPVOID*)& ## NAME ## _t)
 
+		HOOK(SetTexture);
 		HOOK(DrawPrimitive);
 		HOOK(DrawIndexedPrimitive);
 		HOOK(DrawPrimitiveUP);
@@ -749,6 +756,16 @@ namespace local
 #define D3DORIG(NAME) \
 	NAME ## _t
 
+	static HRESULT __stdcall SetTexture_r(IDirect3DDevice9* _this, DWORD Stage, IDirect3DBaseTexture9* pTexture)
+	{
+		if (!Stage)
+		{
+			param::BaseTexture = (IDirect3DTexture9*)pTexture;
+		}
+
+		return D3DORIG(SetTexture)(_this, Stage, pTexture);
+	}
+
 	static HRESULT __stdcall DrawPrimitive_r(IDirect3DDevice9* _this,
 		D3DPRIMITIVETYPE PrimitiveType,
 		UINT StartVertex,
@@ -860,25 +877,6 @@ namespace local
 
 #ifdef USE_OIT
 
-	static Sint32 show_layer = 0;
-
-	const char* strings[14] = {
-		"nope",
-		"D3DBLEND_ZERO",
-		"D3DBLEND_ONE",
-		"D3DBLEND_SRCCOLOR",
-		"D3DBLEND_INVSRCCOLOR",
-		"D3DBLEND_SRCALPHA",
-		"D3DBLEND_INVSRCALPHA",
-		"D3DBLEND_DESTALPHA",
-		"D3DBLEND_INVDESTALPHA",
-		"D3DBLEND_DESTCOLOR",
-		"D3DBLEND_INVDESTCOLOR",
-		"D3DBLEND_SRCALPHASAT",
-		"D3DBLEND_BOTHSRCALPHA",
-		"D3DBLEND_BOTHINVSRCALPHA"
-	};
-
 	struct QuadVertex
 	{
 		static const UINT Format = D3DFVF_XYZRHW | D3DFVF_TEX1;
@@ -939,30 +937,6 @@ namespace local
 		d3d::device->SetRenderState(D3DRS_ZFUNC, index + 1);
 	}
 
-	static void layer_debug()
-	{
-		auto pad = ControllerPointers[0];
-
-		if (pad)
-		{
-			auto pressed = pad->PressedButtons;
-
-			if (pressed & Buttons_Down)
-			{
-				++show_layer %= numPasses + 1;
-			}
-			else if (pressed & Buttons_Up)
-			{
-				if (--show_layer < 0)
-				{
-					show_layer = numPasses;
-				}
-			}
-		}
-
-		DisplayDebugStringFormatted(NJM_LOCATION(1, 1), "LAYER: %d", show_layer);
-	}
-
 	static void __cdecl DrawQueuedModels_r();
 	static Trampoline DrawQueuedModels_t(0x004086F0, 0x004086F6, DrawQueuedModels_r);
 
@@ -986,8 +960,8 @@ namespace local
 			Texture currUnit = depthUnits[currId];
 			Texture lastUnit = depthUnits[lastId];
 
-			Surface unit = nullptr;
-			Surface target = nullptr;
+			Surface unit      = nullptr;
+			Surface target    = nullptr;
 			Surface blendmode = nullptr;
 
 			currUnit->GetSurfaceLevel(0, &unit);
@@ -1013,17 +987,14 @@ namespace local
 			// Set the depth buffer to test against if above stuff.
 			param::AlphaDepth = lastUnit;
 
-			param::AlphaDepthTest.Commit(effect);
-			param::AlphaDepth.Commit(effect);
-
 			auto last = *(int*)0x3AB98AC;
 			draw();
 			*(int*)0x3AB98AC = last;
 
-			currUnit = nullptr;
-			lastUnit = nullptr;
-			unit = nullptr;
-			target = nullptr;
+			currUnit  = nullptr;
+			lastUnit  = nullptr;
+			unit      = nullptr;
+			target    = nullptr;
 			blendmode = nullptr;
 		}
 
@@ -1068,6 +1039,12 @@ namespace local
 
 		unsigned int passes;
 		blender->Begin(&passes, 0);
+		auto _effect = effect;
+		effect = blender;
+
+		do_effect = true;
+
+		begin();
 
 		int lastId = 0;
 		for (int i = numPasses; i > 0; i--)
@@ -1084,11 +1061,7 @@ namespace local
 			device->SetRenderTarget(0, surface);
 			device->Clear(0, nullptr, D3DCLEAR_TARGET, 0, 0.0f, 0);
 
-			{
-				blender->BeginPass(0);
-				DrawQuad();
-				blender->EndPass();
-			}
+			DrawQuad();
 
 			surface = nullptr;
 
@@ -1102,14 +1075,17 @@ namespace local
 			}
 		}
 
-		blender->End();
+		end();
+
+		effect = _effect;
+
 		blender->SetTexture("BackBuffer", nullptr);
 		blender->SetTexture("AlphaLayer", nullptr);
 		blender->SetTexture("BlendLayer", nullptr);
 
 		device->SetRenderTarget(0, origRenderTarget);
 		device->SetDepthStencilSurface(depthSurface);
-		device->Clear(0, nullptr, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
+		device->Clear(0, nullptr, D3DCLEAR_TARGET, 0, 1.0f, 0);
 
 		device->SetTexture(0, backBuffers[lastId]);
 		DrawQuad();
@@ -1123,7 +1099,6 @@ namespace local
 		device->SetRenderState(D3DRS_DESTBLEND, dstblend);
 
 		// draw hud and stuff
-		layer_debug();
 		auto draw = TARGET_STATIC(DrawQueuedModels);
 		draw();
 
@@ -1132,10 +1107,6 @@ namespace local
 
 	static void __cdecl DrawQueuedModels_r()
 	{
-		using namespace param;
-		using namespace d3d;
-		//device->SetRenderTarget(0, nullptr);
-
 		renderLayerPasses();
 		renderBackBuffer();
 	}
@@ -1144,52 +1115,12 @@ namespace local
 	{
 		switch ((QueuedModelType)(node->Type & 0xF))
 		{
-			case QueuedModelType_BasicModel:
-			{
-				/*if (!peeling)
-				{
-				return false;
-				}
-
-				if (!texlist)
-				{
-				return true;
-				}
-
-				auto m = (QueuedModelPointer*)node;
-				auto model = m->Model;
-
-				if (!model->nbMat || !model->nbMeshset)
-				{
-				return true;
-				}
-
-				constexpr auto MASK = NJD_FLAG_USE_ALPHA;
-
-				for (int i = 0; i < model->nbMat; i++)
-				{
-				const NJS_MATERIAL& mat = model->mats[i];
-				auto flags = mat.attrflags;
-
-				if (_nj_control_3d_flag_ & NJD_CONTROL_3D_CONSTANT_ATTR)
-				{
-				flags = _nj_constant_attr_or_ | _nj_constant_attr_and_ & flags;
-				}
-
-				if ((flags & MASK) == MASK && (flags & NJD_DA_MASK) == NJD_DA_ONE)
-				{
-				return final_blend;
-				}
-				}*/
-
-				return peeling;
-			}
-
 			// TODO: actually handle 3D sprites (particles etc)
 			case QueuedModelType_Sprite3D:
+			case QueuedModelType_BasicModel:
+			case QueuedModelType_Callback:
 				return peeling;
 
-			case QueuedModelType_Callback:
 			case QueuedModelType_Sprite2D:
 			case QueuedModelType_Rect:
 				return !peeling;

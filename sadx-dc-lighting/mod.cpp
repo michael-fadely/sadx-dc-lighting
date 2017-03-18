@@ -178,9 +178,7 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 	SetShaderOptions(ShaderOptions::UseLight, (flags & NJD_FLAG_IGNORE_LIGHT) == 0);
 
 	param::SourceBlend = NJD_FLAG_D3DBLEND[flags >> 29];
-	param::DestinationBlend = NJD_FLAG_D3DBLEND[(flags >> 26) & 7];
-	param::SourceBlend.Commit(effect);
-	param::DestinationBlend.Commit(effect);
+	param::DestinationBlend = NJD_FLAG_D3DBLEND[flags >> 26 & 7];
 
 	// Environment map matrix
 	param::TextureTransform = *(D3DXMATRIX*)0x038A5DD0;
