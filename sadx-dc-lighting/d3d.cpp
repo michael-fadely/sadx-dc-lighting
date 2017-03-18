@@ -182,7 +182,7 @@ namespace local
 	static Surface backBufferSurface          = nullptr;
 	static Surface origRenderTarget           = nullptr;
 	static bool peeling                       = false;
-
+	static bool allow_alpha                   = false;
 
 	DataPointer(D3DPRESENT_PARAMETERS, PresentParameters, 0x03D0FDC0);
 #endif
@@ -228,7 +228,10 @@ namespace local
 
 		shaderCount = 0;
 		pool = nullptr;
+
+	#ifdef USE_OIT
 		blender = nullptr;
+	#endif
 	}
 
 #ifdef USE_OIT
@@ -1112,9 +1115,13 @@ namespace local
 		renderBackBuffer();
 	}
 
-	static bool __stdcall MyCoolFunction(QueuedModelNode* node, NJS_TEXLIST* texlist)
+	static bool __stdcall MyCoolFunction(QueuedModelNode* node)
 	{
-		switch ((QueuedModelType)(node->Type & 0xF))
+		QueuedModelType type = (QueuedModelType)(node->Type & 0xF);
+
+		allow_alpha = type == QueuedModelType_Sprite3D;
+
+		switch (type)
 		{
 			// TODO: actually handle 3D sprites (particles etc)
 			case QueuedModelType_Sprite3D:
@@ -1144,27 +1151,33 @@ namespace local
 		}
 	}
 
-	const auto continue_draw = (void*)0x00408986;
-	const auto skip_draw = (void*)0x00408F17;
-	void __declspec(naked) saveyourself()
+	const auto continue_draw = (void*)0x0040880D;
+	const auto skip_draw = (void*)0x00408F24;
+	static void __declspec(naked) saveyourself()
 	{
 		__asm
 		{
-			call njColorBlendingMode_
-			push ebx
-			push esi
-			call MyCoolFunction
-			test al, al
-			jnz  wangis
+			// _nj_control_3d_flag_
+			mov   ds:03D0F9C8h, edi
+
+			// saving value
+			push  edx
+
+			push  esi
+			call  MyCoolFunction
+
+			// restore
+			pop   edx
+
+			test  al, al
+			jnz   wangis
 
 			// skip the type evaluation & drawing
-			// (also correct the stack from all those function calls)
-			add  esp, 14h
-			jmp	 skip_draw
+			jmp   skip_draw
 
 			// continue to type evaluation & draw
 		wangis:
-			jmp  continue_draw
+			jmp   continue_draw
 		}
 	}
 
@@ -1217,14 +1230,14 @@ namespace local
 	static void __fastcall njAlphaMode_r(Int mode)
 	{
 		using namespace d3d;
-		if (peeling || mode == 0)
+		if (mode == 0)
 		{
 			device->SetRenderState(D3DRS_ALPHABLENDENABLE, 0);
 			device->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG2);
 		}
 		else
 		{
-			device->SetRenderState(D3DRS_ALPHABLENDENABLE, 1);
+			device->SetRenderState(D3DRS_ALPHABLENDENABLE, allow_alpha || !peeling);
 			device->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
 		}
 	}
@@ -1232,20 +1245,20 @@ namespace local
 	static void __fastcall njTextureShadingMode_r(Int mode)
 	{
 		using namespace d3d;
-		if (!peeling && mode)
+		if (mode)
 		{
 			if (--mode)
 			{
 				if (mode == 1)
 				{
-					device->SetRenderState(D3DRS_ALPHABLENDENABLE, 1);
+					device->SetRenderState(D3DRS_ALPHABLENDENABLE, allow_alpha || !peeling);
 					device->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
 					device->SetRenderState(D3DRS_ALPHAREF, 16);
 				}
 			}
 			else
 			{
-				device->SetRenderState(D3DRS_ALPHABLENDENABLE, 1);
+				device->SetRenderState(D3DRS_ALPHABLENDENABLE, allow_alpha || !peeling);
 				device->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
 				device->SetRenderState(D3DRS_ALPHAREF, 0);
 			}
@@ -1279,7 +1292,7 @@ namespace d3d
 		try
 		{
 			ID3DXBuffer* errors = nullptr;
-			auto result = D3DXCreateEffectFromFileA(d3d::device, "blender.fx", nullptr, nullptr,
+			auto result = D3DXCreateEffectFromFileA(device, "blender.fx", nullptr, nullptr,
 				D3DXFX_NOT_CLONEABLE | D3DXFX_DONOTSAVESTATE | D3DXFX_DONOTSAVESAMPLERSTATE,
 				nullptr, &local::blender, &errors);
 
@@ -1352,7 +1365,7 @@ namespace d3d
 		// HACK: DIRTY HACKS
 		WriteJump(Direct3D_EnableZWrite, Direct3D_EnableZWrite_r);
 		WriteJump((void*)0x0077ED00, Direct3D_SetZFunc_r);
-		WriteJump((void*)0x00408981, saveyourself);
+		WriteJump((void*)0x00408807, saveyourself);
 		WriteJump((void*)0x00791940, njAlphaMode_r);
 		WriteJump((void*)0x00791990, njTextureShadingMode_r);
 	#endif
