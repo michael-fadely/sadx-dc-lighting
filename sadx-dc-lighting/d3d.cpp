@@ -228,6 +228,7 @@ namespace local
 
 		shaderCount = 0;
 		pool = nullptr;
+		blender = nullptr;
 	}
 
 #ifdef USE_OIT
