@@ -10,7 +10,7 @@
 #define FOGMODE_EXP2   2
 #define FOGMODE_LINEAR 3
 #define E 2.71828
-#define EPSILON 1e-5
+#define EPSILON 2.98023242e-7
 
 #define D3DMCS_MATERIAL 0 // Color from material is used
 #define D3DMCS_COLOR1   1 // Diffuse vertex color is used
@@ -120,7 +120,6 @@ shared bool AlphaDepthTest;
 static bool OpaqueDepthTest = true;
 // Used for correcting screen-space coordinates to sample the depth buffer.
 shared float2 ViewPort;
-
 shared uint SourceBlend, DestinationBlend;
 
 // Pre-adjusted on the CPU before being sent to the shader.
@@ -291,17 +290,15 @@ float4 ps_main(PS_IN input) : COLOR0
 	result = input.diffuse + input.specular;
 #endif
 
-#if defined(USE_ALPHA) && !defined(USE_OIT)
-
+#if defined(USE_ALPHA)
 	#ifdef USE_OIT
-		if (result.a - alpha_bias <= EPSILON)
+		if (result.a == 0.0f)
 		{
 			discard;
 		}
 	#else
 		clip(result.a < AlphaRef ? -1 : 1);
 	#endif
-
 #endif
 
 #ifdef USE_OIT
@@ -326,7 +323,7 @@ float4 ps_main(PS_IN input) : COLOR0
 		// ...discard any fragment whose depth is less than the last fragment depth.
 		// (equivalent to D3DCMP_GREATER)
 		float lastDepth = tex2D(alphaDepthSampler, depthcoord).r;
-		if (currentDepth - lastDepth <= EPSILON)
+		if (currentDepth - lastDepth < EPSILON)
 		{
 			discard;
 		}

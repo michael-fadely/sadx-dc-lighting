@@ -1111,7 +1111,7 @@ namespace local
 		renderBackBuffer();
 	}
 
-	bool __stdcall MyCoolFunction(QueuedModelNode* node, NJS_TEXLIST* texlist)
+	static bool __stdcall MyCoolFunction(QueuedModelNode* node, NJS_TEXLIST* texlist)
 	{
 		switch ((QueuedModelType)(node->Type & 0xF))
 		{
@@ -1173,16 +1173,16 @@ namespace local
 	static void __cdecl njColorBlendingMode__r(Int target, Int mode)
 	{
 		using namespace d3d;
-		if (peeling)
+		/*if (peeling)
 		{
 			device->SetRenderState(D3DRS_ALPHABLENDENABLE, 0);
 			device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
 			device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
 		}
 		else
-		{
+		{*/
 			TARGET_STATIC(njColorBlendingMode_)(target, mode);
-		}
+		//}
 
 		if (mode)
 		{
