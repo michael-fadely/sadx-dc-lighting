@@ -1162,7 +1162,7 @@ namespace local
 			jmp	 skip_draw
 
 			// continue to type evaluation & draw
-			wangis :
+		wangis:
 			jmp  continue_draw
 		}
 	}
