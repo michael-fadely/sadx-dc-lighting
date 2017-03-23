@@ -530,32 +530,6 @@ namespace local
 		end();
 	}
 
-	static void drawPolyBuff(PolyBuff* _this, D3DPRIMITIVETYPE type)
-	{
-		/*
-		* This isn't ideal where mod compatibility is concerned.
-		* Since we're not calling the trampoline, this must be the
-		* last mod loaded in order for things to work nicely.
-		*/
-
-		Uint32 cullmode = D3DCULL_FORCE_DWORD;
-		auto args = _this->RenderArgs;
-
-		for (auto i = _this->LockCount; i; --i)
-		{
-			if (args->CullMode != cullmode)
-			{
-				Direct3D_Device->SetRenderState(D3DRS_CULLMODE, args->CullMode);
-				cullmode = args->CullMode;
-			}
-
-			Direct3D_Device->DrawPrimitive(type, args->StartVertex, args->PrimitiveCount);
-			++args;
-		}
-
-		_this->LockCount = 0;
-	}
-
 	static void __cdecl sub_77EAD0_r(void* a1, int a2, int a3)
 	{
 		begin();
@@ -587,14 +561,14 @@ namespace local
 	static void __fastcall PolyBuff_DrawTriangleStrip_r(PolyBuff* _this)
 	{
 		begin();
-		drawPolyBuff(_this, D3DPT_TRIANGLESTRIP);
+		runTrampoline(TARGET_DYNAMIC(PolyBuff_DrawTriangleStrip), _this);
 		end();
 	}
 
 	static void __fastcall PolyBuff_DrawTriangleList_r(PolyBuff* _this)
 	{
 		begin();
-		drawPolyBuff(_this, D3DPT_TRIANGLELIST);
+		runTrampoline(TARGET_DYNAMIC(PolyBuff_DrawTriangleList), _this);
 		end();
 	}
 
