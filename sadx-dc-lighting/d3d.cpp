@@ -159,7 +159,19 @@ namespace local
 
 	static auto sanitize(Uint32& options)
 	{
-		return options &= d3d::Mask;
+		options &= d3d::Mask;
+
+		if (options & d3d::UseBlend && !(options & d3d::UseLight))
+		{
+			options &= ~d3d::UseBlend;
+		}
+
+		if (options & d3d::UseEnvMap && !(options & d3d::UseTexture))
+		{
+			options &= ~d3d::UseEnvMap;
+		}
+
+		return options;
 	}
 
 	static void updateHandles()
@@ -192,10 +204,78 @@ namespace local
 		pool = nullptr;
 	}
 
+	static std::string shaderOptionsString(Uint32 o)
+	{
+		std::stringstream result;
+
+		bool thing = false;
+		while (o != 0)
+		{
+			using namespace d3d;
+
+			if (thing)
+			{
+				result << " | ";
+			}
+
+			if (o & UseFog)
+			{
+				o &= ~UseFog;
+				result << "USE_FOG";
+				thing = true;
+				continue;
+			}
+
+			if (o & UseBlend)
+			{
+				o &= ~UseBlend;
+				result << "USE_BLEND";
+				thing = true;
+				continue;
+			}
+
+			if (o & UseLight)
+			{
+				o &= ~UseLight;
+				result << "USE_LIGHT";
+				thing = true;
+				continue;
+			}
+
+			if (o & UseAlpha)
+			{
+				o &= ~UseAlpha;
+				result << "USE_ALPHA";
+				thing = true;
+				continue;
+			}
+
+			if (o & UseEnvMap)
+			{
+				o &= ~UseEnvMap;
+				result << "USE_ENVMAP";
+				thing = true;
+				continue;
+			}
+
+			if (o & UseTexture)
+			{
+				o &= ~UseTexture;
+				result << "USE_TEXTURE";
+				thing = true;
+				continue;
+			}
+
+			break;
+		}
+
+		return result.str();
+	}
+
 	static Effect compileShader(Uint32 options)
 	{
-		sanitize(options);
-		PrintDebug("[lantern] Compiling shader #%02d: %08X\n", ++shaderCount, options);
+		PrintDebug("[lantern] Compiling shader #%02d: %08X (%s)\n", ++shaderCount, options,
+			shaderOptionsString(options).c_str());
 
 		if (pool == nullptr)
 		{
@@ -206,7 +286,7 @@ namespace local
 		}
 
 		macros.clear();
-		auto o = options;
+		auto o = sanitize(options);
 
 		while (o != 0)
 		{
@@ -730,6 +810,19 @@ namespace d3d
 		try
 		{
 			effect = local::compileShader(local::DEFAULT_OPTIONS);
+
+		#ifdef PRECOMPILE_SHADERS
+			for (Uint32 i = 1; i < ShaderOptions::Count; i++)
+			{
+				auto options = i;
+				local::sanitize(options);
+				if (options && local::shaders[options] == nullptr)
+				{
+					local::compileShader(options);
+				}
+			}
+		#endif
+
 			local::updateHandles();
 		}
 		catch (std::exception& ex)

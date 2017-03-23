@@ -3,6 +3,7 @@
 #define _D3D8TYPES_H_
 
 #define EXPORT __declspec(dllexport)
+
 // Convenient macros for trampolines.
 #define TARGET_DYNAMIC(name) ((decltype(name##_r)*)name##_t->Target())
 #define TARGET_STATIC(name) ((decltype(name##_r)*)name##_t.Target())
@@ -13,9 +14,13 @@
 #define DataPointer_(type, name, address) \
 	type &name = *(type *)address
 
+// Enable shader precompilation
+#define PRECOMPILE_SHADERS
+
 #define WIN32_LEAN_AND_MEAN
 
 #if 1
+
 // Windows API
 #include <Windows.h>
 #include <atlbase.h>
@@ -55,4 +60,5 @@
 #include "Obj_Past.h"
 #include "Obj_SkyDeck.h"
 #include "Trampoline.h"
+
 #endif
