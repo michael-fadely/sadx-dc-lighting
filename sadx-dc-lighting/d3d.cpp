@@ -423,18 +423,23 @@ namespace local
 
 		bool changes = false;
 
-		if (sanitize(shader_options) && shader_options != last_options)
+		// The value here is copied so that UseBlend can be safely removed
+		// when possible without permanently removing it. It's required by
+		// Sky Deck, and it's only added to the flags once on stage load.
+		auto options = shader_options;
+
+		if (sanitize(options) && options != last_options)
 		{
 			endEffect();
 			changes = true;
 
-			last_options = shader_options;
-			auto e = shaders[shader_options];
+			last_options = options;
+			auto e = shaders[options];
 			if (e == nullptr)
 			{
 				try
 				{
-					e = compileShader(shader_options);
+					e = compileShader(options);
 				}
 				catch (std::exception& ex)
 				{
