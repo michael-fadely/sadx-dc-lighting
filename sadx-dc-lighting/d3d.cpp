@@ -103,6 +103,7 @@ namespace local
 	static Trampoline* PolyBuff_DrawTriangleStrip_t       = nullptr;
 	static Trampoline* PolyBuff_DrawTriangleList_t        = nullptr;
 
+	static HRESULT __stdcall SetTexture_r(IDirect3DDevice9* _this, DWORD Stage, IDirect3DBaseTexture9* pTexture);
 	static HRESULT __stdcall DrawPrimitive_r(IDirect3DDevice9* _this,
 		D3DPRIMITIVETYPE PrimitiveType,
 		UINT StartVertex,
@@ -129,6 +130,7 @@ namespace local
 		CONST void* pVertexStreamZeroData,
 		UINT VertexStreamZeroStride);
 
+	static decltype(SetTexture_r)*             SetTexture_t             = nullptr;
 	static decltype(DrawPrimitive_r)*          DrawPrimitive_t          = nullptr;
 	static decltype(DrawIndexedPrimitive_r)*   DrawIndexedPrimitive_t   = nullptr;
 	static decltype(DrawPrimitiveUP_r)*        DrawPrimitiveUP_t        = nullptr;
@@ -506,6 +508,7 @@ namespace local
 	{
 		enum
 		{
+			IndexOf_SetTexture = 65,
 			IndexOf_DrawPrimitive = 81,
 			IndexOf_DrawIndexedPrimitive,
 			IndexOf_DrawPrimitiveUP,
@@ -517,6 +520,7 @@ namespace local
 	#define HOOK(NAME) \
 	MH_CreateHook(vtbl[IndexOf_ ## NAME], NAME ## _r, (LPVOID*)& ## NAME ## _t)
 
+		HOOK(SetTexture);
 		HOOK(DrawPrimitive);
 		HOOK(DrawIndexedPrimitive);
 		HOOK(DrawPrimitiveUP);
@@ -660,6 +664,16 @@ namespace local
 
 #define D3DORIG(NAME) \
 	NAME ## _t
+
+	static HRESULT __stdcall SetTexture_r(IDirect3DDevice9* _this, DWORD Stage, IDirect3DBaseTexture9* pTexture)
+	{
+		if (!Stage)
+		{
+			param::BaseTexture = (IDirect3DTexture9*)pTexture;
+		}
+
+		return D3DORIG(SetTexture)(_this, Stage, pTexture);
+	}
 
 	static HRESULT __stdcall DrawPrimitive_r(IDirect3DDevice9* _this,
 		D3DPRIMITIVETYPE PrimitiveType,
