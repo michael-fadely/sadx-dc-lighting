@@ -220,39 +220,49 @@ std::string LanternInstance::PaletteId(Sint32 level, Sint32 act)
 			// otherwise it just uses a single palette, unaffected by time of day.
 			case LevelIDs_EggCarrierOutside:
 			{
-				int flag;
+				// Act 4 is the "Private Room" area. Act 3 and 5 (Captain's Room, Pool) both
+				// use their act numbers for palette loading. In every other case, use act 0.
+				if (act == 4)
+				{
+					act = 2;
+				}
+				else if (act < 3 || act > 5)
+				{
+					int flag;
 
-				switch (CurrentCharacter)
-				{
-					default:
-						flag = EventFlags_Sonic_EggCarrierSunk;
-						break;
-					case Characters_Tails:
-						flag = EventFlags_Tails_EggCarrierSunk;
-						break;
-					case Characters_Knuckles:
-						flag = EventFlags_Knuckles_EggCarrierSunk;
-						break;
-					case Characters_Amy:
-						flag = EventFlags_Amy_EggCarrierSunk;
-						break;
-					case Characters_Big:
-						flag = EventFlags_Big_EggCarrierSunk;
-						break;
-					case Characters_Gamma:
-						flag = EventFlags_Gamma_EggCarrierSunk;
-						break;
+					switch (CurrentCharacter)
+					{
+						default:
+							flag = EventFlags_Sonic_EggCarrierSunk;
+							break;
+						case Characters_Tails:
+							flag = EventFlags_Tails_EggCarrierSunk;
+							break;
+						case Characters_Knuckles:
+							flag = EventFlags_Knuckles_EggCarrierSunk;
+							break;
+						case Characters_Amy:
+							flag = EventFlags_Amy_EggCarrierSunk;
+							break;
+						case Characters_Big:
+							flag = EventFlags_Big_EggCarrierSunk;
+							break;
+						case Characters_Gamma:
+							flag = EventFlags_Gamma_EggCarrierSunk;
+							break;
+					}
+
+					if (EventFlagArray[flag] != 0)
+					{
+						level = LevelIDs_EmeraldCoast;
+						act = 0;
+					}
+					else
+					{
+						act = 0;
+					}
 				}
 
-				if (EventFlagArray[flag] != 0)
-				{
-					level = LevelIDs_EmeraldCoast;
-					act = 0;
-				}
-				else
-				{
-					act = 0;
-				}
 				break;
 			}
 		}
@@ -484,7 +494,10 @@ bool LanternInstance::LoadFiles(LanternInstance& instance)
 		int level = CurrentLevel;
 		int act = i;
 
-		GetTimeOfDayLevelAndAct(&level, &act);
+		if (UseTimeOfDay(level, act))
+		{
+			GetTimeOfDayLevelAndAct(&level, &act);
+		}
 
 		if (level == instance.last_level && act == instance.last_act && time == instance.last_time)
 		{
