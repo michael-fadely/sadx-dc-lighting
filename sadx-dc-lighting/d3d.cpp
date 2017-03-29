@@ -411,6 +411,14 @@ namespace local
 				continue;
 			}
 
+			if (o & UseOit)
+			{
+				o &= ~UseOit;
+				result << "USE_OIT";
+				thing = true;
+				continue;
+			}
+
 			break;
 		}
 
@@ -564,13 +572,13 @@ namespace local
 		beganEffect = false;
 	}
 
-	static void startEffect()
+	static int startEffect()
 	{
 		if ((!d3d::do_effect && !peeling)|| d3d::effect == nullptr
 			|| d3d::do_effect && !drawing)
 		{
 			endEffect();
-			return;
+			return 1;
 		}
 
 		bool changes = false;
@@ -601,7 +609,7 @@ namespace local
 						d3d::effect = nullptr;
 						endEffect();
 						MessageBoxA(WindowHandle, ex.what(), "Shader creation failed", MB_OK | MB_ICONERROR);
-						return;
+						return -1;
 					}
 				}
 
@@ -632,18 +640,16 @@ namespace local
 				throw std::runtime_error("Failed to begin shader!");
 			}
 
-			if (passes > 1)
-			{
-				throw std::runtime_error("Multi-pass shaders are not supported.");
-			}
-
 			if (FAILED(d3d::effect->BeginPass(0)))
 			{
 				throw std::runtime_error("Failed to begin pass!");
 			}
 
 			beganEffect = true;
+			return passes;
 		}
+
+		return 1;
 	}
 
 	static void setLightParameters()
@@ -830,15 +836,48 @@ namespace local
 		return D3DORIG(SetTexture)(_this, Stage, pTexture);
 	}
 
+	static Surface targets[2] = {};
+	template<typename T, typename... Args>
+	static HRESULT runEffect(const T& original, Args... args)
+	{
+		if (!d3d::do_effect)
+		{
+			return original(args...);
+		}
+
+		HRESULT result = D3D_OK;
+		auto passes = startEffect();
+
+		for (int i = 0; i < passes; i++)
+		{
+			auto target = targets[i % 2];
+			if (target != nullptr)
+			{
+				d3d::device->SetRenderTarget(0, targets[i % 2]);
+			}
+
+			d3d::effect->BeginPass(i);
+
+			result = original(args...);
+			if (FAILED(result))
+			{
+				break;
+			}
+
+			d3d::effect->EndPass();
+		}
+
+		endEffect();
+		return result;
+	}
+
+
 	static HRESULT __stdcall DrawPrimitive_r(IDirect3DDevice9* _this,
 		D3DPRIMITIVETYPE PrimitiveType,
 		UINT StartVertex,
 		UINT PrimitiveCount)
 	{
-		startEffect();
-		auto result = D3DORIG(DrawPrimitive)(_this, PrimitiveType, StartVertex, PrimitiveCount);
-		endEffect();
-		return result;
+		return runEffect(D3DORIG(DrawPrimitive), _this, PrimitiveType, StartVertex, PrimitiveCount);
 	}
 	static HRESULT __stdcall DrawIndexedPrimitive_r(IDirect3DDevice9* _this,
 		D3DPRIMITIVETYPE PrimitiveType,
@@ -848,10 +887,7 @@ namespace local
 		UINT startIndex,
 		UINT primCount)
 	{
-		startEffect();
-		auto result = D3DORIG(DrawIndexedPrimitive)(_this, PrimitiveType, BaseVertexIndex, MinVertexIndex, NumVertices, startIndex, primCount);
-		endEffect();
-		return result;
+		return runEffect(D3DORIG(DrawIndexedPrimitive), _this, PrimitiveType, BaseVertexIndex, MinVertexIndex, NumVertices, startIndex, primCount);
 	}
 	static HRESULT __stdcall DrawPrimitiveUP_r(IDirect3DDevice9* _this,
 		D3DPRIMITIVETYPE PrimitiveType,
@@ -859,10 +895,7 @@ namespace local
 		CONST void* pVertexStreamZeroData,
 		UINT VertexStreamZeroStride)
 	{
-		startEffect();
-		auto result = D3DORIG(DrawPrimitiveUP)(_this, PrimitiveType, PrimitiveCount, pVertexStreamZeroData, VertexStreamZeroStride);
-		endEffect();
-		return result;
+		return runEffect(D3DORIG(DrawPrimitiveUP), _this, PrimitiveType, PrimitiveCount, pVertexStreamZeroData, VertexStreamZeroStride);
 	}
 	static HRESULT __stdcall DrawIndexedPrimitiveUP_r(IDirect3DDevice9* _this,
 		D3DPRIMITIVETYPE PrimitiveType,
@@ -874,10 +907,8 @@ namespace local
 		CONST void* pVertexStreamZeroData,
 		UINT VertexStreamZeroStride)
 	{
-		startEffect();
-		auto result = D3DORIG(DrawIndexedPrimitiveUP)(_this, PrimitiveType, MinVertexIndex, NumVertices, PrimitiveCount, pIndexData, IndexDataFormat, pVertexStreamZeroData, VertexStreamZeroStride);
-		endEffect();
-		return result;
+		return runEffect(D3DORIG(DrawIndexedPrimitiveUP),
+			_this, PrimitiveType, MinVertexIndex, NumVertices, PrimitiveCount, pIndexData, IndexDataFormat, pVertexStreamZeroData, VertexStreamZeroStride);
 	}
 
 	static void __stdcall DrawMeshSetBuffer_c(MeshSetBuffer* buffer)
@@ -1033,14 +1064,19 @@ namespace local
 			blendModeLayers[i]->GetSurfaceLevel(0, &blendmode);
 
 			device->SetDepthStencilSurface(unit);
+
+			device->SetRenderTarget(0, blendmode);
+			device->Clear(0, nullptr, D3DCLEAR_TARGET, 0, 1.0f, 0);
+
 			device->SetRenderTarget(0, target);
-			device->SetRenderTarget(1, blendmode);
+			
+			targets[0] = target;
+			targets[1] = blendmode;
 
 			// Always use LESS comparison with the native d3d depth test.
 			device->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESS);
 			// Clear old crap
 			device->Clear(0, nullptr, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
-			device->Clear(1, nullptr, D3DCLEAR_TARGET, 0, 1.0f, 0);
 
 			// Only enable manual alpha depth tests on the second pass.
 			// If not, the depth test will fail and nothing will render
@@ -1055,11 +1091,15 @@ namespace local
 			draw();
 			*(int*)0x3AB98AC = last;
 
-			currUnit  = nullptr;
-			lastUnit  = nullptr;
-			unit      = nullptr;
-			target    = nullptr;
-			blendmode = nullptr;
+			device->SetRenderTarget(0, target);
+
+			currUnit   = nullptr;
+			lastUnit   = nullptr;
+			unit       = nullptr;
+			target     = nullptr;
+			blendmode  = nullptr;
+			targets[0] = nullptr;
+			targets[1] = nullptr;
 		}
 
 		end();
@@ -1068,7 +1108,6 @@ namespace local
 		param::OpaqueDepth = nullptr;
 		param::AlphaDepth = nullptr;
 		SetShaderOptions(UseOit, false);
-		device->SetRenderTarget(1, nullptr);
 	}
 
 	static void renderBackBuffer()
@@ -1098,7 +1137,6 @@ namespace local
 		device->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTOP_SELECTARG1);
 		device->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTOP_DISABLE);
 
-		// draw the custom backbuffer to the real backbuffer
 		auto pad = ControllerPointers[0];
 
 		unsigned int passes;
@@ -1146,10 +1184,19 @@ namespace local
 		blender->SetTexture("BackBuffer", nullptr);
 		blender->SetTexture("AlphaLayer", nullptr);
 		blender->SetTexture("BlendLayer", nullptr);
+		blender->EndPass();
+		blender->End();
 
 		device->SetRenderTarget(0, origRenderTarget);
 		device->SetDepthStencilSurface(depthSurface);
 		device->Clear(0, nullptr, D3DCLEAR_TARGET, 0, 1.0f, 0);
+
+		if (pad && pad->PressedButtons & Buttons_Right)
+		{
+			D3DXSaveTextureToFileA("backbuffer.png", D3DXIFF_PNG, backBuffers[lastId], nullptr);
+		}
+
+		do_effect = false;
 
 		device->SetTexture(0, backBuffers[lastId]);
 		DrawQuad();
@@ -1179,6 +1226,7 @@ namespace local
 	{
 		QueuedModelType type = (QueuedModelType)(node->Type & 0xF);
 
+		// HACK: this isn't good enough
 		allow_alpha = type == QueuedModelType_Sprite3D;
 
 		switch (type)
