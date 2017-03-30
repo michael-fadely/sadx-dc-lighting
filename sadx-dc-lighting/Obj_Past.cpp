@@ -9,8 +9,6 @@
 
 VoidFunc(sub_541990, 0x541990);
 VoidFunc(sub_543F20, 0x543F20);
-FunctionPointer(Sint32, QueueSound_DualEntity, (int, void*, int, int, int), 0x00423F50);
-ObjectFunc(Obj_Past_Delete, 0x005419C0);
 
 static const auto sub_541FC0 = (void*)0x00541FC0;
 

@@ -14,7 +14,7 @@
 #define DataPointer_(type, name, address) \
 	type &name = *(type *)address
 
-// Enable shader precompilation
+// Enable shader precompilation (in release builds)
 #ifndef _DEBUG
 #define PRECOMPILE_SHADERS
 #endif
