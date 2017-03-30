@@ -17,7 +17,6 @@
 #include <vector>
 
 // Local
-#include "modelqueue.h"
 #include "d3d.h"
 #include "datapointers.h"
 #include "globals.h"
@@ -1070,7 +1069,7 @@ namespace local
 				njRotateEx((Angle*)&d->Rotation.x, 1);
 			}
 
-			njGetMatrix((NJS_MATRIX*)&world);
+			njGetMatrix((NJS_MATRIX_PTR)&world[0]);
 		}
 		njPopMatrix(1);
 
@@ -1327,7 +1326,7 @@ namespace local
 
 	static bool __stdcall MyCoolFunction(QueuedModelNode* node)
 	{
-		QueuedModelType type = (QueuedModelType)(node->Type & 0xF);
+		QueuedModelType type = (QueuedModelType)(node->Flags & 0xF);
 
 		// HACK: this isn't good enough
 		//allow_alpha = type == QueuedModelType_Sprite3D;

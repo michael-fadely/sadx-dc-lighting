@@ -111,7 +111,6 @@ xcopy /C /Y /D "$(ProjectDir)lantern.fx" "$(OutDir)system\"</Command>
     <ClInclude Include="FixCharacterMaterials.h" />
     <ClInclude Include="globals.h" />
     <ClInclude Include="lantern.h" />
-    <ClInclude Include="modelqueue.h" />
     <ClInclude Include="mrgarden.h" />
     <ClInclude Include="mrgarden_night.h" />
     <ClInclude Include="Obj_Past.h" />
