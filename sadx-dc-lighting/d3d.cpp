@@ -1076,31 +1076,37 @@ namespace local
 		Direct3D_SetTexList(tlist);
 		njSetTextureNum_(tanim->texid);
 
-		NJS_VECTOR p = {};
-		njGetTranslation(nullptr, &p);
+		D3DXMATRIX m;
 
-		D3DXMATRIX world;
-		njPushMatrix(nullptr);
+		if (!!(attr & NJD_SPRITE_SCALE))
 		{
-			njUnitMatrix(nullptr);
+			njUnitMatrix(m);
+			njTranslateV(m, &sp->p);
+			
+			NJS_VECTOR p = sp->p;
+			njSubVector(&p, &Camera_Data1->Position);
+			njUnitVector(&p);
 
-			if (CharObj1Ptrs[0])
+			Angle rx = 0, ry = 0;
+			DirectionToRotation(&p, &rx, &ry);
+			
+			if (rx)
 			{
-				njTranslateEx(&CharObj1Ptrs[0]->Position);
+				njRotateX(m, rx);
+			}
+			if (ry)
+			{
+				njRotateY(m, ry);
 			}
 
-			if (Camera_Data1)
-			{
-				auto d = Camera_Data1;
-				njRotateEx((Angle*)&d->Rotation.x, 1);
-			}
-
-			njGetMatrix((NJS_MATRIX_PTR)&world[0]);
+			D3DXMatrixMultiply(&m, &m, &ViewMatrix);
 		}
-		njPopMatrix(1);
+		else
+		{
+			njGetMatrix(m);
+		}
 
-		device->SetTransform(D3DTS_WORLD, &world);
-		param::wvMatrix = world * ViewMatrix;
+		param::wvMatrix = m;
 
 		static const auto size = sizeof(FVFStruct_H) * 4;
 		static const auto format = D3DFVF_DIFFUSE | D3DFVF_XYZ | 0x100;
