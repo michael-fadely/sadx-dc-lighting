@@ -1046,6 +1046,8 @@ namespace local
 	static IDirect3DVertexBuffer9* sprite_vbuff = nullptr;
 #endif
 
+	DataPointer(NJS_ARGB, _nj_constant_material_, 0x03D0F7F0);
+
 	static void __cdecl njDrawSprite3D_DrawNow_r(NJS_SPRITE *sp, int n, NJD_SPRITE attr)
 	{
 		using namespace d3d;
@@ -1055,18 +1057,18 @@ namespace local
 		Direct3D_SetTexList(tlist);
 		njSetTextureNum_(tanim->texid);
 
-		const float u1 = tanim->u1 / 255.0f;
-		const float v1 = tanim->v1 / 255.0f;
-		const float u2 = tanim->u2 / 255.0f;
-		const float v2 = tanim->v2 / 255.0f;
+		float u1 = tanim->u1 / 255.0f;
+		float v1 = tanim->v1 / 255.0f;
+		float u2 = tanim->u2 / 255.0f;
+		float v2 = tanim->v2 / 255.0f;
 
-		auto mx = ((float)tanim->cx / (float)tanim->sx) * sp->sx;
-		auto my = ((float)tanim->cx / (float)tanim->sx) * sp->sy;
+		auto mx = (float)tanim->cx / (float)tanim->sx;
+		auto my = (float)tanim->cx / (float)tanim->sx;
 
 		auto _cx  = (float)-tanim->cx * mx;
 		auto _cy  = (float)-tanim->cy * my;
-		auto _csx = ((float)tanim->sx * mx) + _cx;
-		auto _csy = ((float)tanim->sy * my) + _cy;
+		auto _csx = (float)tanim->sx * mx + _cx;
+		auto _csy = (float)tanim->sy * my + _cy;
 
 		D3DXMATRIX m;
 
@@ -1075,7 +1077,7 @@ namespace local
 		{
 			njUnitMatrix(m);
 			njTranslateV(m, &sp->p);
-			
+
 			NJS_VECTOR p = sp->p;
 			njSubVector(&p, &Camera_Data1->Position);
 			njUnitVector(&p);
@@ -1101,6 +1103,33 @@ namespace local
 
 		param::wvMatrix = m;
 
+		NJS_COLOR diffuse = { 0xFFFFFFFF };
+
+		if (!!(attr & NJD_SPRITE_COLOR))
+		{
+			auto& c = diffuse.argb;
+			c.b = (Uint8)(_nj_constant_material_.b * 255.0f);
+			c.g = (Uint8)(_nj_constant_material_.g * 255.0f);
+			c.r = (Uint8)(_nj_constant_material_.r * 255.0f);
+			c.a = (Uint8)(_nj_constant_material_.a * 255.0f);
+		}
+
+		if (!!(attr & NJD_SPRITE_HFLIP))
+		{
+			auto _u1 = u1;
+			auto _u2 = u2;
+			u1 = _u2;
+			u2 = _u1;
+		}
+
+		if (!!(attr & NJD_SPRITE_VFLIP))
+		{
+			auto _v1 = v1;
+			auto _v2 = v2;
+			v1 = _v2;
+			v2 = _v1;
+		}
+
 		static const auto format = D3DFVF_DIFFUSE | D3DFVF_XYZ | 0x100;
 		
 	#ifdef USE_VBUFF
@@ -1125,19 +1154,19 @@ namespace local
 
 		quad[0].position = D3DXVECTOR3(_cx, _cy, 0.0f);
 		quad[0].uv       = D3DXVECTOR2(u1, v1);
-		quad[0].diffuse  = 0xFFFFFFFF;
+		quad[0].diffuse  = diffuse.color;
 
 		quad[1].position = D3DXVECTOR3(_csx, _cy, 0.0f);
 		quad[1].uv       = D3DXVECTOR2(u2, v1);
-		quad[1].diffuse  = 0xFFFFFFFF;
+		quad[1].diffuse  = diffuse.color;
 
 		quad[2].position = D3DXVECTOR3(_cx, _csy, 0.0f);
 		quad[2].uv       = D3DXVECTOR2(u1, v2);
-		quad[2].diffuse  = 0xFFFFFFFF;
+		quad[2].diffuse  = diffuse.color;
 
 		quad[3].position = D3DXVECTOR3(_csx, _csy, 0.0f);
 		quad[3].uv       = D3DXVECTOR2(u2, v2);
-		quad[3].diffuse  = 0xFFFFFFFF;
+		quad[3].diffuse  = diffuse.color;
 
 		device->SetFVF(format);
 		auto o = do_effect;
@@ -1153,6 +1182,7 @@ namespace local
 		device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, &quad, sizeof(FVFStruct_H));
 	#endif
 
+		device->SetFVF(0);
 		do_effect = o;
 	}
 
