@@ -35,7 +35,6 @@ DataArray(StageLightData, CurrentStageLights, 0x03ABD9F8, 4);
 DataArray(NJS_TEXLIST*, LevelObjTexlists, 0x03B290B4, 4);
 DataArray(D3DBLEND, NJD_FLAG_D3DBLEND, 0x0088AE1C, 9);
 
-DataPointer(EntityData1*, Camera_Data1, 0x03B2CBB0);
 DataPointer(NJS_COLOR, EntityVertexColor, 0x03D0848C);
 DataPointer(NJS_COLOR, LandTableVertexColor, 0x03D08494);
 DataPointer(PaletteLight, LSPalette, 0x03ABDAF0);

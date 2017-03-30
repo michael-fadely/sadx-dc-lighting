@@ -812,7 +812,7 @@ namespace local
 		// This specifically force light type 0 to prevent
 		// the light direction from being overwritten.
 		target(0);
-		d3d::SetShaderOptions(d3d::UseLight, true);
+		SetShaderOptions(d3d::UseLight, true);
 
 		if (type != globals::light_type)
 		{
@@ -1035,6 +1035,109 @@ namespace local
 	static void __cdecl DrawQueuedModels_r();
 	static Trampoline DrawQueuedModels_t(0x004086F0, 0x004086F6, DrawQueuedModels_r);
 
+	static const D3DXVECTOR3 up = {
+		0.0f, 1.0f, 0.0f
+	};
+
+	struct FVFStruct_H
+	{
+		D3DXVECTOR3 position;
+		Uint32 diffuse;
+		D3DXVECTOR2 uv;
+	};
+
+	static IDirect3DVertexBuffer9* sprite_vbuff = nullptr;
+	static void __cdecl njDrawSprite3D_DrawNow_r(NJS_SPRITE *sp, int n, NJD_SPRITE attr)
+	{
+		using namespace d3d;
+
+		auto tlist = sp->tlist;
+		auto tanim = &sp->tanim[n];
+		Direct3D_SetTexList(tlist);
+		njSetTextureNum_(tanim->texid);
+
+		// TODO: njGetTranslation?
+
+		D3DXMATRIX world;
+		njPushMatrix(nullptr);
+		{
+			njUnitMatrix(nullptr);
+			njTranslate(nullptr, sp->p.z, sp->p.y, sp->p.x);
+
+			if (Camera_Data1)
+			{
+				auto d = Camera_Data1;
+				njRotateEx((Angle*)&d->Rotation.x, 1);
+			}
+
+			njGetMatrix((NJS_MATRIX*)&world);
+		}
+		njPopMatrix(1);
+
+		//device->SetTransform(D3DTS_WORLD, &world);
+		param::WorldMatrix = world;
+
+		static const auto size = sizeof(FVFStruct_H) * 4;
+		static const auto format = D3DFVF_DIFFUSE | D3DFVF_XYZ | 0x100;
+		
+		if (!sprite_vbuff)
+		{
+			device->CreateVertexBuffer(size, 0, format,
+				D3DPOOL_MANAGED, &sprite_vbuff, nullptr);
+		}
+
+		if (!sprite_vbuff)
+		{
+			throw;
+		}
+
+		FVFStruct_H* quad = nullptr;
+		sprite_vbuff->Lock(0, size, (void**)&quad, 0);
+
+		const float u1 = tanim->u1 / 255.0f;
+		const float v1 = tanim->v1 / 255.0f;
+		const float u2 = tanim->u2 / 255.0f;
+		const float v2 = tanim->v2 / 255.0f;
+
+		auto mx = ((float)tanim->cx / (float)tanim->sx) * sp->sx;
+		auto my = ((float)tanim->cx / (float)tanim->sx) * sp->sy;
+
+		auto _cx = (float)-tanim->cx * mx;
+		auto _cy = (float)-tanim->cy * my;
+		auto _csx = ((float)tanim->sx * mx) + _cx;
+		auto _csy = ((float)tanim->sy * my) + _cy;
+
+
+		quad[0].position = D3DXVECTOR3(_cx, _cy, 1.0f);
+		quad[0].uv       = D3DXVECTOR2(u1, v1);
+		quad[0].diffuse  = 0xFFFFFFFF;
+
+		quad[1].position = D3DXVECTOR3(_csx, _cy, 1.0f);
+		quad[1].uv       = D3DXVECTOR2(u2, v1);
+		quad[1].diffuse  = 0xFFFFFFFF;
+
+		quad[2].position = D3DXVECTOR3(_cx, _csy, 1.0f);
+		quad[2].uv       = D3DXVECTOR2(u1, v2);
+		quad[2].diffuse  = 0xFFFFFFFF;
+
+		quad[3].position = D3DXVECTOR3(_csx, _csy, 1.0f);
+		quad[3].uv       = D3DXVECTOR2(u2, v2);
+		quad[3].diffuse  = 0xFFFFFFFF;
+
+		quad = nullptr;
+		sprite_vbuff->Unlock();
+
+		device->SetFVF(format);
+		auto o = do_effect;
+		do_effect = true;
+		//d3d::device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, &quad, sizeof(FVFStruct_H));
+
+		device->SetStreamSource(0, sprite_vbuff, 0, sizeof(FVFStruct_H));
+		device->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
+
+		do_effect = o;
+	}
+
 	static void renderLayerPasses()
 	{
 		using namespace d3d;
@@ -1227,15 +1330,17 @@ namespace local
 		QueuedModelType type = (QueuedModelType)(node->Type & 0xF);
 
 		// HACK: this isn't good enough
-		allow_alpha = type == QueuedModelType_Sprite3D;
+		//allow_alpha = type == QueuedModelType_Sprite3D;
 
 		switch (type)
 		{
 			// TODO: actually handle 3D sprites (particles etc)
 			case QueuedModelType_Sprite3D:
+				return peeling;
 			case QueuedModelType_BasicModel:
 			case QueuedModelType_Callback:
-				return peeling;
+				//return peeling;
+				return false;
 
 			case QueuedModelType_Sprite2D:
 			case QueuedModelType_Rect:
@@ -1330,9 +1435,6 @@ namespace local
 			param::SourceBlend = D3DBLEND_INVSRCALPHA;
 			param::DestinationBlend = D3DBLEND_SRCALPHA;
 		}
-
-		param::SourceBlend.Commit(effect);
-		param::DestinationBlend.Commit(effect);
 	}
 
 	static void __fastcall njAlphaMode_r(Int mode)
@@ -1489,6 +1591,7 @@ namespace d3d
 		WriteJump((void*)0x00408807, saveyourself);
 		WriteJump((void*)0x00791940, njAlphaMode_r);
 		WriteJump((void*)0x00791990, njTextureShadingMode_r);
+		WriteJump((void*)0x0077E390, njDrawSprite3D_DrawNow_r);
 	#endif
 	}
 }

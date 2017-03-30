@@ -15,7 +15,9 @@
 	type &name = *(type *)address
 
 // Enable shader precompilation
+#ifndef _DEBUG
 #define PRECOMPILE_SHADERS
+#endif
 
 #define WIN32_LEAN_AND_MEAN
 
