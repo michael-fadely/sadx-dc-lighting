@@ -864,9 +864,8 @@ namespace local
 			return original(args...);
 		}
 
-		HRESULT result = D3D_OK;
 		startEffect();
-		result = original(args...);
+		auto result = original(args...);
 		endEffect();
 		return result;
 	}
