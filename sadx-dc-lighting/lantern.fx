@@ -313,8 +313,7 @@ float4 ps_main(PS_IN input) : COLOR0
 		float baseDepth = tex2D(opaqueDepthSampler, depthcoord).r;
 		if (currentDepth - baseDepth > EPSILON)
 		{
-			return float4(1, 0, 0, 1);
-			//discard;
+			discard;
 		}
 	}
 
@@ -326,8 +325,7 @@ float4 ps_main(PS_IN input) : COLOR0
 		float lastDepth = tex2D(alphaDepthSampler, depthcoord).r;
 		if (currentDepth - lastDepth <= EPSILON)
 		{
-			return float4(1, 0, 0, 1);
-			//discard;
+			discard;
 		}
 	}
 #endif

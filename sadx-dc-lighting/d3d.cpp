@@ -121,6 +121,7 @@ namespace local
 	static Trampoline* PolyBuff_DrawTriangleStrip_t       = nullptr;
 	static Trampoline* PolyBuff_DrawTriangleList_t        = nullptr;
 
+	static HRESULT __stdcall SetRenderState_r(IDirect3DDevice9* _this, D3DRENDERSTATETYPE State, DWORD Value);
 	static HRESULT __stdcall SetTexture_r(IDirect3DDevice9* _this, DWORD Stage, IDirect3DBaseTexture9* pTexture);
 	static HRESULT __stdcall DrawPrimitive_r(IDirect3DDevice9* _this,
 		D3DPRIMITIVETYPE PrimitiveType,
@@ -148,6 +149,7 @@ namespace local
 		CONST void* pVertexStreamZeroData,
 		UINT VertexStreamZeroStride);
 
+	static decltype(SetRenderState_r)*         SetRenderState_t         = nullptr;
 	static decltype(SetTexture_r)*             SetTexture_t             = nullptr;
 	static decltype(DrawPrimitive_r)*          DrawPrimitive_t          = nullptr;
 	static decltype(DrawIndexedPrimitive_r)*   DrawIndexedPrimitive_t   = nullptr;
@@ -667,6 +669,7 @@ namespace local
 	{
 		enum
 		{
+			IndexOf_SetRenderState = 57,
 			IndexOf_SetTexture = 65,
 			IndexOf_DrawPrimitive = 81,
 			IndexOf_DrawIndexedPrimitive,
@@ -679,6 +682,7 @@ namespace local
 	#define HOOK(NAME) \
 	MH_CreateHook(vtbl[IndexOf_ ## NAME], NAME ## _r, (LPVOID*)& ## NAME ## _t)
 
+		HOOK(SetRenderState);
 		HOOK(SetTexture);
 		HOOK(DrawPrimitive);
 		HOOK(DrawIndexedPrimitive);
@@ -824,6 +828,23 @@ namespace local
 
 #define D3DORIG(NAME) \
 	NAME ## _t
+
+	HRESULT __stdcall SetRenderState_r(IDirect3DDevice9* _this, D3DRENDERSTATETYPE State, DWORD Value)
+	{
+		switch (State)
+		{
+			case D3DRS_SRCBLEND:
+				param::SourceBlend = Value;
+				break;
+			case D3DRS_DESTBLEND:
+				param::DestinationBlend = Value;
+				break;
+			default:
+				break;
+		}
+
+		return D3DORIG(SetRenderState)(_this, State, Value);
+	}
 
 	static HRESULT __stdcall SetTexture_r(IDirect3DDevice9* _this, DWORD Stage, IDirect3DBaseTexture9* pTexture)
 	{
@@ -1055,13 +1076,18 @@ namespace local
 		Direct3D_SetTexList(tlist);
 		njSetTextureNum_(tanim->texid);
 
-		// TODO: njGetTranslation?
+		NJS_VECTOR p = {};
+		njGetTranslation(nullptr, &p);
 
 		D3DXMATRIX world;
 		njPushMatrix(nullptr);
 		{
 			njUnitMatrix(nullptr);
-			njTranslate(nullptr, sp->p.z, sp->p.y, sp->p.x);
+
+			if (CharObj1Ptrs[0])
+			{
+				njTranslateEx(&CharObj1Ptrs[0]->Position);
+			}
 
 			if (Camera_Data1)
 			{
@@ -1073,8 +1099,8 @@ namespace local
 		}
 		njPopMatrix(1);
 
-		//device->SetTransform(D3DTS_WORLD, &world);
-		param::WorldMatrix = world;
+		device->SetTransform(D3DTS_WORLD, &world);
+		param::wvMatrix = world * ViewMatrix;
 
 		static const auto size = sizeof(FVFStruct_H) * 4;
 		static const auto format = D3DFVF_DIFFUSE | D3DFVF_XYZ | 0x100;
@@ -1107,19 +1133,19 @@ namespace local
 		auto _csy = ((float)tanim->sy * my) + _cy;
 
 
-		quad[0].position = D3DXVECTOR3(_cx, _cy, 1.0f);
+		quad[0].position = D3DXVECTOR3(_cx, _cy, 0.0f);
 		quad[0].uv       = D3DXVECTOR2(u1, v1);
 		quad[0].diffuse  = 0xFFFFFFFF;
 
-		quad[1].position = D3DXVECTOR3(_csx, _cy, 1.0f);
+		quad[1].position = D3DXVECTOR3(_csx, _cy, 0.0f);
 		quad[1].uv       = D3DXVECTOR2(u2, v1);
 		quad[1].diffuse  = 0xFFFFFFFF;
 
-		quad[2].position = D3DXVECTOR3(_cx, _csy, 1.0f);
+		quad[2].position = D3DXVECTOR3(_cx, _csy, 0.0f);
 		quad[2].uv       = D3DXVECTOR2(u1, v2);
 		quad[2].diffuse  = 0xFFFFFFFF;
 
-		quad[3].position = D3DXVECTOR3(_csx, _csy, 1.0f);
+		quad[3].position = D3DXVECTOR3(_csx, _csy, 0.0f);
 		quad[3].uv       = D3DXVECTOR2(u2, v2);
 		quad[3].diffuse  = 0xFFFFFFFF;
 
@@ -1133,6 +1159,7 @@ namespace local
 
 		device->SetStreamSource(0, sprite_vbuff, 0, sizeof(FVFStruct_H));
 		device->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
+		device->SetStreamSource(0, nullptr, 0, sizeof(FVFStruct_H));
 
 		do_effect = o;
 	}
@@ -1335,11 +1362,9 @@ namespace local
 		{
 			// TODO: actually handle 3D sprites (particles etc)
 			case QueuedModelType_Sprite3D:
-				return peeling;
 			case QueuedModelType_BasicModel:
 			case QueuedModelType_Callback:
-				//return peeling;
-				return false;
+				return peeling;
 
 			case QueuedModelType_Sprite2D:
 			case QueuedModelType_Rect:
