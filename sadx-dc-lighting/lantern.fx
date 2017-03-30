@@ -276,7 +276,7 @@ PS_IN vs_main(VS_IN input)
 uniform float alpha_bias = 1 / 255;
 
 #ifdef USE_OIT
-float4 ps_main(PS_IN input, float2 vpos : VPOS) : COLOR0
+float4 ps_main(PS_IN input, float2 vpos : VPOS, out float4 blend : COLOR1) : COLOR0
 #else
 float4 ps_main(PS_IN input) : COLOR0
 #endif
@@ -311,9 +311,8 @@ float4 ps_main(PS_IN input) : COLOR0
 		// ...exclude any fragment whose depth exceeds that of any opaque fragment.
 		// (equivalent to D3DCMP_LESS)
 		float baseDepth = tex2D(opaqueDepthSampler, depthcoord).r;
-		if (currentDepth - baseDepth > EPSILON)
+		if (currentDepth - baseDepth >= EPSILON)
 		{
-			//return float4(1, 0, 0, 1);
 			discard;
 		}
 	}
@@ -324,12 +323,13 @@ float4 ps_main(PS_IN input) : COLOR0
 		// ...discard any fragment whose depth is less than the last fragment depth.
 		// (equivalent to D3DCMP_GREATER)
 		float lastDepth = tex2D(alphaDepthSampler, depthcoord).r;
-		if (currentDepth - lastDepth <= EPSILON)
+		if (currentDepth - lastDepth < EPSILON)
 		{
-			//return float4(1, 0, 0, 1);
 			discard;
 		}
 	}
+
+	blend = float4((float)SourceBlend / 15.0f, (float)DestinationBlend / 15.0f, 0, 1);
 #endif
 
 #ifdef USE_FOG
@@ -340,41 +340,11 @@ float4 ps_main(PS_IN input) : COLOR0
 	return result;
 }
 
-void vs_blend(
-	in  VS_IN  input,
-	out float4 position : POSITION)
-{
-	position = mul(float4(input.position, 1), wvMatrix);
-	position = mul(position, ProjectionMatrix);
-	position = position;
-}
-
-float4 ps_blend() : COLOR
-{
-	return float4((float)SourceBlend / 15.0f, (float)DestinationBlend / 15.0f, 0, 1);
-}
-
 technique Main
 {
 	pass p0
 	{
-	#ifdef USE_OIT
-		ZWRITEENABLE = true;
-		ZEnable = true;
-	#endif
-
 		VertexShader = compile vs_3_0 vs_main();
 		PixelShader = compile ps_3_0 ps_main();
 	}
-#ifdef USE_OIT
-	pass p1
-	{
-		AlphaBlendEnable = false;
-		ZWRITEENABLE = false;
-		ZFunc = Equal;
-
-		VertexShader = compile vs_3_0 vs_blend();
-		PixelShader = compile ps_3_0 ps_blend();
-	}
-#endif
 }

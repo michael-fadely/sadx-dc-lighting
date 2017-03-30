@@ -856,7 +856,6 @@ namespace local
 		return D3DORIG(SetTexture)(_this, Stage, pTexture);
 	}
 
-	static Surface targets[2] = {};
 	template<typename T, typename... Args>
 	static HRESULT runEffect(const T& original, Args... args)
 	{
@@ -866,27 +865,8 @@ namespace local
 		}
 
 		HRESULT result = D3D_OK;
-		auto passes = startEffect();
-
-		for (int i = 0; i < passes; i++)
-		{
-			auto target = targets[i % 2];
-			if (target != nullptr)
-			{
-				d3d::device->SetRenderTarget(0, targets[i % 2]);
-			}
-
-			d3d::effect->BeginPass(i);
-
-			result = original(args...);
-			if (FAILED(result))
-			{
-				break;
-			}
-
-			d3d::effect->EndPass();
-		}
-
+		startEffect();
+		result = original(args...);
 		endEffect();
 		return result;
 	}
@@ -1055,10 +1035,6 @@ namespace local
 	static void __cdecl DrawQueuedModels_r();
 	static Trampoline DrawQueuedModels_t(0x004086F0, 0x004086F6, DrawQueuedModels_r);
 
-	static const D3DXVECTOR3 up = {
-		0.0f, 1.0f, 0.0f
-	};
-
 	struct FVFStruct_H
 	{
 		D3DXVECTOR3 position;
@@ -1066,7 +1042,10 @@ namespace local
 		D3DXVECTOR2 uv;
 	};
 
+#ifdef USE_VBUFF
 	static IDirect3DVertexBuffer9* sprite_vbuff = nullptr;
+#endif
+
 	static void __cdecl njDrawSprite3D_DrawNow_r(NJS_SPRITE *sp, int n, NJD_SPRITE attr)
 	{
 		using namespace d3d;
@@ -1076,8 +1055,22 @@ namespace local
 		Direct3D_SetTexList(tlist);
 		njSetTextureNum_(tanim->texid);
 
+		const float u1 = tanim->u1 / 255.0f;
+		const float v1 = tanim->v1 / 255.0f;
+		const float u2 = tanim->u2 / 255.0f;
+		const float v2 = tanim->v2 / 255.0f;
+
+		auto mx = ((float)tanim->cx / (float)tanim->sx) * sp->sx;
+		auto my = ((float)tanim->cx / (float)tanim->sx) * sp->sy;
+
+		auto _cx  = (float)-tanim->cx * mx;
+		auto _cy  = (float)-tanim->cy * my;
+		auto _csx = ((float)tanim->sx * mx) + _cx;
+		auto _csy = ((float)tanim->sy * my) + _cy;
+
 		D3DXMATRIX m;
 
+		// TODO: fix scaling (dust & fire too small)
 		if (!!(attr & NJD_SPRITE_SCALE))
 		{
 			njUnitMatrix(m);
@@ -1108,9 +1101,11 @@ namespace local
 
 		param::wvMatrix = m;
 
-		static const auto size = sizeof(FVFStruct_H) * 4;
 		static const auto format = D3DFVF_DIFFUSE | D3DFVF_XYZ | 0x100;
 		
+	#ifdef USE_VBUFF
+		static const auto size = sizeof(FVFStruct_H) * 4;
+
 		if (!sprite_vbuff)
 		{
 			device->CreateVertexBuffer(size, 0, format,
@@ -1124,20 +1119,9 @@ namespace local
 
 		FVFStruct_H* quad = nullptr;
 		sprite_vbuff->Lock(0, size, (void**)&quad, 0);
-
-		const float u1 = tanim->u1 / 255.0f;
-		const float v1 = tanim->v1 / 255.0f;
-		const float u2 = tanim->u2 / 255.0f;
-		const float v2 = tanim->v2 / 255.0f;
-
-		auto mx = ((float)tanim->cx / (float)tanim->sx) * sp->sx;
-		auto my = ((float)tanim->cx / (float)tanim->sx) * sp->sy;
-
-		auto _cx = (float)-tanim->cx * mx;
-		auto _cy = (float)-tanim->cy * my;
-		auto _csx = ((float)tanim->sx * mx) + _cx;
-		auto _csy = ((float)tanim->sy * my) + _cy;
-
+	#else
+		FVFStruct_H quad[4];
+	#endif
 
 		quad[0].position = D3DXVECTOR3(_cx, _cy, 0.0f);
 		quad[0].uv       = D3DXVECTOR2(u1, v1);
@@ -1155,17 +1139,19 @@ namespace local
 		quad[3].uv       = D3DXVECTOR2(u2, v2);
 		quad[3].diffuse  = 0xFFFFFFFF;
 
-		quad = nullptr;
-		sprite_vbuff->Unlock();
-
 		device->SetFVF(format);
 		auto o = do_effect;
 		do_effect = true;
-		//d3d::device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, &quad, sizeof(FVFStruct_H));
 
+	#ifdef USE_VBUFF
+		quad = nullptr;
+		sprite_vbuff->Unlock();
 		device->SetStreamSource(0, sprite_vbuff, 0, sizeof(FVFStruct_H));
 		device->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
 		device->SetStreamSource(0, nullptr, 0, sizeof(FVFStruct_H));
+	#else
+		device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, &quad, sizeof(FVFStruct_H));
+	#endif
 
 		do_effect = o;
 	}
@@ -1200,18 +1186,13 @@ namespace local
 
 			device->SetDepthStencilSurface(unit);
 
-			device->SetRenderTarget(0, blendmode);
-			device->Clear(0, nullptr, D3DCLEAR_TARGET, 0, 1.0f, 0);
-
 			device->SetRenderTarget(0, target);
-			
-			targets[0] = target;
-			targets[1] = blendmode;
+			device->SetRenderTarget(1, blendmode);
+			device->Clear(0, nullptr, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
+			device->Clear(1, nullptr, D3DCLEAR_TARGET, 0, 1.0f, 0);
 
 			// Always use LESS comparison with the native d3d depth test.
 			device->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESS);
-			// Clear old crap
-			device->Clear(0, nullptr, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
 
 			// Only enable manual alpha depth tests on the second pass.
 			// If not, the depth test will fail and nothing will render
@@ -1233,8 +1214,6 @@ namespace local
 			unit       = nullptr;
 			target     = nullptr;
 			blendmode  = nullptr;
-			targets[0] = nullptr;
-			targets[1] = nullptr;
 		}
 
 		end();
@@ -1243,6 +1222,7 @@ namespace local
 		param::OpaqueDepth = nullptr;
 		param::AlphaDepth = nullptr;
 		SetShaderOptions(UseOit, false);
+		device->SetRenderTarget(1, nullptr);
 	}
 
 	static void renderBackBuffer()
