@@ -575,7 +575,7 @@ namespace local
 
 	static int startEffect()
 	{
-		if ((!d3d::do_effect && !peeling)|| d3d::effect == nullptr
+		if (!d3d::do_effect && !peeling || d3d::effect == nullptr
 			|| d3d::do_effect && !drawing)
 		{
 			endEffect();
@@ -850,7 +850,9 @@ namespace local
 	{
 		if (!Stage)
 		{
-			param::BaseTexture = (IDirect3DTexture9*)pTexture;
+			Texture t = (IDirect3DTexture9*)pTexture;
+			param::BaseTexture.Release();
+			param::BaseTexture = t;
 		}
 
 		return D3DORIG(SetTexture)(_this, Stage, pTexture);
@@ -1076,23 +1078,8 @@ namespace local
 		{
 			njUnitMatrix(m);
 			njTranslateV(m, &sp->p);
-
-			NJS_VECTOR p = sp->p;
-			njSubVector(&p, &Camera_Data1->Position);
-			njUnitVector(&p);
-
-			Angle rx = 0, ry = 0;
-			DirectionToRotation(&p, &rx, &ry);
-			
-			if (rx)
-			{
-				njRotateX(m, rx);
-			}
-			if (ry)
-			{
-				njRotateY(m, ry);
-			}
-
+			auto& r = Camera_Data1->Rotation;
+			njRotateXYZ(m, r.x, r.y, r.z);
 			D3DXMatrixMultiply(&m, &m, &ViewMatrix);
 		}
 		else
