@@ -56,6 +56,7 @@ namespace param
 	EffectParameter<int>         DestinationBlend("DestinationBlend", 0);
 	EffectParameter<bool>        AlphaDepthTest("AlphaDepthTest", false);
 	EffectParameter<D3DXVECTOR2> ViewPort("ViewPort", {});
+	EffectParameter<float>       DrawDistance("DrawDistance", 0.0f);
 #endif
 
 #ifdef USE_SL
@@ -96,6 +97,7 @@ namespace param
 		&DestinationBlend,
 		&AlphaDepthTest,
 		&ViewPort,
+		&DrawDistance,
 	#endif
 
 	#ifdef USE_SL
@@ -785,6 +787,8 @@ namespace local
 		{
 			return;
 		}
+
+		param::DrawDistance = farPlane;
 
 		// The view matrix can also be set here if necessary.
 		param::ProjectionMatrix = _ProjectionMatrix * TransformationMatrix;

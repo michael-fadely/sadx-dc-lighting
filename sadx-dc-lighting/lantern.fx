@@ -121,6 +121,7 @@ static bool OpaqueDepthTest = true;
 // Used for correcting screen-space coordinates to sample the depth buffer.
 shared float2 ViewPort;
 shared uint SourceBlend, DestinationBlend;
+shared float DrawDistance;
 
 // Pre-adjusted on the CPU before being sent to the shader.
 shared float DiffuseIndexA  = 0;
@@ -212,6 +213,7 @@ PS_IN vs_main(VS_IN input)
 	output.fogDist = position.z;
 	position = mul(position, ProjectionMatrix);
 
+	output.depth = position.zw;
 	output.position = position;
 
 #if defined(USE_TEXTURE) && defined(USE_ENVMAP)
@@ -220,8 +222,6 @@ PS_IN vs_main(VS_IN input)
 #else
 	output.tex = input.tex;
 #endif
-
-	output.depth = output.position.zw;
 
 #ifdef USE_LIGHT
 	{
@@ -276,9 +276,9 @@ PS_IN vs_main(VS_IN input)
 uniform float alpha_bias = 1 / 255;
 
 #ifdef USE_OIT
-float4 ps_main(PS_IN input, float2 vpos : VPOS, out float4 blend : COLOR1) : COLOR0
+float4 ps_main(PS_IN input, out float oDepth : DEPTH0, float2 vpos : VPOS, out float4 blend : COLOR1) : COLOR0
 #else
-float4 ps_main(PS_IN input) : COLOR0
+float4 ps_main(PS_IN input, out float oDepth : DEPTH0, float2 vpos : VPOS) : COLOR0
 #endif
 {
 	float4 result;
@@ -301,8 +301,12 @@ float4 ps_main(PS_IN input) : COLOR0
 	#endif
 #endif
 
+	const float C = 1.0;
+	const float offset = 1;
+
+	float currentDepth = log(C * input.depth.x + offset) / log(C * DrawDistance + offset);
+
 #ifdef USE_OIT
-	float currentDepth = clamp(input.depth.x / input.depth.y, 0, 1);
 	float2 depthcoord = vpos / ViewPort;
 
 	// If opaque depth tests are enabled...
@@ -311,7 +315,7 @@ float4 ps_main(PS_IN input) : COLOR0
 		// ...exclude any fragment whose depth exceeds that of any opaque fragment.
 		// (equivalent to D3DCMP_LESS)
 		float baseDepth = tex2D(opaqueDepthSampler, depthcoord).r;
-		if (currentDepth - baseDepth >= EPSILON)
+		if (currentDepth >= baseDepth)
 		{
 			discard;
 		}
@@ -323,7 +327,7 @@ float4 ps_main(PS_IN input) : COLOR0
 		// ...discard any fragment whose depth is less than the last fragment depth.
 		// (equivalent to D3DCMP_GREATER)
 		float lastDepth = tex2D(alphaDepthSampler, depthcoord).r;
-		if (currentDepth - lastDepth < EPSILON)
+		if (currentDepth <= lastDepth)
 		{
 			discard;
 		}
@@ -331,6 +335,8 @@ float4 ps_main(PS_IN input) : COLOR0
 
 	blend = float4((float)SourceBlend / 15.0f, (float)DestinationBlend / 15.0f, 0, 1);
 #endif
+
+	oDepth = currentDepth;
 
 #ifdef USE_FOG
 	float factor = CalcFogFactor(input.fogDist);
