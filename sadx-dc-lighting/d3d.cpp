@@ -1046,11 +1046,7 @@ namespace local
 		Uint32 diffuse;
 		D3DXVECTOR2 uv;
 	};
-
-#ifdef USE_VBUFF
-	static IDirect3DVertexBuffer9* sprite_vbuff = nullptr;
-#endif
-
+	
 	DataPointer(NJS_ARGB, _nj_constant_material_, 0x03D0F7F0);
 
 	static void __cdecl njDrawSprite3D_DrawNow_r(NJS_SPRITE *sp, int n, NJD_SPRITE attr)
@@ -1067,8 +1063,8 @@ namespace local
 		float u2 = tanim->u2 / 255.0f;
 		float v2 = tanim->v2 / 255.0f;
 
-		auto mx = (float)tanim->cx / (float)tanim->sx;
-		auto my = (float)tanim->cx / (float)tanim->sx;
+		auto mx = sp->sx * ((float)tanim->cx / (float)tanim->sx);
+		auto my = sp->sy * ((float)tanim->cx / (float)tanim->sx);
 
 		auto _cx  = (float)-tanim->cx * mx;
 		auto _cy  = (float)-tanim->cy * my;
@@ -1122,25 +1118,7 @@ namespace local
 
 		static const auto format = D3DFVF_DIFFUSE | D3DFVF_XYZ | 0x100;
 		
-	#ifdef USE_VBUFF
-		static const auto size = sizeof(FVFStruct_H) * 4;
-
-		if (!sprite_vbuff)
-		{
-			device->CreateVertexBuffer(size, 0, format,
-				D3DPOOL_MANAGED, &sprite_vbuff, nullptr);
-		}
-
-		if (!sprite_vbuff)
-		{
-			throw;
-		}
-
-		FVFStruct_H* quad = nullptr;
-		sprite_vbuff->Lock(0, size, (void**)&quad, 0);
-	#else
 		FVFStruct_H quad[4];
-	#endif
 
 		quad[0].position = D3DXVECTOR3(_cx, _cy, 0.0f);
 		quad[0].uv       = D3DXVECTOR2(u1, v1);
@@ -1162,15 +1140,7 @@ namespace local
 		auto o = do_effect;
 		do_effect = true;
 
-	#ifdef USE_VBUFF
-		quad = nullptr;
-		sprite_vbuff->Unlock();
-		device->SetStreamSource(0, sprite_vbuff, 0, sizeof(FVFStruct_H));
-		device->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
-		device->SetStreamSource(0, nullptr, 0, sizeof(FVFStruct_H));
-	#else
 		device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, &quad, sizeof(FVFStruct_H));
-	#endif
 
 		device->SetFVF(0);
 		do_effect = o;
