@@ -7,6 +7,7 @@
 #include <SADXStructs.h>
 
 #include "EffectParameter.h"
+#include "lanternapi.h"
 
 #pragma pack(push, 1)
 struct SourceLight_t
@@ -45,6 +46,10 @@ public:
 	virtual bool LoadSource(const std::string& path) = 0;
 	virtual void SetLastLevel(Sint32 level, Sint32 act) = 0;
 	virtual void SetPalettes(Sint32 type, Uint32 flags) = 0;
+	virtual void SetDiffuse(Sint32 n) = 0;
+	virtual void SetSpecular(Sint32 n) = 0;
+	virtual Sint32 GetDiffuse() = 0;
+	virtual Sint32 GetSpecular() = 0;
 	virtual void SetSelfBlend(Sint32 type, Sint32 diffuse, Sint32 specular) = 0;
 };
 
@@ -57,13 +62,16 @@ class LanternInstance : ILantern
 	EffectParameter<float>* diffuse_param;
 	EffectParameter<float>* specular_param;
 
-	Sint32 blend_type;
-	Sint8 last_time;
-	Sint32 last_act;
-	Sint32 last_level;
+	Sint32 blend_type       = -1;
+	Sint8 last_time         = -1;
+	Sint32 last_act         = -1;
+	Sint32 last_level       = -1;
+	Sint32 diffuse_index    = -1;
+	Sint32 specular_index   = -1;
+	Sint32 diffuse_index_b  = -1;
+	Sint32 specular_index_b = -1;
 
-	void set_diffuse(Sint32 diffuse) const;
-	void set_specular(Sint32 specular) const;
+	void copy(LanternInstance& inst);
 
 public:
 	LanternInstance(EffectParameter<Texture>* atlas, EffectParameter<float>* diffuse_param, EffectParameter<float>* specular_param);
@@ -75,6 +83,7 @@ public:
 	~LanternInstance();
 
 	static bool UsePalette();
+	static float BlendFactor();
 	static std::string PaletteId(Sint32 level, Sint32 act);
 	static bool LoadFiles(LanternInstance& instance);
 	static void SetBlendFactor(float f);
@@ -86,17 +95,40 @@ public:
 	bool LoadSource(const std::string& path) override;
 	void SetLastLevel(Sint32 level, Sint32 act) override;
 	void SetPalettes(Sint32 type, Uint32 flags) override;
+	void SetDiffuse(Sint32 n) override;
+	void SetSpecular(Sint32 n) override;
+	Sint32 GetDiffuse() override;
+	Sint32 GetSpecular() override;
 	void SetSelfBlend(Sint32 type, Sint32 diffuse, Sint32 specular) override;
+
+	void SetDiffuseB(Sint32 n);
+	void SetSpecularB(Sint32 n);
+	Sint32 GetDiffuseB() const;
+	Sint32 GetSpecularB() const;
 };
 
 class LanternCollection : ILantern
 {
 	std::deque<LanternInstance> instances;
+	std::deque<lantern_load_t> pl_callbacks;
+	std::deque<lantern_load_t> sl_callbacks;
+
+	static void callback_add(std::deque<lantern_load_t>& c, lantern_load_t callback);
+	static void callback_del(std::deque<lantern_load_t>& c, lantern_load_t callback);
 
 public:
 	size_t Add(LanternInstance& src);
 	void Remove(size_t index);
-	auto Size() { return instances.size(); }
+
+	auto Size() const
+	{
+		return instances.size();
+	}
+
+	void AddPlCallback(lantern_load_t callback);
+	void RemovePlCallback(lantern_load_t callback);
+	void AddSlCallback(lantern_load_t callback);
+	void RemoveSlCallback(lantern_load_t callback);
 
 	bool LoadFiles() override;
 	bool LoadPalette(Sint32 level, Sint32 act) override;
@@ -105,6 +137,19 @@ public:
 	bool LoadSource(const std::string& path) override;
 	void SetLastLevel(Sint32 level, Sint32 act) override;
 	void SetPalettes(Sint32 type, Uint32 flags) override;
+	void SetDiffuse(Sint32 n) override;
+	void SetSpecular(Sint32 n) override;
+
+	Sint32 GetDiffuse() override
+	{
+		return -1;
+	}
+
+	Sint32 GetSpecular() override
+	{
+		return -1;
+	}
+
 	void SetSelfBlend(Sint32 type, Sint32 diffuse, Sint32 specular) override;
 
 	LanternInstance& operator[](size_t i) { return instances[i]; }

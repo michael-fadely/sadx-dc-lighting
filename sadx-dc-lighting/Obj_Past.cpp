@@ -5,6 +5,7 @@
 #include <Trampoline.h>
 
 #include "lantern.h"
+#include "lanternapi.h"
 #include "globals.h"
 
 VoidFunc(sub_541990, 0x541990);
@@ -16,7 +17,7 @@ static Trampoline* Obj_Past_t = nullptr;
 
 static void __cdecl Obj_Past_Delete_r(ObjectMaster* _this)
 {
-	SetShaderOptions(d3d::ShaderOptions::UseBlend, false);
+	d3d::SetShaderFlags(ShaderFlags_Blend, false);
 	Obj_Past_Delete(_this);
 }
 
@@ -26,7 +27,7 @@ static void __cdecl Obj_Past_r(ObjectMaster *_this)
 	switch (entity->Action)
 	{
 		case 0:
-			SetShaderOptions(d3d::ShaderOptions::UseBlend, true);
+			d3d::SetShaderFlags(ShaderFlags_Blend, true);
 
 			entity->InvulnerableTime = CurrentAct;
 			sub_543F20();

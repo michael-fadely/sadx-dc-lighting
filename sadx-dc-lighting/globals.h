@@ -11,6 +11,7 @@ namespace globals
 #endif
 	extern Sint32 light_type;
 	extern bool no_specular;
+	extern bool landtable_specular;
 	extern std::string system;
 	extern LanternCollection palettes;
 }

@@ -111,6 +111,7 @@ xcopy /C /Y /D "$(ProjectDir)lantern.fx" "$(OutDir)system\"</Command>
     <ClInclude Include="FixCharacterMaterials.h" />
     <ClInclude Include="globals.h" />
     <ClInclude Include="lantern.h" />
+    <ClInclude Include="lanternapi.h" />
     <ClInclude Include="mrgarden.h" />
     <ClInclude Include="mrgarden_night.h" />
     <ClInclude Include="Obj_Past.h" />
@@ -127,6 +128,7 @@ xcopy /C /Y /D "$(ProjectDir)lantern.fx" "$(OutDir)system\"</Command>
     <ClCompile Include="fog.cpp" />
     <ClCompile Include="globals.cpp" />
     <ClCompile Include="lantern.cpp" />
+    <ClCompile Include="lanternapi.cpp" />
     <ClCompile Include="mod.cpp" />
     <ClCompile Include="Obj_Past.cpp" />
     <ClCompile Include="Obj_SkyDeck.cpp" />

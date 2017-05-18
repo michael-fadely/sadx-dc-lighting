@@ -5,6 +5,7 @@
 
 #include "Trampoline.h"
 #include "globals.h"
+#include "lanternapi.h"
 
 #include "Obj_SkyDeck.h"
 
@@ -32,7 +33,7 @@ static void __cdecl SkyDeck_SimulateAltitude_r(Uint16 act)
 
 static void __cdecl SkyBox_SkyDeck_Delete(ObjectMaster*)
 {
-	SetShaderOptions(d3d::ShaderOptions::UseBlend, false);
+	d3d::SetShaderFlags(ShaderFlags_Blend, false);
 }
 static void __cdecl SkyBox_SkyDeck_r(ObjectMaster* _this)
 {
@@ -47,7 +48,7 @@ static void __cdecl SkyBox_SkyDeck_r(ObjectMaster* _this)
 static void __cdecl Obj_SkyDeck_Delete(ObjectMaster* _this)
 {
 	globals::palettes.Remove(handle);
-	SetShaderOptions(d3d::ShaderOptions::UseBlend, false);
+	d3d::SetShaderFlags(ShaderFlags_Blend, false);
 	handle = 0;
 }
 static void __cdecl Obj_SkyDeck_r(ObjectMaster* _this)
@@ -68,12 +69,12 @@ static void __cdecl Obj_SkyDeck_r(ObjectMaster* _this)
 	lantern.LoadPalette(LevelIDs_SkyDeck, 1);
 	handle = globals::palettes.Add(lantern);
 	globals::palettes.SetLastLevel(-1, -1);
-	SetShaderOptions(d3d::ShaderOptions::UseBlend, true);
+	d3d::SetShaderFlags(ShaderFlags_Blend, true);
 }
 
 void SkyDeck_Init()
 {
 	Obj_SkyDeck_t              = new Trampoline(0x005F02E0, 0x005F02E5, Obj_SkyDeck_r);
 	SkyDeck_SimulateAltitude_t = new Trampoline(0x005ECA80, 0x005ECA87, SkyDeck_SimulateAltitude_r);
-	SkyBox_SkyDeck_t           = new Trampoline(0x005F0340, 0x005F0347, SkyBox_SkyDeck_r);;
+	SkyBox_SkyDeck_t           = new Trampoline(0x005F0340, 0x005F0347, SkyBox_SkyDeck_r);
 }

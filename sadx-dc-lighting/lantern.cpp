@@ -3,6 +3,7 @@
 #include <atlbase.h>
 #include <d3d9.h>
 
+#include <algorithm>
 #include <exception>
 #include <string>
 #include <sstream>
@@ -11,12 +12,13 @@
 #include "d3d.h"
 #include <SADXModLoader.h>
 
-#include "lantern.h"
 #include "globals.h"
 
 #ifdef _DEBUG
 #include "datapointers.h"
 #endif
+
+#include "lantern.h"
 
 #pragma pack(push, 1)
 struct ColorPair
@@ -123,6 +125,11 @@ float LanternInstance::blend_factor = 0.0f;
 bool LanternInstance::UsePalette()
 {
 	return use_palette;
+}
+
+float LanternInstance::BlendFactor()
+{
+	return blend_factor;
 }
 
 inline bool GameModeIngame()
@@ -290,27 +297,35 @@ std::string LanternInstance::PaletteId(Sint32 level, Sint32 act)
 	return result.str();
 }
 
+void LanternInstance::copy(LanternInstance& inst)
+{
+	atlas            = inst.atlas;
+	diffuse_param    = inst.diffuse_param;
+	specular_param   = inst.specular_param;
+	blend_type       = inst.blend_type;
+	last_time        = inst.last_time;
+	last_act         = inst.last_act;
+	last_level       = inst.last_level;
+	diffuse_index    = inst.diffuse_index;
+	specular_index   = inst.specular_index;
+	diffuse_index_b  = inst.diffuse_index_b;
+	specular_index_b = inst.specular_index_b;
+}
+
 LanternInstance::LanternInstance(EffectParameter<Texture>* atlas, EffectParameter<float>* diffuse_param, EffectParameter<float>* specular_param)
-	: atlas(atlas), diffuse_param(diffuse_param), specular_param(specular_param), blend_type(-1), last_time(-1), last_act(-1), last_level(-1)
+	: atlas(atlas), diffuse_param(diffuse_param), specular_param(specular_param)
 {
 }
 
 LanternInstance::LanternInstance(LanternInstance&& inst) noexcept
-	: atlas(inst.atlas), diffuse_param(inst.diffuse_param), specular_param(inst.specular_param),
-	blend_type(inst.blend_type), last_time(inst.last_time), last_act(inst.last_act), last_level(inst.last_level)
 {
+	copy(inst);
 }
 
 LanternInstance& LanternInstance::operator=(LanternInstance&& inst) noexcept
 {
-	atlas          = inst.atlas;
-	last_time      = inst.last_time;
-	last_act       = inst.last_act;
-	last_level     = inst.last_level;
-	blend_type     = inst.blend_type;
-
+	copy(inst);
 	inst.atlas = nullptr;
-
 	return *this;
 }
 
@@ -534,25 +549,9 @@ void LanternInstance::SetBlendFactor(float f)
 	blend_factor = f;
 }
 
-inline float _index(Sint32 i, Sint32 offset)
+inline float _index_float(Sint32 i, Sint32 offset)
 {
 	return ((float)(2 * i + offset) + 0.5f) / 16.0f;
-}
-
-void LanternInstance::set_diffuse(Sint32 diffuse) const
-{
-	if (diffuse >= 0)
-	{
-		*diffuse_param = _index(diffuse, 0);
-	}
-}
-
-void LanternInstance::set_specular(Sint32 specular) const
-{
-	if (specular >= 0)
-	{
-		*specular_param = _index(specular, 1);
-	}
 }
 
 /// <summary>
@@ -633,10 +632,70 @@ void LanternInstance::SetPalettes(Sint32 type, Uint32 flags)
 		}
 	}
 
-	set_diffuse(diffuse);
-	set_specular(specular);
+	SetDiffuse(diffuse);
+	SetSpecular(specular);
 
 	d3d::do_effect = use_palette = diffuse > -1 && specular > -1;
+}
+
+void LanternInstance::SetDiffuse(Sint32 n)
+{
+	if (n >= 0)
+	{
+		*diffuse_param = _index_float(n, 0);
+	}
+
+	diffuse_index = n;
+}
+
+void LanternInstance::SetSpecular(Sint32 n)
+{
+	if (n >= 0)
+	{
+		*specular_param = _index_float(n, 1);
+	}
+
+	specular_index = n;
+}
+
+Sint32 LanternInstance::GetDiffuse()
+{
+	return diffuse_index;
+}
+
+Sint32 LanternInstance::GetSpecular()
+{
+	return specular_index;
+}
+
+void LanternInstance::SetDiffuseB(Sint32 n)
+{
+	if (n > -1)
+	{
+		param::DiffuseIndexB = _index_float(n, 0);
+	}
+
+	diffuse_index_b = n;
+}
+
+void LanternInstance::SetSpecularB(Sint32 n)
+{
+	if (n > -1)
+	{
+		param::SpecularIndexB = _index_float(n, 1);
+	}
+
+	specular_index_b = n;
+}
+
+Sint32 LanternInstance::GetDiffuseB() const
+{
+	return diffuse_index_b;
+}
+
+Sint32 LanternInstance::GetSpecularB() const
+{
+	return specular_index_b;
 }
 
 // hard coded crap
@@ -652,15 +711,9 @@ void LanternInstance::SetSelfBlend(Sint32 type, Sint32 diffuse, Sint32 specular)
 	blend_type = type;
 	param::PaletteB = param::PaletteA;
 
-	if (diffuse > -1)
-	{
-		param::DiffuseIndexB = _index(diffuse, 0);
-	}
+	SetDiffuseB(diffuse);
 
-	if (specular > -1)
-	{
-		param::SpecularIndexB = _index(specular, 1);
-	}
+	SetSpecularB(specular);
 }
 
 // Collection
@@ -761,12 +814,44 @@ void LanternCollection::SetPalettes(Sint32 type, Uint32 flags)
 	}
 }
 
+void LanternCollection::SetDiffuse(Sint32 n)
+{
+	for (auto& i : instances)
+	{
+		i.SetDiffuse(n);
+	}
+}
+
+void LanternCollection::SetSpecular(Sint32 n)
+{
+	for (auto& i : instances)
+	{
+		i.SetSpecular(n);
+	}
+}
+
 void LanternCollection::SetSelfBlend(Sint32 type, Sint32 diffuse, Sint32 specular)
 {
 	for (auto& i : instances)
 	{
 		i.SetSelfBlend(type, diffuse, specular);
 	}
+}
+
+void LanternCollection::callback_add(std::deque<lantern_load_t>& c, lantern_load_t callback)
+{
+	if (callback == nullptr)
+	{
+		return;
+	}
+
+	callback_del(c, callback);
+	c.push_back(callback);
+}
+
+void LanternCollection::callback_del(std::deque<lantern_load_t>& c, lantern_load_t callback)
+{
+	remove(c.begin(), c.end(), callback);
 }
 
 size_t LanternCollection::Add(LanternInstance& src)
@@ -778,4 +863,24 @@ size_t LanternCollection::Add(LanternInstance& src)
 void LanternCollection::Remove(size_t index)
 {
 	instances.erase(instances.begin() + index);
+}
+
+void LanternCollection::AddPlCallback(lantern_load_t callback)
+{
+	callback_add(pl_callbacks, callback);
+}
+
+void LanternCollection::RemovePlCallback(lantern_load_t callback)
+{
+	callback_del(pl_callbacks, callback);
+}
+
+void LanternCollection::AddSlCallback(lantern_load_t callback)
+{
+	callback_add(sl_callbacks, callback);
+}
+
+void LanternCollection::RemoveSlCallback(lantern_load_t callback)
+{
+	callback_del(sl_callbacks, callback);
 }

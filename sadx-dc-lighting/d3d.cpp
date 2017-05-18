@@ -22,6 +22,7 @@
 #include "datapointers.h"
 #include "globals.h"
 #include "lantern.h"
+#include "lanternapi.h"
 #include "EffectParameter.h"
 
 namespace param
@@ -137,14 +138,14 @@ namespace local
 	static decltype(DrawPrimitiveUP_r)*        DrawPrimitiveUP_t        = nullptr;
 	static decltype(DrawIndexedPrimitiveUP_r)* DrawIndexedPrimitiveUP_t = nullptr;
 
-	constexpr auto DEFAULT_OPTIONS = d3d::UseAlpha | d3d::UseFog | d3d::UseLight | d3d::UseTexture;
+	constexpr auto DEFAULT_FLAGS = ShaderFlags_Alpha | ShaderFlags_Fog | ShaderFlags_Light | ShaderFlags_Texture;
 
-	static Uint32 shader_options = DEFAULT_OPTIONS;
-	static Uint32 last_options = DEFAULT_OPTIONS;
+	static Uint32 shader_flags = DEFAULT_FLAGS;
+	static Uint32 last_flags = DEFAULT_FLAGS;
 
 	static std::vector<Uint8> shaderFile;
 	static Uint32 shaderCount = 0;
-	static Effect shaders[d3d::ShaderOptions::Count] = {};
+	static Effect shaders[ShaderFlags_Count] = {};
 	static CComPtr<ID3DXEffectPool> pool = nullptr;
 
 	static bool initialized = false;
@@ -160,21 +161,21 @@ namespace local
 	DataPointer(D3DXMATRIX, _ProjectionMatrix, 0x03D129C0);
 	DataPointer(int, TransformAndViewportInvalid, 0x03D0FD1C);
 
-	static auto sanitize(Uint32& options)
+	static auto sanitize(Uint32& flags)
 	{
-		options &= d3d::Mask;
+		flags &= ShaderFlags_Mask;
 
-		if (options & d3d::UseBlend && !(options & d3d::UseLight))
+		if (flags & ShaderFlags_Blend && !(flags & ShaderFlags_Light))
 		{
-			options &= ~d3d::UseBlend;
+			flags &= ~ShaderFlags_Blend;
 		}
 
-		if (options & d3d::UseEnvMap && !(options & d3d::UseTexture))
+		if (flags & ShaderFlags_EnvMap && !(flags & ShaderFlags_Texture))
 		{
-			options &= ~d3d::UseEnvMap;
+			flags &= ~ShaderFlags_EnvMap;
 		}
 
-		return options;
+		return flags;
 	}
 
 	static void updateHandles()
@@ -207,7 +208,7 @@ namespace local
 		pool = nullptr;
 	}
 
-	static std::string shaderOptionsString(Uint32 o)
+	static std::string shaderFlagsString(Uint32 o)
 	{
 		std::stringstream result;
 
@@ -221,49 +222,49 @@ namespace local
 				result << " | ";
 			}
 
-			if (o & UseFog)
+			if (o & ShaderFlags_Fog)
 			{
-				o &= ~UseFog;
+				o &= ~ShaderFlags_Fog;
 				result << "USE_FOG";
 				thing = true;
 				continue;
 			}
 
-			if (o & UseBlend)
+			if (o & ShaderFlags_Blend)
 			{
-				o &= ~UseBlend;
+				o &= ~ShaderFlags_Blend;
 				result << "USE_BLEND";
 				thing = true;
 				continue;
 			}
 
-			if (o & UseLight)
+			if (o & ShaderFlags_Light)
 			{
-				o &= ~UseLight;
+				o &= ~ShaderFlags_Light;
 				result << "USE_LIGHT";
 				thing = true;
 				continue;
 			}
 
-			if (o & UseAlpha)
+			if (o & ShaderFlags_Alpha)
 			{
-				o &= ~UseAlpha;
+				o &= ~ShaderFlags_Alpha;
 				result << "USE_ALPHA";
 				thing = true;
 				continue;
 			}
 
-			if (o & UseEnvMap)
+			if (o & ShaderFlags_EnvMap)
 			{
-				o &= ~UseEnvMap;
+				o &= ~ShaderFlags_EnvMap;
 				result << "USE_ENVMAP";
 				thing = true;
 				continue;
 			}
 
-			if (o & UseTexture)
+			if (o & ShaderFlags_Texture)
 			{
-				o &= ~UseTexture;
+				o &= ~ShaderFlags_Texture;
 				result << "USE_TEXTURE";
 				thing = true;
 				continue;
@@ -275,10 +276,10 @@ namespace local
 		return result.str();
 	}
 
-	static Effect compileShader(Uint32 options)
+	static Effect compileShader(Uint32 flags)
 	{
-		PrintDebug("[lantern] Compiling shader #%02d: %08X (%s)\n", ++shaderCount, options,
-			shaderOptionsString(options).c_str());
+		PrintDebug("[lantern] Compiling shader #%02d: %08X (%s)\n", ++shaderCount, flags,
+			shaderFlagsString(flags).c_str());
 
 		if (pool == nullptr)
 		{
@@ -289,50 +290,50 @@ namespace local
 		}
 
 		macros.clear();
-		auto o = sanitize(options);
+		auto o = sanitize(flags);
 
 		while (o != 0)
 		{
 			using namespace d3d;
 
-			if (o & UseTexture)
+			if (o & ShaderFlags_Texture)
 			{
-				o &= ~UseTexture;
+				o &= ~ShaderFlags_Texture;
 				macros.push_back({ "USE_TEXTURE", "1" });
 				continue;
 			}
 
-			if (o & UseEnvMap)
+			if (o & ShaderFlags_EnvMap)
 			{
-				o &= ~UseEnvMap;
+				o &= ~ShaderFlags_EnvMap;
 				macros.push_back({ "USE_ENVMAP", "1" });
 				continue;
 			}
 
-			if (o & UseLight)
+			if (o & ShaderFlags_Light)
 			{
-				o &= ~UseLight;
+				o &= ~ShaderFlags_Light;
 				macros.push_back({ "USE_LIGHT", "1" });
 				continue;
 			}
 
-			if (o & UseBlend)
+			if (o & ShaderFlags_Blend)
 			{
-				o &= ~UseBlend;
+				o &= ~ShaderFlags_Blend;
 				macros.push_back({ "USE_BLEND", "1" });
 				continue;
 			}
 
-			if (o & UseAlpha)
+			if (o & ShaderFlags_Alpha)
 			{
-				o &= ~UseAlpha;
+				o &= ~ShaderFlags_Alpha;
 				macros.push_back({ "USE_ALPHA", "1" });
 				continue;
 			}
 
-			if (o & UseFog)
+			if (o & ShaderFlags_Fog)
 			{
-				o &= ~UseFog;
+				o &= ~ShaderFlags_Fog;
 				macros.push_back({ "USE_FOG", "1" });
 				continue;
 			}
@@ -387,7 +388,7 @@ namespace local
 		}
 
 		effect->SetTechnique("Main");
-		shaders[options] = effect;
+		shaders[flags] = effect;
 		return effect;
 	}
 
@@ -429,20 +430,20 @@ namespace local
 		// The value here is copied so that UseBlend can be safely removed
 		// when possible without permanently removing it. It's required by
 		// Sky Deck, and it's only added to the flags once on stage load.
-		auto options = shader_options;
+		auto flags = shader_flags;
 
-		if (sanitize(options) && options != last_options)
+		if (sanitize(flags) && flags != last_flags)
 		{
 			endEffect();
 			changes = true;
 
-			last_options = options;
-			auto e = shaders[options];
+			last_flags = flags;
+			auto e = shaders[flags];
 			if (e == nullptr)
 			{
 				try
 				{
-					e = compileShader(options);
+					e = compileShader(flags);
 				}
 				catch (std::exception& ex)
 				{
@@ -652,7 +653,7 @@ namespace local
 		// This specifically force light type 0 to prevent
 		// the light direction from being overwritten.
 		target(0);
-		d3d::SetShaderOptions(d3d::UseLight, true);
+		d3d::SetShaderFlags(ShaderFlags_Light, true);
 
 		if (type != globals::light_type)
 		{
@@ -803,16 +804,16 @@ namespace d3d
 
 		try
 		{
-			effect = local::compileShader(local::DEFAULT_OPTIONS);
+			effect = local::compileShader(local::DEFAULT_FLAGS);
 
 		#ifdef PRECOMPILE_SHADERS
-			for (Uint32 i = 1; i < ShaderOptions::Count; i++)
+			for (Uint32 i = 1; i < ShaderFlags_Count; i++)
 			{
-				auto options = i;
-				local::sanitize(options);
-				if (options && local::shaders[options] == nullptr)
+				auto flags = i;
+				local::sanitize(flags);
+				if (flags && local::shaders[flags] == nullptr)
 				{
-					local::compileShader(options);
+					local::compileShader(flags);
 				}
 			}
 		#endif
@@ -826,15 +827,15 @@ namespace d3d
 		}
 	}
 
-	void SetShaderOptions(Uint32 options, bool add)
+	void SetShaderFlags(Uint32 flags, bool add)
 	{
 		if (add)
 		{
-			local::shader_options |= options;
+			local::shader_flags |= flags;
 		}
 		else
 		{
-			local::shader_options &= ~options;
+			local::shader_flags &= ~flags;
 		}
 	}
 

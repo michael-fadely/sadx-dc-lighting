@@ -14,6 +14,7 @@
 #include "datapointers.h"
 #include "globals.h"
 #include "lantern.h"
+#include "lanternapi.h"
 #include "Obj_Past.h"
 #include "Obj_SkyDeck.h"
 #include "FixChaoGardenMaterials.h"
@@ -170,10 +171,10 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 	globals::palettes.SetPalettes(globals::light_type, globals::no_specular ? flags | NJD_FLAG_IGNORE_SPECULAR : flags);
 
 	bool use_texture = (flags & NJD_FLAG_USE_TEXTURE) != 0;
-	SetShaderOptions(ShaderOptions::UseTexture, use_texture);
-	SetShaderOptions(ShaderOptions::UseAlpha, (flags & NJD_FLAG_USE_ALPHA) != 0);
-	SetShaderOptions(ShaderOptions::UseEnvMap, (flags & NJD_FLAG_USE_ENV) != 0);
-	SetShaderOptions(ShaderOptions::UseLight, (flags & NJD_FLAG_IGNORE_LIGHT) == 0);
+	SetShaderFlags(ShaderFlags_Texture, use_texture);
+	SetShaderFlags(ShaderFlags_Alpha, (flags & NJD_FLAG_USE_ALPHA) != 0);
+	SetShaderFlags(ShaderFlags_EnvMap, (flags & NJD_FLAG_USE_ENV) != 0);
+	SetShaderFlags(ShaderFlags_Light, (flags & NJD_FLAG_IGNORE_LIGHT) == 0);
 
 	// Environment map matrix
 	param::TextureTransform = *(D3DXMATRIX*)0x038A5DD0;
@@ -277,6 +278,12 @@ static void __cdecl LoadLevelFiles_r()
 
 static void __cdecl DrawLandTable_r()
 {
+	if (globals::landtable_specular)
+	{
+		TARGET_DYNAMIC(DrawLandTable)();
+		return;
+	}
+
 	auto flag = _nj_control_3d_flag_;
 	auto or = _nj_constant_attr_or_;
 
@@ -306,7 +313,9 @@ static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
 				for (int i = 0; i < 4; i++)
 				{
 					if (LevelObjTexlists[i] != texlist)
+					{
 						continue;
+					}
 
 					globals::palettes.SetPalettes(0, NJD_FLAG_IGNORE_SPECULAR);
 					globals::no_specular = true;
@@ -344,7 +353,7 @@ extern "C"
 			return;
 		}
 
-		auto init = MH_Initialize();
+		MH_Initialize();
 
 		LanternInstance base(&param::PaletteA, &param::DiffuseIndexA, &param::SpecularIndexA);
 		globals::palettes.Add(base);
@@ -383,6 +392,8 @@ extern "C"
 		WriteCall((void*)0x00412783, NormalScale);
 
 		NormalScaleMultiplier = { 1.0f, 1.0f, 1.0f };
+
+		landtable_allow_specular(true);
 	}
 
 #ifdef _DEBUG

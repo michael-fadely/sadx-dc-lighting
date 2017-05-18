@@ -10,24 +10,11 @@
 
 namespace d3d
 {
-	enum ShaderOptions : Uint32
-	{
-		None,
-		UseTexture = 1 << 0,
-		UseEnvMap  = 1 << 1,
-		UseAlpha   = 1 << 2,
-		UseLight   = 1 << 3,
-		UseBlend   = 1 << 4,
-		UseFog     = 1 << 5,
-		Mask       = 0x3F,
-		Count
-	};
-
 	extern IDirect3DDevice9* device;
 	extern Effect effect;
 	extern bool do_effect;
 	void LoadShader();
-	void SetShaderOptions(Uint32 options, bool add = true);
+	void SetShaderFlags(Uint32 flags, bool add = true);
 	void InitTrampolines();
 }
 

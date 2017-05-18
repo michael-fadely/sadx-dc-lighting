@@ -7,8 +7,9 @@
 
 namespace globals
 {
-	Sint32 light_type = 0;
-	bool no_specular  = false;
+	Sint32 light_type       = 0;
+	bool no_specular        = false;
+	bool landtable_specular = false;
 
 #ifdef _DEBUG
 	NJS_VECTOR light_dir = {};
