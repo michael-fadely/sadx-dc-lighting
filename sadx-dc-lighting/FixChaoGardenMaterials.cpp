@@ -1,9 +1,9 @@
 #include "stdafx.h"
-#include <ModLoader/MemAccess.h>
-#include <Trampoline.h>
-#include "FixChaoGardenMaterials.h"
 
-#include "datapointers.h"
+#undef _D3D8TYPES_H_ // Dirty hack to fix variables include
+#include <SADXVariables.h>
+#include <MemAccess.h>
+#include <Trampoline.h>
 
 // Static materials (in the main exe)
 #include "ssgarden.h"
@@ -12,6 +12,8 @@
 // DLL materials (because why not have a dll to swap out landtables amirite?)
 #include "mrgarden.h"
 #include "mrgarden_night.h"
+
+#include "FixChaoGardenMaterials.h"
 
 static Trampoline* ChaoGardenMR_SetLandTable_Day_t     = nullptr;
 static Trampoline* ChaoGardenMR_SetLandTable_Evening_t = nullptr;

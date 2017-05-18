@@ -7,13 +7,14 @@
 #include <d3d8to9.hpp>
 
 // Mod loader
-#include <SADXModLoader/SADXFunctions.h>
+#include <SADXFunctions.h>
 #include <Trampoline.h>
 
 // MinHook
 #include <MinHook.h>
 
 // Standard library
+#include <sstream>
 #include <vector>
 
 // Local

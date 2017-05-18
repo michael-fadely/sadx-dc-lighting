@@ -4,7 +4,7 @@
 #include <ninja.h>
 #include <d3d9.h>
 #include <deque>
-#include <SADXModLoader/SADXStructs.h>
+#include <SADXStructs.h>
 
 #include "EffectParameter.h"
 

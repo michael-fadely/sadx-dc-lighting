@@ -35,7 +35,7 @@
 #include <d3d8to9.hpp>
 
 // Mod loader
-#include <ModLoader/MemAccess.h>
+#include <MemAccess.h>
 #include <SADXModLoader.h>
 #include <Trampoline.h>
 
@@ -62,5 +62,11 @@
 #include "Obj_Past.h"
 #include "Obj_SkyDeck.h"
 #include "Trampoline.h"
+
+// Materials
+#include "ssgarden.h"
+#include "ecgarden.h"
+#include "mrgarden.h"
+#include "mrgarden_night.h"
 
 #endif
