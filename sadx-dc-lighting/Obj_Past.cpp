@@ -51,7 +51,7 @@ static void __cdecl Obj_Past_r(ObjectMaster *_this)
 			{
 				if (!entity->InvulnerableTime)
 				{
-					QueueSound_DualEntity(1108, entity, 1, 0, 2);
+					QueueSound_DualEntity(1108, entity, 1, nullptr, 2);
 				}
 				else if (CurrentAct == 2 && d3d::effect)
 				{

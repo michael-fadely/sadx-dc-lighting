@@ -82,6 +82,9 @@ public:
 
 	~LanternInstance();
 
+	static bool diffuse_override;
+	static bool specular_override;
+
 	static bool UsePalette();
 	static float BlendFactor();
 	static std::string PaletteId(Sint32 level, Sint32 act);

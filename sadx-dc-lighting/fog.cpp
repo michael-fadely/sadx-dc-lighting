@@ -8,7 +8,6 @@
 
 // Local
 #include "d3d.h"
-#include "globals.h"
 #include "../include/lanternapi.h"
 
 static D3DFOGMODE fog_mode = D3DFOG_NONE;

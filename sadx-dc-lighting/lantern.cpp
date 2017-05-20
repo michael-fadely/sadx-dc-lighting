@@ -119,8 +119,10 @@ void UpdateLightDirections(const NJS_VECTOR& dir)
 	}
 }
 
-bool LanternInstance::use_palette = false;
-float LanternInstance::blend_factor = 0.0f;
+bool LanternInstance::diffuse_override  = false;
+bool LanternInstance::specular_override = false;
+bool LanternInstance::use_palette       = false;
+float LanternInstance::blend_factor     = 0.0f;
 
 bool LanternInstance::UsePalette()
 {
@@ -632,8 +634,15 @@ void LanternInstance::SetPalettes(Sint32 type, Uint32 flags)
 		}
 	}
 
-	SetDiffuse(diffuse);
-	SetSpecular(specular);
+	if (!diffuse_override)
+	{
+		SetDiffuse(diffuse);
+	}
+
+	if (!specular_override)
+	{
+		SetSpecular(specular);
+	}
 
 	d3d::do_effect = use_palette = diffuse > -1 && specular > -1;
 }

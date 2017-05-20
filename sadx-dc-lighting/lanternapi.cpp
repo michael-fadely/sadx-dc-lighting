@@ -44,6 +44,8 @@ void set_diffuse(int n)
 	{
 		palettes[0].SetDiffuse(n);
 	}
+
+	LanternInstance::diffuse_override = n >= 0;
 }
 
 void set_specular(int n)
@@ -52,6 +54,8 @@ void set_specular(int n)
 	{
 		palettes[0].SetSpecular(n);
 	}
+
+	LanternInstance::specular_override = n >= 0;
 }
 
 int get_diffuse()

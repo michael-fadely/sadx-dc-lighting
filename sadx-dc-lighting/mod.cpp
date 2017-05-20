@@ -392,8 +392,6 @@ extern "C"
 		WriteCall((void*)0x00412783, NormalScale);
 
 		NormalScaleMultiplier = { 1.0f, 1.0f, 1.0f };
-
-		landtable_allow_specular(true);
 	}
 
 #ifdef _DEBUG
