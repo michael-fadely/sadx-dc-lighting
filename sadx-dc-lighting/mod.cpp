@@ -14,7 +14,7 @@
 #include "datapointers.h"
 #include "globals.h"
 #include "lantern.h"
-#include "lanternapi.h"
+#include "../include/lanternapi.h"
 #include "Obj_Past.h"
 #include "Obj_SkyDeck.h"
 #include "FixChaoGardenMaterials.h"

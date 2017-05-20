@@ -4,7 +4,7 @@
 #include "globals.h"
 #include "d3d.h"
 
-#include "lanternapi.h"
+#include "../include/lanternapi.h"
 
 using namespace globals;
 

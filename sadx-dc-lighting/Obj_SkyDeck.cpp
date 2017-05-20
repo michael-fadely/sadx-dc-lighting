@@ -5,7 +5,7 @@
 
 #include "Trampoline.h"
 #include "globals.h"
-#include "lanternapi.h"
+#include "../include/lanternapi.h"
 
 #include "Obj_SkyDeck.h"
 

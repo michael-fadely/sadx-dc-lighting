@@ -25,6 +25,9 @@
     <Filter Include="Source Files\Material Fixes">
       <UniqueIdentifier>{8120a15a-3505-4f78-8847-28ef4bed7740}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\include">
+      <UniqueIdentifier>{d4770a4b-f08e-4b73-a9f8-1a7cefc3dfe9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -72,8 +75,8 @@
     <ClInclude Include="mrgarden_night.h">
       <Filter>Header Files\Material Fixes</Filter>
     </ClInclude>
-    <ClInclude Include="lanternapi.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\include\lanternapi.h">
+      <Filter>Header Files\include</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

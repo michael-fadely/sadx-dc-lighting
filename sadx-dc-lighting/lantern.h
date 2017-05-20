@@ -7,7 +7,7 @@
 #include <SADXStructs.h>
 
 #include "EffectParameter.h"
-#include "lanternapi.h"
+#include "../include/lanternapi.h"
 
 #pragma pack(push, 1)
 struct SourceLight_t

@@ -5,7 +5,7 @@
 #include <Trampoline.h>
 
 #include "lantern.h"
-#include "lanternapi.h"
+#include "../include/lanternapi.h"
 #include "globals.h"
 
 VoidFunc(sub_541990, 0x541990);

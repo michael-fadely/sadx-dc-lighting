@@ -22,7 +22,7 @@
 #include "datapointers.h"
 #include "globals.h"
 #include "lantern.h"
-#include "lanternapi.h"
+#include "../include/lanternapi.h"
 #include "EffectParameter.h"
 
 namespace param

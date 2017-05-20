@@ -102,6 +102,7 @@ xcopy /C /Y /D "$(ProjectDir)lantern.fx" "$(OutDir)system\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\lanternapi.h" />
     <ClInclude Include="..\sadx-mod-loader\libmodutils\Trampoline.h" />
     <ClInclude Include="d3d.h" />
     <ClInclude Include="datapointers.h" />
@@ -111,7 +112,6 @@ xcopy /C /Y /D "$(ProjectDir)lantern.fx" "$(OutDir)system\"</Command>
     <ClInclude Include="FixCharacterMaterials.h" />
     <ClInclude Include="globals.h" />
     <ClInclude Include="lantern.h" />
-    <ClInclude Include="lanternapi.h" />
     <ClInclude Include="mrgarden.h" />
     <ClInclude Include="mrgarden_night.h" />
     <ClInclude Include="Obj_Past.h" />

@@ -52,6 +52,9 @@
 #include <string>
 #include <vector>
 
+// API
+#include "../include/lanternapi.h"
+
 // Local
 #include "d3d.h"
 #include "datapointers.h"
@@ -60,7 +63,6 @@
 #include "FixCharacterMaterials.h"
 #include "globals.h"
 #include "lantern.h"
-#include "lanternapi.h"
 #include "Obj_Past.h"
 #include "Obj_SkyDeck.h"
 #include "Trampoline.h"

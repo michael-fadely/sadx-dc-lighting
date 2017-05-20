@@ -14,7 +14,7 @@ extern "C" {
 		ShaderFlags_Light   = 1 << 3,
 		ShaderFlags_Blend   = 1 << 4,
 		ShaderFlags_Fog     = 1 << 5,
-		ShaderFlags_Mask       = 0x3F,
+		ShaderFlags_Mask    = 0x3F,
 		ShaderFlags_Count
 	} ShaderFlags;
 
