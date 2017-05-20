@@ -1,6 +1,12 @@
 #ifndef _LANTERNAPI_H
 #define _LANTERNAPI_H
 
+#ifdef LANTERN_API
+#define API __declspec(dllexport)
+#else
+#define API __declspec(dllimport)
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -20,29 +26,29 @@ extern "C" {
 
 	typedef const char* (__cdecl* lantern_load_t)(int, int);
 
-	__declspec(dllexport) void pl_load_register(lantern_load_t callback);
-	__declspec(dllexport) void pl_load_unregister(lantern_load_t callback);
-	__declspec(dllexport) void sl_load_register(lantern_load_t callback);
-	__declspec(dllexport) void sl_load_unregister(lantern_load_t callback);
+	API void pl_load_register(lantern_load_t callback);
+	API void pl_load_unregister(lantern_load_t callback);
+	API void sl_load_register(lantern_load_t callback);
+	API void sl_load_unregister(lantern_load_t callback);
 
-	__declspec(dllexport) void set_shader_flags(unsigned int flags, bool add);
+	API void set_shader_flags(unsigned int flags, bool add);
 
-	__declspec(dllexport) void landtable_allow_specular(bool allow);
+	API void landtable_allow_specular(bool allow);
 
-	__declspec(dllexport) void set_diffuse(int n);
-	__declspec(dllexport) void set_specular(int n);
+	API void set_diffuse(int n);
+	API void set_specular(int n);
 
-	__declspec(dllexport) int get_diffuse();
-	__declspec(dllexport) int get_specular();
+	API int get_diffuse();
+	API int get_specular();
 
-	__declspec(dllexport) void set_diffuse_blend(int n);
-	__declspec(dllexport) void set_specular_blend(int n);
+	API void set_diffuse_blend(int n);
+	API void set_specular_blend(int n);
 
-	__declspec(dllexport) int get_diffuse_blend();
-	__declspec(dllexport) int get_specular_blend();
+	API int get_diffuse_blend();
+	API int get_specular_blend();
 
-	__declspec(dllexport) void set_blend_factor(float factor);
-	__declspec(dllexport) float get_blend_factor();
+	API void set_blend_factor(float factor);
+	API float get_blend_factor();
 
 #ifdef __cplusplus
 }
