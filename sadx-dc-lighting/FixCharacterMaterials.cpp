@@ -4,9 +4,9 @@
 	#include <vector>
 
 	#include "d3d8types.hpp"
-	#include <SADXModLoader/SADXFunctions.h>
+	#include <SADXFunctions.h>
 #else
-	#include <ModLoader/MemAccess.h>
+	#include <MemAccess.h>
 #endif
 
 #include <ninja.h>
@@ -155,14 +155,6 @@ void FixCharacterMaterials()
 {
 	auto handle = get_handle();
 
-#if _DEBUG
-	int ids[] = { 1, 18, 3, 27, 33 };
-	actions("E102", 78, ids);
-	objects("E102", 28, ids);
-	//models ("E102", 11, ids);
-	materials.clear();
-#endif
-	
 	// Sonic's nose
 	DataArray_(NJS_MATERIAL, matlist_00565C68, (0x00565C68 + handle), 3);
 	DataArray_(NJS_MATERIAL, matlist_0057636C, (0x0057636C + handle), 3);

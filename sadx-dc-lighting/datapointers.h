@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ModLoader/MemAccess.h>
+#include <MemAccess.h>
 #include <d3d8types.hpp>
 #include <ninja.h>
 
