@@ -39,7 +39,6 @@ class ILantern
 public:
 	virtual ~ILantern() = default;
 
-	virtual bool LoadFiles() = 0;
 	virtual bool LoadPalette(Sint32 level, Sint32 act) = 0;
 	virtual bool LoadPalette(const std::string& path) = 0;
 	virtual bool LoadSource(Sint32 level, Sint32 act) = 0;
@@ -55,21 +54,9 @@ public:
 
 class LanternInstance : ILantern
 {
-	static float blend_factor;
-	static bool use_palette;
-
 	EffectParameter<Texture>* atlas;
 	EffectParameter<float>* diffuse_param;
 	EffectParameter<float>* specular_param;
-
-	Sint32 blend_type       = -1;
-	Sint8 last_time         = -1;
-	Sint32 last_act         = -1;
-	Sint32 last_level       = -1;
-	Sint32 diffuse_index    = -1;
-	Sint32 specular_index   = -1;
-	Sint32 diffuse_index_b  = -1;
-	Sint32 specular_index_b = -1;
 
 	void copy(LanternInstance& inst);
 
@@ -84,14 +71,23 @@ public:
 
 	static bool diffuse_override;
 	static bool specular_override;
+	static float blend_factor;
+	static bool use_palette;
+
+	Sint32 blend_type       = -1;
+	Sint8 last_time         = -1;
+	Sint32 last_act         = -1;
+	Sint32 last_level       = -1;
+	Sint32 diffuse_index    = -1;
+	Sint32 specular_index   = -1;
+	Sint32 diffuse_index_b  = -1;
+	Sint32 specular_index_b = -1;
 
 	static bool UsePalette();
 	static float BlendFactor();
 	static std::string PaletteId(Sint32 level, Sint32 act);
-	static bool LoadFiles(LanternInstance& instance);
 	static void SetBlendFactor(float f);
 
-	bool LoadFiles() override;
 	bool LoadPalette(Sint32 level, Sint32 act) override;
 	bool LoadPalette(const std::string& path) override;
 	bool LoadSource(Sint32 level, Sint32 act) override;
@@ -132,8 +128,10 @@ public:
 	void RemovePlCallback(lantern_load_t callback);
 	void AddSlCallback(lantern_load_t callback);
 	void RemoveSlCallback(lantern_load_t callback);
+	bool RunPlCallbacks(Sint32 level, Sint32 act, Sint8 time);
+	bool RunSlCallbacks(Sint32 level, Sint32 act, Sint8 time);
+	bool LoadFiles();
 
-	bool LoadFiles() override;
 	bool LoadPalette(Sint32 level, Sint32 act) override;
 	bool LoadPalette(const std::string& path) override;
 	bool LoadSource(Sint32 level, Sint32 act) override;

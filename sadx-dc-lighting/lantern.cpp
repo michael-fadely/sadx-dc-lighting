@@ -161,8 +161,6 @@ inline bool GameModeIngame()
 /// <returns>A string containing the properly formatted PL level ID.</returns>
 std::string LanternInstance::PaletteId(Sint32 level, Sint32 act)
 {
-	// TODO: Provide a method for other mods to handle this to allow for custom palettes.
-
 	if (UseTimeOfDay(level, act))
 	{
 		// Station Square (unlike other sane adventure
@@ -404,11 +402,6 @@ bool LanternInstance::LoadSource(Sint32 level, Sint32 act)
 	return LoadSource(name.str());
 }
 
-bool LanternInstance::LoadFiles()
-{
-	return LoadFiles(*this);
-}
-
 /// <summary>
 /// Loads palette data from the specified path.
 /// </summary>
@@ -492,54 +485,6 @@ bool LanternInstance::LoadPalette(Sint32 level, Sint32 act)
 	return LoadPalette(name.str());
 }
 
-/// <summary>
-/// Loads the lantern palette and source files for the current level if it (or the time of day) has changed.
-/// </summary>
-bool LanternInstance::LoadFiles(LanternInstance& instance)
-{
-	// Sky Deck needs to manage its own palette.
-	// TODO: something better than this
-	if (CurrentLevel == LevelIDs_SkyDeck)
-	{
-		return true;
-	}
-
-	auto time = GetTimeOfDay();
-
-	for (int i = CurrentAct; i >= 0; i--)
-	{
-		int level = CurrentLevel;
-		int act = i;
-
-		if (UseTimeOfDay(level, act))
-		{
-			GetTimeOfDayLevelAndAct(&level, &act);
-		}
-
-		if (level == instance.last_level && act == instance.last_act && time == instance.last_time)
-		{
-			return false;
-		}
-
-		if (!instance.LoadPalette(CurrentLevel, i))
-		{
-			continue;
-		}
-
-		instance.LoadSource(CurrentLevel, i);
-
-		instance.last_time  = time;
-		instance.last_level = level;
-		instance.last_act   = act;
-
-		use_palette = false;
-		d3d::do_effect = false;
-		return true;
-	}
-
-	return false;
-}
-
 void LanternInstance::SetBlendFactor(float f)
 {
 	if (!d3d::effect)
@@ -599,7 +544,7 @@ void LanternInstance::SetPalettes(Sint32 type, Uint32 flags)
 	{
 		case 0:
 			diffuse = 0;
-			specular = (ignore_specular && !(flags & NJD_FLAG_USE_ENV)) ? 0 : 1;
+			specular = ignore_specular && !(flags & NJD_FLAG_USE_ENV) ? 0 : 1;
 #ifdef _DEBUG
 			globals::light_dir = *(NJS_VECTOR*)&Direct3D_CurrentLight.Direction;
 #endif
@@ -721,7 +666,6 @@ void LanternInstance::SetSelfBlend(Sint32 type, Sint32 diffuse, Sint32 specular)
 	param::PaletteB = param::PaletteA;
 
 	SetDiffuseB(diffuse);
-
 	SetSpecularB(specular);
 }
 
@@ -795,8 +739,96 @@ bool LanternCollection::LoadSource(const std::string& path)
 	return count == instances.size();
 }
 
+// TODO: solve duplicate code by having PL and SL classes which inherit a common interface
+bool LanternCollection::RunPlCallbacks(Sint32 level, Sint32 act, Sint8 time)
+{
+	bool result = false;
+
+	for (auto& cb : pl_callbacks)
+	{
+		auto path_ptr = cb(level, act);
+
+		if (path_ptr == nullptr)
+		{
+			continue;
+		}
+
+		std::string path_str = path_ptr;
+
+		for (auto& instance : instances)
+		{
+			if (level == instance.last_level && act == instance.last_act && time == instance.last_time)
+			{
+				result = true;
+				break;
+			}
+
+			if (!instance.LoadPalette(path_str))
+			{
+				return false;
+			}
+
+			instance.last_time  = time;
+			instance.last_level = level;
+			instance.last_act   = act;
+			result = true;
+		}
+
+		if (result)
+		{
+			break;
+		}
+	}
+
+	return result;
+}
+
+bool LanternCollection::RunSlCallbacks(Sint32 level, Sint32 act, Sint8 time)
+{
+	bool result = false;
+
+	for (auto& cb : sl_callbacks)
+	{
+		auto path_ptr = cb(level, act);
+
+		if (path_ptr == nullptr)
+		{
+			continue;
+		}
+
+		std::string path_str = path_ptr;
+
+		for (auto& instance : instances)
+		{
+			if (level == instance.last_level && act == instance.last_act && time == instance.last_time)
+			{
+				result = true;
+				break;
+			}
+
+			if (!instance.LoadSource(path_str))
+			{
+				return false;
+			}
+
+			instance.last_time  = time;
+			instance.last_level = level;
+			instance.last_act   = act;
+			result = true;
+		}
+
+		if (result)
+		{
+			break;
+		}
+	}
+
+	return result;
+}
+
 bool LanternCollection::LoadFiles()
 {
+	auto time = GetTimeOfDay();
 	size_t count = 0;
 
 	if (instances.empty())
@@ -804,11 +836,65 @@ bool LanternCollection::LoadFiles()
 		instances.emplace_back(&param::PaletteA, &param::DiffuseIndexA, &param::SpecularIndexA);
 	}
 
-	for (auto& i : instances)
+	bool pl_handled = RunPlCallbacks(CurrentLevel, CurrentAct, time);
+	bool sl_handled = RunSlCallbacks(CurrentLevel, CurrentAct, time);
+
+	// No need to do automatic detection if a callback has
+	// already provided valid paths to both PL and SL files.
+	if (pl_handled && sl_handled)
 	{
-		if (i.LoadFiles())
+		return true;
+	}
+
+	// Sky Deck needs to manage its own palette.
+	// TODO: something better than this
+	if (CurrentLevel == LevelIDs_SkyDeck)
+	{
+		return true;
+	}
+
+	for (auto& instance : instances)
+	{
+		// This is a fallback for cases where stage acts
+		// palettes from the previous acts.
+		for (int i = CurrentAct; i >= 0; i--)
 		{
+			int level = CurrentLevel;
+			int act = i;
+
+			if (UseTimeOfDay(level, act))
+			{
+				GetTimeOfDayLevelAndAct(&level, &act);
+			}
+
+			if (!pl_handled && !sl_handled
+				&& level == instance.last_level && act == instance.last_act && time == instance.last_time)
+			{
+				break;
+			}
+
+			if (!pl_handled && !instance.LoadPalette(CurrentLevel, i))
+			{
+				// Palette loading is critical for lighting, so
+				// continue immediately on failure.
+				continue;
+			}
+
+			if (!sl_handled)
+			{
+				// Source light loading on the other hand is not a
+				// requirement, so failure is fine.
+				instance.LoadSource(CurrentLevel, i);
+			}
+
+			instance.last_time  = time;
+			instance.last_level = level;
+			instance.last_act   = act;
+
+			LanternInstance::use_palette = false;
+			d3d::do_effect = false;
 			++count;
+			break;
 		}
 	}
 
