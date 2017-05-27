@@ -112,12 +112,6 @@ sampler alphaDepthSampler = sampler_state
 	AddressV  = Clamp;
 };
 
-// Enables or disables depth tests against the previous alpha depth buffer.
-shared bool AlphaDepthTest;
-
-// This will likely need to be non-static for more robust control.
-// Enabled or disabled depth tests against the opaque-only depth buffer.
-static bool OpaqueDepthTest = true;
 // Used for correcting screen-space coordinates to sample the depth buffer.
 shared float2 ViewPort;
 shared uint SourceBlend, DestinationBlend;
@@ -309,28 +303,20 @@ float4 ps_main(PS_IN input, out float oDepth : DEPTH0, float2 vpos : VPOS) : COL
 #ifdef USE_OIT
 	float2 depthcoord = vpos / ViewPort;
 
-	// If opaque depth tests are enabled...
-	if (OpaqueDepthTest)
+	// Exclude any fragment whose depth exceeds that of any opaque fragment.
+	// (equivalent to D3DCMP_LESS)
+	float baseDepth = tex2D(opaqueDepthSampler, depthcoord).r;
+	if (currentDepth >= baseDepth)
 	{
-		// ...exclude any fragment whose depth exceeds that of any opaque fragment.
-		// (equivalent to D3DCMP_LESS)
-		float baseDepth = tex2D(opaqueDepthSampler, depthcoord).r;
-		if (currentDepth >= baseDepth)
-		{
-			discard;
-		}
+		discard;
 	}
 
-	// If alpha depth tests are enabled...
-	if (AlphaDepthTest)
+	// Discard any fragment whose depth is less than the last fragment depth.
+	// (equivalent to D3DCMP_GREATER)
+	float lastDepth = tex2D(alphaDepthSampler, depthcoord).r;
+	if (currentDepth <= lastDepth)
 	{
-		// ...discard any fragment whose depth is less than the last fragment depth.
-		// (equivalent to D3DCMP_GREATER)
-		float lastDepth = tex2D(alphaDepthSampler, depthcoord).r;
-		if (currentDepth <= lastDepth)
-		{
-			discard;
-		}
+		discard;
 	}
 
 	blend = float4((float)SourceBlend / 15.0f, (float)DestinationBlend / 15.0f, 0, 1);

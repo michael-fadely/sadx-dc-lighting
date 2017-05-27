@@ -55,7 +55,6 @@ namespace param
 	EffectParameter<Texture>     OpaqueDepth("OpaqueDepth", nullptr);
 	EffectParameter<int>         SourceBlend("SourceBlend", 0);
 	EffectParameter<int>         DestinationBlend("DestinationBlend", 0);
-	EffectParameter<bool>        AlphaDepthTest("AlphaDepthTest", false);
 	EffectParameter<D3DXVECTOR2> ViewPort("ViewPort", {});
 	EffectParameter<float>       DrawDistance("DrawDistance", 0.0f);
 #endif
@@ -96,7 +95,6 @@ namespace param
 		&OpaqueDepth,
 		&SourceBlend,
 		&DestinationBlend,
-		&AlphaDepthTest,
 		&ViewPort,
 		&DrawDistance,
 	#endif
@@ -1050,6 +1048,7 @@ namespace local
 	
 	DataPointer(NJS_ARGB, _nj_constant_material_, 0x03D0F7F0);
 
+	// TODO: destroy
 	static void __cdecl njDrawSprite3D_DrawNow_r(NJS_SPRITE *sp, int n, NJD_SPRITE attr)
 	{
 		using namespace d3d;
@@ -1167,38 +1166,39 @@ namespace local
 			Texture currUnit = depthUnits[currId];
 			Texture lastUnit = depthUnits[lastId];
 
+			if (!i)
+			{
+				Surface temp;
+				lastUnit->GetSurfaceLevel(0, &temp);
+				device->SetDepthStencilSurface(temp);
+				device->Clear(0, nullptr, D3DCLEAR_ZBUFFER, 0, 0.0f, 0);
+			}
+
 			Surface unit      = nullptr;
 			Surface target    = nullptr;
 			Surface blendmode = nullptr;
 
 			currUnit->GetSurfaceLevel(0, &unit);
-			renderLayers[i]->GetSurfaceLevel(0, &target);
-			blendModeLayers[i]->GetSurfaceLevel(0, &blendmode);
-
 			device->SetDepthStencilSurface(unit);
 
+			renderLayers[i]->GetSurfaceLevel(0, &target);
 			device->SetRenderTarget(0, target);
+
+			blendModeLayers[i]->GetSurfaceLevel(0, &blendmode);
 			device->SetRenderTarget(1, blendmode);
+
 			device->Clear(0, nullptr, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
-			device->Clear(1, nullptr, D3DCLEAR_TARGET, 0, 1.0f, 0);
+			//device->Clear(1, nullptr, D3DCLEAR_TARGET, 0, 1.0f, 0);
 
 			// Always use LESS comparison with the native d3d depth test.
 			device->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESS);
 
-			// Only enable manual alpha depth tests on the second pass.
-			// If not, the depth test will fail and nothing will render
-			// as the "last" depth buffer has not been populated yet.
-			// The shader performs a manual GREATER depth test on
-			// transparent things.
-			param::AlphaDepthTest = i != 0;
 			// Set the depth buffer to test against if above stuff.
 			param::AlphaDepth = lastUnit;
 
 			auto last = *(int*)0x3AB98AC;
 			draw();
 			*(int*)0x3AB98AC = last;
-
-			device->SetRenderTarget(0, target);
 
 			currUnit   = nullptr;
 			lastUnit   = nullptr;
@@ -1592,7 +1592,7 @@ namespace d3d
 		WriteJump((void*)0x00408807, saveyourself);
 		WriteJump((void*)0x00791940, njAlphaMode_r);
 		WriteJump((void*)0x00791990, njTextureShadingMode_r);
-		WriteJump((void*)0x0077E390, njDrawSprite3D_DrawNow_r);
+		WriteCall((void*)0x00408B1F, njDrawSprite3D_DrawNow_r);
 	#endif
 	}
 }
