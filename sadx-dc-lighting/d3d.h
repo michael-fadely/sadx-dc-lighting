@@ -72,6 +72,7 @@ namespace param
 	extern EffectParameter<int> DestinationBlend;
 	extern EffectParameter<D3DXVECTOR2> ViewPort;
 	extern EffectParameter<float> DrawDistance;
+	extern EffectParameter<float> DepthOverride;
 #endif
 
 #ifdef USE_SL

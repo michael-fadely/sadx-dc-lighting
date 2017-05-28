@@ -58,6 +58,7 @@ namespace param
 	EffectParameter<int>         DestinationBlend("DestinationBlend", 0);
 	EffectParameter<D3DXVECTOR2> ViewPort("ViewPort", {});
 	EffectParameter<float>       DrawDistance("DrawDistance", 0.0f);
+	EffectParameter<float>       DepthOverride("DepthOverride", 0.0f);
 #endif
 
 #ifdef USE_SL
@@ -98,6 +99,7 @@ namespace param
 		&DestinationBlend,
 		&ViewPort,
 		&DrawDistance,
+		&DepthOverride,
 	#endif
 
 	#ifdef USE_SL
@@ -185,7 +187,6 @@ namespace local
 	static Surface backBufferSurface          = nullptr;
 	static Surface origRenderTarget           = nullptr;
 	static bool peeling                       = false;
-	static bool allow_alpha                   = false;
 
 	DataPointer(D3DPRESENT_PARAMETERS, PresentParameters, 0x03D0FDC0);
 #endif
@@ -1016,27 +1017,6 @@ namespace local
 		d3d::device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, &quad, sizeof(QuadVertex));
 	}
 
-	static void __cdecl Direct3D_EnableZWrite_r(DWORD enable)
-	{
-		if (peeling)
-		{
-			d3d::device->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
-			return;
-		}
-
-		d3d::device->SetRenderState(D3DRS_ZWRITEENABLE, enable);
-	}
-	static void __cdecl Direct3D_SetZFunc_r(Uint8 index)
-	{
-		if (peeling)
-		{
-			d3d::device->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESS);
-			return;
-		}
-
-		d3d::device->SetRenderState(D3DRS_ZFUNC, index + 1);
-	}
-
 	static void __cdecl DrawQueuedModels_r();
 	static Trampoline DrawQueuedModels_t(0x004086F0, 0x004086F6, DrawQueuedModels_r);
 
@@ -1048,104 +1028,6 @@ namespace local
 	};
 	
 	DataPointer(NJS_ARGB, _nj_constant_material_, 0x03D0F7F0);
-
-	// TODO: destroy
-	static void __cdecl njDrawSprite3D_DrawNow_r(NJS_SPRITE *sp, int n, NJD_SPRITE attr)
-	{
-		using namespace d3d;
-
-		auto tlist = sp->tlist;
-		auto tanim = &sp->tanim[n];
-		Direct3D_SetTexList(tlist);
-		njSetTextureNum_(tanim->texid);
-
-		float u1 = tanim->u1 / 255.0f;
-		float v1 = tanim->v1 / 255.0f;
-		float u2 = tanim->u2 / 255.0f;
-		float v2 = tanim->v2 / 255.0f;
-
-		auto mx = sp->sx * ((float)tanim->cx / (float)tanim->sx);
-		auto my = sp->sy * ((float)tanim->cx / (float)tanim->sx);
-
-		auto _cx  = (float)-tanim->cx * mx;
-		auto _cy  = (float)-tanim->cy * my;
-		auto _csx = (float)tanim->sx * mx + _cx;
-		auto _csy = (float)tanim->sy * my + _cy;
-
-		D3DXMATRIX m;
-
-		// TODO: fix scaling (dust & fire too small)
-		if (!!(attr & NJD_SPRITE_SCALE))
-		{
-			njUnitMatrix(m);
-			njTranslateV(m, &sp->p);
-			auto& r = Camera_Data1->Rotation;
-			njRotateXYZ(m, r.x, r.y, r.z);
-			D3DXMatrixMultiply(&m, &m, &ViewMatrix);
-		}
-		else
-		{
-			njGetMatrix(m);
-		}
-
-		param::wvMatrix = m;
-
-		NJS_COLOR diffuse = { 0xFFFFFFFF };
-
-		if (!!(attr & NJD_SPRITE_COLOR))
-		{
-			auto& c = diffuse.argb;
-			c.b = (Uint8)(_nj_constant_material_.b * 255.0f);
-			c.g = (Uint8)(_nj_constant_material_.g * 255.0f);
-			c.r = (Uint8)(_nj_constant_material_.r * 255.0f);
-			c.a = (Uint8)(_nj_constant_material_.a * 255.0f);
-		}
-
-		if (!!(attr & NJD_SPRITE_HFLIP))
-		{
-			auto _u1 = u1;
-			auto _u2 = u2;
-			u1 = _u2;
-			u2 = _u1;
-		}
-
-		if (!!(attr & NJD_SPRITE_VFLIP))
-		{
-			auto _v1 = v1;
-			auto _v2 = v2;
-			v1 = _v2;
-			v2 = _v1;
-		}
-
-		static const auto format = D3DFVF_DIFFUSE | D3DFVF_XYZ | 0x100;
-		
-		FVFStruct_H quad[4];
-
-		quad[0].position = D3DXVECTOR3(_cx, _cy, 0.0f);
-		quad[0].uv       = D3DXVECTOR2(u1, v1);
-		quad[0].diffuse  = diffuse.color;
-
-		quad[1].position = D3DXVECTOR3(_csx, _cy, 0.0f);
-		quad[1].uv       = D3DXVECTOR2(u2, v1);
-		quad[1].diffuse  = diffuse.color;
-
-		quad[2].position = D3DXVECTOR3(_cx, _csy, 0.0f);
-		quad[2].uv       = D3DXVECTOR2(u1, v2);
-		quad[2].diffuse  = diffuse.color;
-
-		quad[3].position = D3DXVECTOR3(_csx, _csy, 0.0f);
-		quad[3].uv       = D3DXVECTOR2(u2, v2);
-		quad[3].diffuse  = diffuse.color;
-
-		device->SetFVF(format);
-		auto o = do_effect;
-		do_effect = true;
-
-		device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, &quad, sizeof(FVFStruct_H));
-
-		device->SetFVF(0);
-		do_effect = o;
-	}
 
 	static void __cdecl AddToQueue_r(QueuedModelNode* node, float pri, int idk);
 	static void __declspec(naked) AddToQueue_asm()
@@ -1192,9 +1074,15 @@ namespace local
 			return;
 		}
 
+		node->Depth = pri;
+
 		switch ((QueuedModelType)(node->Flags & 0xF))
 		{
 			case QueuedModelType_BasicModel:
+				nodes.push_back(node);
+				break;
+
+			// strictly for debugging
 			case QueuedModelType_Sprite3D:
 				nodes.push_back(node);
 				break;
@@ -1211,14 +1099,25 @@ namespace local
 	DataPointer(NJS_TEXLIST*, CurrentTexList, 0x03ABD950);
 
 	#pragma pack(push, 8)
-		struct QueuedModelPointer
-		{
-			QueuedModelNode Node;
-			NJS_MODEL_SADX *Model;
-			NJS_MATRIX Transform;
-		};
+	struct QueuedModelPointer
+	{
+		QueuedModelNode Node;
+		NJS_MODEL_SADX *Model;
+		NJS_MATRIX Transform;
+	};
 	#pragma pack(pop)
 
+	#pragma pack(push, 8)
+	struct QueuedModelSprite
+	{
+		QueuedModelNode Node;
+		void* dummy;
+		NJS_SPRITE Sprite;
+		NJD_SPRITE SpriteFlags;
+		float SpritePri;
+		NJS_MATRIX Transform;
+	};
+	#pragma pack(pop)
 
 	static void renderLayerPasses()
 	{
@@ -1262,6 +1161,7 @@ namespace local
 
 		for (int p = 0; p < passes; p++)
 		{
+			// TODO: loop per draw type & use [numPasses] depth buffers
 			for (int i = 0; i < numPasses; i++)
 			{
 				int currId = i % 2;
@@ -1360,7 +1260,7 @@ namespace local
 
 					fov_orig = fov_orig_yet_again;
 					
-					Direct3D_SetZFunc(3u);
+					Direct3D_SetZFunc(1u);
 					Direct3D_EnableZWrite(1u);
 
 					njSetConstantMaterial(&it->Color);
@@ -1404,8 +1304,32 @@ namespace local
 						}
 
 						case QueuedModelType_Sprite3D:
-							// TODO
+						{
+							auto inst = (QueuedModelSprite*)it;
+
+							auto tlist = inst->Sprite.tlist;
+							if (!tlist)
+							{
+								break;
+							}
+
+							if (fov_orig_again != fov_orig)
+							{
+								fov_orig = fov_orig_again;
+								fov_orig_yet_again = fov_orig_again;
+								njSetScreenDist(fov_orig_again);
+							}
+
+							if (inst->SpriteFlags & NJD_SPRITE_SCALE)
+							{
+								param::DepthOverride = -it->Depth;
+							}
+
+							njSetMatrix(nullptr, inst->Transform);
+							njDrawSprite3D_DrawNow(&inst->Sprite, it->TexNum & 0x7FFF, inst->SpriteFlags);
+							param::DepthOverride = 0.0f;
 							break;
+						}
 					}
 
 					fogemulation = fog_emulation_orig_again;
@@ -1562,7 +1486,11 @@ namespace local
 
 	bool node_sort(QueuedModelNode* a, QueuedModelNode* b)
 	{
-		return a->TexList != b->TexList && a->TexNum > b->TexNum;
+		return a->TexList != b->TexList
+		&& a->TexNum > b->TexNum
+		&& a->Flags != b->Flags
+		&& a->BlendMode != b->BlendMode
+		&& a->Depth < b->Depth;
 	}
 
 	static void __cdecl DrawQueuedModels_r()
@@ -1577,73 +1505,6 @@ namespace local
 		renderBackBuffer();
 	}
 
-	static bool __stdcall MyCoolFunction(QueuedModelNode* node)
-	{
-		QueuedModelType type = (QueuedModelType)(node->Flags & 0xF);
-
-		// HACK: this isn't good enough
-		//allow_alpha = type == QueuedModelType_Sprite3D;
-
-		switch (type)
-		{
-			// TODO: actually handle 3D sprites (particles etc)
-			case QueuedModelType_Sprite3D:
-			case QueuedModelType_BasicModel:
-			case QueuedModelType_Callback:
-				return peeling;
-
-			case QueuedModelType_Sprite2D:
-			case QueuedModelType_Rect:
-				return !peeling;
-
-			case QueuedModelType_00:
-			case QueuedModelType_04:
-			case QueuedModelType_05:
-			case QueuedModelType_06:
-			case QueuedModelType_07:
-			case QueuedModelType_08:
-			case QueuedModelType_10:
-			case QueuedModelType_11:
-			case QueuedModelType_13:
-			case QueuedModelType_14:
-			case QueuedModelType_15:
-				return false;
-
-			default:
-				return !peeling;
-		}
-	}
-
-	const auto continue_draw = (void*)0x0040880D;
-	const auto skip_draw = (void*)0x00408F24;
-	static void __declspec(naked) saveyourself()
-	{
-		__asm
-		{
-			// _nj_control_3d_flag_
-			mov   ds:03D0F9C8h, edi
-
-			// saving value
-			push  edx
-
-			push  esi
-			call  MyCoolFunction
-
-			// restore
-			pop   edx
-
-			test  al, al
-			jnz   wangis
-
-			// skip the type evaluation & drawing
-			jmp   skip_draw
-
-			// continue to type evaluation & draw
-		wangis:
-			jmp   continue_draw
-		}
-	}
-#if 0
 	DataArray(D3DBLEND, BlendModes, 0x0088AD6C, 12);
 	static void __cdecl njColorBlendingMode__r(Int target, Int mode);
 	static Trampoline njColorBlendingMode__t(0x0077EC60, 0x0077EC66, njColorBlendingMode__r);
@@ -1686,7 +1547,6 @@ namespace local
 			param::DestinationBlend = D3DBLEND_SRCALPHA;
 		}
 	}
-#endif
 
 	static void __fastcall njAlphaMode_r(Int mode)
 	{
@@ -1698,7 +1558,7 @@ namespace local
 		}
 		else
 		{
-			device->SetRenderState(D3DRS_ALPHABLENDENABLE, allow_alpha || !peeling);
+			device->SetRenderState(D3DRS_ALPHABLENDENABLE, !peeling);
 			device->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
 		}
 	}
@@ -1712,14 +1572,14 @@ namespace local
 			{
 				if (mode == 1)
 				{
-					device->SetRenderState(D3DRS_ALPHABLENDENABLE, allow_alpha || !peeling);
+					device->SetRenderState(D3DRS_ALPHABLENDENABLE, !peeling);
 					device->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
 					device->SetRenderState(D3DRS_ALPHAREF, 16);
 				}
 			}
 			else
 			{
-				device->SetRenderState(D3DRS_ALPHABLENDENABLE, allow_alpha || !peeling);
+				device->SetRenderState(D3DRS_ALPHABLENDENABLE, !peeling);
 				device->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
 				device->SetRenderState(D3DRS_ALPHAREF, 0);
 			}
@@ -1837,12 +1697,10 @@ namespace d3d
 
 	#ifdef USE_OIT
 		// HACK: DIRTY HACKS
-		WriteJump(Direct3D_EnableZWrite, Direct3D_EnableZWrite_r);
-		WriteJump((void*)0x0077ED00, Direct3D_SetZFunc_r);
-		//WriteJump((void*)0x00408807, saveyourself);
+		//WriteJump(Direct3D_EnableZWrite, Direct3D_EnableZWrite_r);
+		//WriteJump((void*)0x0077ED00, Direct3D_SetZFunc_r);
 		WriteJump((void*)0x00791940, njAlphaMode_r);
 		WriteJump((void*)0x00791990, njTextureShadingMode_r);
-		//WriteCall((void*)0x00408B1F, njDrawSprite3D_DrawNow_r);
 	#endif
 	}
 }

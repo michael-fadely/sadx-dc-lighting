@@ -116,6 +116,7 @@ sampler alphaDepthSampler = sampler_state
 shared float2 ViewPort;
 shared uint SourceBlend, DestinationBlend;
 shared float DrawDistance;
+shared float DepthOverride;
 
 // Pre-adjusted on the CPU before being sent to the shader.
 shared float DiffuseIndexA  = 0;
@@ -298,7 +299,10 @@ float4 ps_main(PS_IN input, out float oDepth : DEPTH0, float2 vpos : VPOS) : COL
 	const float C = 1.0;
 	const float offset = 1;
 
-	float currentDepth = log(C * input.depth.x + offset) / log(C * DrawDistance + offset);
+	// Logarithmic depth
+	float currentDepth = log(C * (input.depth.x + DepthOverride) + offset) / log(C * DrawDistance + offset);
+
+	oDepth = currentDepth;
 
 #ifdef USE_OIT
 	float2 depthcoord = vpos / ViewPort;
@@ -321,8 +325,6 @@ float4 ps_main(PS_IN input, out float oDepth : DEPTH0, float2 vpos : VPOS) : COL
 
 	blend = float4((float)SourceBlend / 15.0f, (float)DestinationBlend / 15.0f, 0, 1);
 #endif
-
-	oDepth = currentDepth;
 
 #ifdef USE_FOG
 	float factor = CalcFogFactor(input.fogDist);
