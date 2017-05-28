@@ -1065,9 +1065,30 @@ namespace local
 		}
 	}
 
+	#pragma pack(push, 8)
+	struct QueuedModelPointer
+	{
+		QueuedModelNode Node;
+		NJS_MODEL_SADX *Model;
+		NJS_MATRIX Transform;
+	};
+
+	struct QueuedModelSprite
+	{
+		QueuedModelNode Node;
+		void* dummy;
+		NJS_SPRITE Sprite;
+		NJD_SPRITE SpriteFlags;
+		float SpritePri;
+		NJS_MATRIX Transform;
+	};
+	#pragma pack(pop)
+
+
 	struct QueuedNodeEx
 	{
 		QueuedModelNode* node;
+		NJS_MESHSET_SADX* meshset;
 		float pri;
 		int idk;
 		float bias;
@@ -1081,16 +1102,26 @@ namespace local
 		auto a = _a.node;
 		auto b = _b.node;
 
-		return /*a->TexList != b->TexList
-			&& a->TexNum > b->TexNum
-			&& a->Flags != b->Flags
-			&& a->BlendMode != b->BlendMode
-			&& */a->Depth > b->Depth;
+		bool result = a->TexList != b->TexList;
+
+		if (_a.meshset && _b.meshset)
+		{
+			return result && (_a.meshset->type_matId & 0x3FFF) < (_b.meshset->type_matId & 0x3FFF);
+		}
+
+		return result;
 	}
 
 	__inline void sort_nodes()
 	{
+		auto t = GetTickCount64();
 		sort(nodes.begin(), nodes.end(), &node_sort_near);
+		auto e = GetTickCount64() - t;
+
+		if (e > 0)
+		{
+			PrintDebug("%d\n", e);
+		}
 	}
 
 	void __cdecl AddToQueue_r(QueuedModelNode* node, float pri, int idk)
@@ -1104,13 +1135,26 @@ namespace local
 		switch ((QueuedModelType)(node->Flags & 0xF))
 		{
 			case QueuedModelType_BasicModel:
+			{
 				node->Depth = pri;
-				nodes.push_back({ node, pri, idk, DrawQueueDepthBias });
+				auto inst = reinterpret_cast<QueuedModelPointer*>(node);
+
+				if (inst->Model->nbMeshset == 1)
+				{
+					nodes.push_back({ node, nullptr, pri, idk, DrawQueueDepthBias });
+					break;
+				}
+
+				for (int i = 0; i < inst->Model->nbMeshset; i++)
+				{
+					nodes.push_back({ node, &inst->Model->meshsets[i], pri, idk, DrawQueueDepthBias });
+				}
 				break;
+			}
 
 			case QueuedModelType_Sprite3D:
 				node->Depth = fabs(pri);
-				nodes.push_back({ node, pri, idk, DrawQueueDepthBias });
+				nodes.push_back({ node, nullptr, pri, idk, DrawQueueDepthBias });
 				break;
 
 			default:
@@ -1123,27 +1167,6 @@ namespace local
 	DataPointer(bool, FogEnabled, 0x03ABDCFE);
 	DataPointer(int, CurrentLightType, 0x03B12208);
 	DataPointer(NJS_TEXLIST*, CurrentTexList, 0x03ABD950);
-
-	#pragma pack(push, 8)
-	struct QueuedModelPointer
-	{
-		QueuedModelNode Node;
-		NJS_MODEL_SADX *Model;
-		NJS_MATRIX Transform;
-	};
-	#pragma pack(pop)
-
-	#pragma pack(push, 8)
-	struct QueuedModelSprite
-	{
-		QueuedModelNode Node;
-		void* dummy;
-		NJS_SPRITE Sprite;
-		NJD_SPRITE SpriteFlags;
-		float SpritePri;
-		NJS_MATRIX Transform;
-	};
-	#pragma pack(pop)
 
 	class draw_guard
 	{
@@ -1165,7 +1188,7 @@ namespace local
 		NJS_MATRIX orig_matrix;
 		int passes;
 
-		draw_guard(bool is_peeling)
+		explicit draw_guard(bool is_peeling)
 		{
 			this->is_peeling = is_peeling;
 			begin();
@@ -1249,8 +1272,9 @@ namespace local
 			}
 		}
 
-		void draw(QueuedModelNode* node)
+		void draw(const QueuedNodeEx& ex)
 		{
+			auto node = ex.node;
 			auto flags = node->Flags;
 
 			_nj_control_3d_flag_   = node->Control3D;
@@ -1301,7 +1325,9 @@ namespace local
 
 			auto texlist = node->TexList;
 
-			CurrentTexList = texlist;
+			//CurrentTexList = texlist;
+			Direct3D_SetNullTexture();
+			njSetTexture(CurrentTexList);
 
 			if (texlist && texlist->nbTexture)
 			{
@@ -1357,11 +1383,25 @@ namespace local
 						njSetScreenDist(fov_orig_again);
 					}
 
+
+					if ((unsigned int)model < 0x100000)
+					{
+						break;
+					}
+
 					njSetMatrix(nullptr, inst->Transform);
 
-					if ((unsigned int)model >= 0x100000)
+					if (model->nbMeshset == 1)
 					{
 						DrawModel_ResetRenderFlags(model);
+					}
+					else
+					{
+						auto _model = *model;
+						_model.nbMeshset = 1;
+						_model.meshsets = ex.meshset;
+
+						DrawModel_ResetRenderFlags(&_model);
 					}
 					break;
 				}
@@ -1460,7 +1500,7 @@ namespace local
 					}
 #endif
 
-					guard.draw(it.node);
+					guard.draw(it);
 				}
 
 				currUnit  = nullptr;
@@ -1596,7 +1636,7 @@ namespace local
 
 			for (auto& it : nodes)
 			{
-				guard.draw(it.node);
+				guard.draw(it);
 			}
 #endif
 
