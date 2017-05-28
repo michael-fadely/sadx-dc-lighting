@@ -1065,7 +1065,7 @@ namespace local
 		}
 	}
 
-	#pragma pack(push, 8)
+	#pragma pack(push, 1)
 	struct QueuedModelPointer
 	{
 		QueuedModelNode Node;
@@ -1082,6 +1082,26 @@ namespace local
 		float SpritePri;
 		NJS_MATRIX Transform;
 	};
+
+	struct QueuedModelLineA
+	{
+		QueuedModelNode Node;
+		int Unknown;
+		union
+		{
+			NJS_POINT2COL POINT2COL;
+			NJS_POINT3COL POINT3COL;
+		} Points;
+		NJS_MATRIX Transform;
+		Uint32 Attributes;
+		Uint32 TextureNum;
+	};
+
+	struct QueuedModelLineB : QueuedModelLineA
+	{
+		float Pri;
+	};
+
 	#pragma pack(pop)
 
 
@@ -1094,10 +1114,32 @@ namespace local
 		float bias;
 	};
 
+	enum _QueuedModelType : __int8
+	{
+		QueuedModelType_00             = 0x0,
+		QueuedModelType_BasicModel     = 0x1,
+		QueuedModelType_Sprite2D       = 0x2,
+		QueuedModelType_Sprite3D       = 0x3,
+		QueuedModelType_Line3D         = 0x4,
+		QueuedModelType_3DLinesMaybe   = 0x5,
+		QueuedModelType_2DLinesMaybe   = 0x6,
+		QueuedModelType_3DTriFanThing  = 0x7,
+		QueuedModelType_ActionPtr      = 0x8,
+		QueuedModelType_Rect           = 0x9,
+		QueuedModelType_Object         = 0xA,
+		QueuedModelType_Action         = 0xB,
+		QueuedModelType_Callback       = 0xC,
+		QueuedModelType_TextureMemList = 0xD,
+		QueuedModelType_Line2D         = 0xE,
+		QueuedModelType_MotionThing    = 0xF,
+	};
+
+
 	static constexpr auto NODE_LIMIT = 50;
 	std::deque<QueuedNodeEx> nodes;
 
-	bool node_sort_near(QueuedNodeEx& _a, QueuedNodeEx& _b)
+	// TODO: fix
+	bool node_sort_pred(QueuedNodeEx& _a, QueuedNodeEx& _b)
 	{
 		auto a = _a.node;
 		auto b = _b.node;
@@ -1115,7 +1157,7 @@ namespace local
 	__inline void sort_nodes()
 	{
 		auto t = GetTickCount64();
-		sort(nodes.begin(), nodes.end(), &node_sort_near);
+		sort(nodes.begin(), nodes.end(), &node_sort_pred);
 		auto e = GetTickCount64() - t;
 
 		if (e > 0)
@@ -1132,7 +1174,7 @@ namespace local
 			return;
 		}
 
-		switch ((QueuedModelType)(node->Flags & 0xF))
+		switch ((_QueuedModelType)(node->Flags & 0xF))
 		{
 			case QueuedModelType_BasicModel:
 			{
@@ -1157,6 +1199,12 @@ namespace local
 				nodes.push_back({ node, nullptr, pri, idk, DrawQueueDepthBias });
 				break;
 
+			case QueuedModelType_Line3D:
+			case QueuedModelType_3DLinesMaybe:
+				node->Depth = fabs(pri);
+				nodes.push_back({ node, nullptr, pri, idk, DrawQueueDepthBias });
+				break;
+
 			default:
 				AddToQueue_o(node, pri, idk);
 				break;
@@ -1167,6 +1215,8 @@ namespace local
 	DataPointer(bool, FogEnabled, 0x03ABDCFE);
 	DataPointer(int, CurrentLightType, 0x03B12208);
 	DataPointer(NJS_TEXLIST*, CurrentTexList, 0x03ABD950);
+	FunctionPointer(void, njDrawLine3D, (NJS_POINT3COL *p, Int n, Uint32 attr), 0x0077E820);
+	FunctionPointer(void, sub_77EBA0, (NJS_POINT3COL *p, Int n, Uint32 attr), 0x77EBA0);
 
 	class draw_guard
 	{
@@ -1361,7 +1411,7 @@ namespace local
 				fogemulation &= ~2u;
 			}
 
-			switch (flags & 0x0F)
+			switch ((_QueuedModelType)(flags & 0x0F))
 			{
 				default:
 					break;
@@ -1431,6 +1481,46 @@ namespace local
 					njSetMatrix(nullptr, inst->Transform);
 					njDrawSprite3D_DrawNow(&inst->Sprite, node->TexNum & 0x7FFF, inst->SpriteFlags);
 					param::DepthOverride = 0.0f;
+					break;
+				}
+
+				case QueuedModelType_Line3D:
+				{
+					auto inst = (QueuedModelLineB*)node;
+					if (fov_orig_again != fov_orig)
+					{
+						fov_orig = fov_orig_again;
+						fov_orig_yet_again = fov_orig_again;
+						njSetScreenDist(fov_orig_again);
+					}
+
+					if ((inst->Attributes & NJD_USE_TEXTURE) != 0 && node->TexList)
+					{
+						njSetTextureNum_(inst->TextureNum);
+					}
+
+					njSetMatrix(nullptr, inst->Transform);
+					njDrawLine3D(&inst->Points.POINT3COL, node->TexNum & 0x7FFF, inst->Attributes);
+					break;
+				}
+
+				case QueuedModelType_3DLinesMaybe:
+				{
+					auto inst = (QueuedModelLineB*)node;
+					if (fov_orig_again != fov_orig)
+					{
+						fov_orig = fov_orig_again;
+						fov_orig_yet_again = fov_orig_again;
+						njSetScreenDist(fov_orig_again);
+					}
+
+					if ((inst->Attributes & NJD_USE_TEXTURE) != 0 && node->TexList)
+					{
+						njSetTextureNum_(inst->TextureNum);
+					}
+
+					njSetMatrix(nullptr, inst->Transform);
+					sub_77EBA0(&inst->Points.POINT3COL, node->TexNum & 0x7FFF, inst->Attributes);
 					break;
 				}
 			}
