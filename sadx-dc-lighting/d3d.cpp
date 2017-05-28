@@ -176,7 +176,7 @@ namespace local
 	static std::vector<D3DXMACRO> macros;
 
 #ifdef USE_OIT
-	static const int numPasses                = 4;
+	static const int numPasses                = 8;
 	static Effect blender                     = nullptr;
 	static Texture depthUnits[2]              = {};
 	static Texture renderLayers[numPasses]    = {};
@@ -1448,10 +1448,6 @@ namespace local
 
 				device->Clear(0, nullptr, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
 
-				// Always use LESS comparison with the native d3d depth test.
-				device->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESS);
-
-				// Set the depth buffer to test against if above stuff.
 				param::AlphaDepth = lastUnit;
 
 				size_t index = 0;
