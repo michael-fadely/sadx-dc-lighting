@@ -345,10 +345,10 @@ namespace local
 		param::AlphaDepth.Release();
 		param::OpaqueDepth.Release();
 
-		depthSurface = nullptr;
-		depthBuffer = nullptr;
+		depthSurface      = nullptr;
+		depthBuffer       = nullptr;
 		backBufferSurface = nullptr;
-		origRenderTarget = nullptr;
+		origRenderTarget  = nullptr;
 	}
 
 #endif
@@ -1047,6 +1047,7 @@ namespace local
 		}
 	}
 
+	DataPointer(float, DrawQueueDepthBias, 0x03ABD9C0);
 	static Trampoline AddToQueue_t(0x00403E80, 0x00403E87, AddToQueue_asm);
 
 	void __cdecl AddToQueue_o(QueuedModelNode* node, float pri, int idk)
@@ -1064,7 +1065,33 @@ namespace local
 		}
 	}
 
-	std::deque<QueuedModelNode*> nodes;
+	struct QueuedNodeEx
+	{
+		QueuedModelNode* node;
+		float pri;
+		int idk;
+		float bias;
+	};
+
+	static constexpr auto NODE_LIMIT = 50;
+	std::deque<QueuedNodeEx> nodes;
+
+	bool node_sort_near(QueuedNodeEx& _a, QueuedNodeEx& _b)
+	{
+		auto a = _a.node;
+		auto b = _b.node;
+
+		return /*a->TexList != b->TexList
+			&& a->TexNum > b->TexNum
+			&& a->Flags != b->Flags
+			&& a->BlendMode != b->BlendMode
+			&& */a->Depth > b->Depth;
+	}
+
+	__inline void sort_nodes()
+	{
+		sort(nodes.begin(), nodes.end(), &node_sort_near);
+	}
 
 	void __cdecl AddToQueue_r(QueuedModelNode* node, float pri, int idk)
 	{
@@ -1074,17 +1101,16 @@ namespace local
 			return;
 		}
 
-		node->Depth = pri;
-
 		switch ((QueuedModelType)(node->Flags & 0xF))
 		{
 			case QueuedModelType_BasicModel:
-				nodes.push_back(node);
+				node->Depth = pri;
+				nodes.push_back({ node, pri, idk, DrawQueueDepthBias });
 				break;
 
-			// strictly for debugging
 			case QueuedModelType_Sprite3D:
-				nodes.push_back(node);
+				node->Depth = fabs(pri);
+				nodes.push_back({ node, pri, idk, DrawQueueDepthBias });
 				break;
 
 			default:
@@ -1119,38 +1145,267 @@ namespace local
 	};
 	#pragma pack(pop)
 
+	class draw_guard
+	{
+		bool is_peeling;
+		bool backed_up = false;
+		int toggled_fog;
+
+	public:
+		Uint32 control_3d_orig;
+		Uint32 attr_and_orig;
+		Uint32 attr_or_orig;
+		int currentLightType_orig;
+		Angle fov_orig;
+		bool fogEnabled_orig;
+		Angle fov_orig_again;
+		Angle fov_orig_yet_again;
+		Sint8 fog_emulation_orig_again;
+		Sint8 _fogemulation;
+		NJS_MATRIX orig_matrix;
+		int passes;
+
+		draw_guard(bool is_peeling)
+		{
+			this->is_peeling = is_peeling;
+			begin();
+		}
+		~draw_guard()
+		{
+			end();
+		}
+
+		void begin()
+		{
+			if (backed_up)
+			{
+				return;
+			}
+
+			backed_up = true;
+
+			toggled_fog              = -1;
+			control_3d_orig          = _nj_control_3d_flag_;
+			attr_and_orig            = _nj_constant_attr_and_;
+			attr_or_orig             = _nj_constant_attr_or_;
+			currentLightType_orig    = CurrentLightType;
+			fov_orig                 = HorizontalFOV_BAMS;
+			fogEnabled_orig          = FogEnabled;
+			fov_orig_again           = HorizontalFOV_BAMS;
+			fov_orig_yet_again       = HorizontalFOV_BAMS;
+			fog_emulation_orig_again = fogemulation;
+
+			ClampGlobalColorThing_Thing();
+
+			if (CurrentLightType)
+			{
+				SetCurrentLightType(0);
+			}
+
+			njGetMatrix(orig_matrix);
+
+			_fogemulation = fogemulation;
+
+			if (!(fogemulation & 2) || (passes = 2, !(fogemulation & 1)))
+			{
+				passes = 1;
+			}
+
+		}
+
+		void end()
+		{
+			if (!backed_up)
+			{
+				return;
+			}
+
+			backed_up = false;
+
+			njSetMatrix(nullptr, orig_matrix);
+			CurrentTexList = nullptr;
+			SetMaterialAndSpriteColor((NJS_ARGB*)0x03AB9864); // &GlobalSpriteColor
+			SetCurrentLightType_B(currentLightType_orig);
+			ScaleVectorThing_Restore();
+			Direct3D_SetZFunc(1u);
+			Direct3D_EnableZWrite(1u);
+
+			_nj_control_3d_flag_   = control_3d_orig;
+			_nj_constant_attr_and_ = attr_and_orig;
+			_nj_constant_attr_or_  = attr_or_orig;
+
+			if (fov_orig != fov_orig_again)
+			{
+				njSetScreenDist(fov_orig_again);
+			}
+
+			if (fogEnabled_orig)
+			{
+				ToggleStageFog();
+			}
+			else
+			{
+				DisableFog();
+			}
+		}
+
+		void draw(QueuedModelNode* node)
+		{
+			auto flags = node->Flags;
+
+			_nj_control_3d_flag_   = node->Control3D;
+			_nj_constant_attr_and_ = node->ConstantAndAttr;
+			_nj_constant_attr_or_  = node->ConstantOrAttr | NJD_FLAG_DOUBLE_SIDE;
+
+			auto texNum = node->TexNum;
+			auto bit_7 = flags >> 6;
+
+#define SHIBYTE(x)   (*((int8_t*)&(x)+1))
+
+			if (flags & QueuedModelFlags_FogEnabled && SHIBYTE(texNum) >= 0)
+			{
+				if (_fogemulation & 2 && _fogemulation & 1 && passes != 1)
+				{
+					return;
+				}
+
+				if (!toggled_fog)
+				{
+					ToggleStageFog();
+				}
+
+				toggled_fog = 1;
+			}
+			else if (!(_fogemulation & 2) || !(_fogemulation & 1) || passes != 1)
+			{
+				if (toggled_fog)
+				{
+					DisableFog();
+				}
+				toggled_fog = 0;
+			}
+
+			if (bit_7 != -1)
+			{
+				if (SHIBYTE(texNum) < 0)
+				{
+					_nj_constant_attr_or_ |= NJD_FLAG_IGNORE_LIGHT | NJD_FLAG_IGNORE_SPECULAR;
+					bit_7 = 0;
+				}
+				if (bit_7 != CurrentLightType)
+				{
+					SetCurrentLightType(bit_7);
+				}
+				ScaleVectorThing_Restore();
+			}
+
+			auto texlist = node->TexList;
+
+			CurrentTexList = texlist;
+
+			if (texlist && texlist->nbTexture)
+			{
+				Direct3D_SetTexList(texlist);
+			}
+
+			fov_orig = fov_orig_yet_again;
+
+			if (is_peeling)
+			{
+				//Direct3D_SetZFunc(1u);
+				//Direct3D_EnableZWrite(1u);
+			}
+			else if (flags & QueuedModelFlags_ZTestWrite)
+			{
+				Direct3D_SetZFunc(3u);
+				Direct3D_EnableZWrite(1u);
+			}
+			else
+			{
+				Direct3D_SetZFunc(3u);
+				Direct3D_EnableZWrite(0);
+			}
+
+			njSetConstantMaterial(&node->Color);
+			njColorBlendingMode_(0, (NJD_COLOR_BLENDING)(node->BlendMode & 0xF));
+			njColorBlendingMode_(NJD_DESTINATION_COLOR, (NJD_COLOR_BLENDING)(node->BlendMode >> 4) & 0xF);
+
+			if (fogemulation & 2 && fogemulation & 1)
+			{
+				fogemulation &= ~2u;
+			}
+
+			switch (flags & 0x0F)
+			{
+				default:
+					break;
+
+				case QueuedModelType_BasicModel:
+				{
+					if (!texlist)
+					{
+						break;
+					}
+
+					auto inst = (QueuedModelPointer*)node;
+					auto model = inst->Model;
+
+					if (fov_orig_again != fov_orig)
+					{
+						fov_orig = fov_orig_again;
+						fov_orig_yet_again = fov_orig_again;
+						njSetScreenDist(fov_orig_again);
+					}
+
+					njSetMatrix(nullptr, inst->Transform);
+
+					if ((unsigned int)model >= 0x100000)
+					{
+						DrawModel_ResetRenderFlags(model);
+					}
+					break;
+				}
+
+				case QueuedModelType_Sprite3D:
+				{
+					auto inst = (QueuedModelSprite*)node;
+
+					auto tlist = inst->Sprite.tlist;
+					if (!tlist)
+					{
+						break;
+					}
+
+					if (fov_orig_again != fov_orig)
+					{
+						fov_orig = fov_orig_again;
+						fov_orig_yet_again = fov_orig_again;
+						njSetScreenDist(fov_orig_again);
+					}
+
+					if (inst->SpriteFlags & NJD_SPRITE_SCALE)
+					{
+						param::DepthOverride = node->Depth;
+					}
+
+					njSetMatrix(nullptr, inst->Transform);
+					njDrawSprite3D_DrawNow(&inst->Sprite, node->TexNum & 0x7FFF, inst->SpriteFlags);
+					param::DepthOverride = 0.0f;
+					break;
+				}
+			}
+
+			fogemulation = fog_emulation_orig_again;
+		}
+	};
+
 	static void renderLayerPasses()
 	{
 		using namespace d3d;
 
-		auto control_3d_orig          = _nj_control_3d_flag_;
-		auto attr_and_orig            = _nj_constant_attr_and_;
-		auto attr_or_orig             = _nj_constant_attr_or_;
-		auto currentLightType_orig    = CurrentLightType;
-		auto fov_orig                 = HorizontalFOV_BAMS;
-		auto negative_one             = -1;
-		auto fogEnabled_orig          = FogEnabled;
-		auto fov_orig_again           = HorizontalFOV_BAMS;
-		auto fov_orig_yet_again       = HorizontalFOV_BAMS;
-		auto fog_emulation_orig_again = fogemulation;
+		draw_guard guard(true);
 
-		ClampGlobalColorThing_Thing();
-
-		if (CurrentLightType)
-		{
-			SetCurrentLightType(0);
-		}
-
-		NJS_MATRIX orig_matrix {};
-		njGetMatrix(orig_matrix);
-
-		auto _fogemulation = fogemulation;
-
-		int passes;
-		if (!(fogemulation & 2) || (passes = 2, !(fogemulation & 1)))
-		{
-			passes = 1;
-		}
+		int passes = guard.passes;
 
 		SetShaderOptions(UseOit, true);
 		param::OpaqueDepth = depthBuffer;
@@ -1199,140 +1454,17 @@ namespace local
 				// Set the depth buffer to test against if above stuff.
 				param::AlphaDepth = lastUnit;
 
+				size_t index = 0;
 				for (auto& it : nodes)
 				{
-					auto flags = it->Flags;
-					auto _flags = flags;
-
-					_nj_control_3d_flag_   = it->Control3D;
-					_nj_constant_attr_and_ = it->ConstantAndAttr;
-					_nj_constant_attr_or_  = it->ConstantOrAttr | NJD_FLAG_DOUBLE_SIDE;
-
-					auto v5 = it->TexNum;
-					auto v6 = _flags >> 6;
-
-					#define SHIBYTE(x)   (*((int8_t*)&(x)+1))
-					if (_flags & QueuedModelFlags_FogEnabled && SHIBYTE(v5) >= 0)
+#ifdef USE_NODE_LIMIT
+					if (++index > NODE_LIMIT)
 					{
-						if (_fogemulation & 2 && _fogemulation & 1 && passes != 1)
-						{
-							continue;
-						}
-
-						if (!negative_one)
-						{
-							ToggleStageFog();
-						}
-
-						negative_one = 1;
+						break;
 					}
-					else if (!(_fogemulation & 2) || !(_fogemulation & 1) || passes != 1)
-					{
-						if (negative_one)
-						{
-							DisableFog();
-						}
-						negative_one = 0;
-					}
+#endif
 
-					if (v6 != -1)
-					{
-						if (SHIBYTE(v5) < 0)
-						{
-							_nj_constant_attr_or_ |= NJD_FLAG_IGNORE_LIGHT | NJD_FLAG_IGNORE_SPECULAR;
-							v6 = 0;
-						}
-						if (v6 != CurrentLightType)
-						{
-							SetCurrentLightType(v6);
-						}
-						ScaleVectorThing_Restore();
-					}
-
-					auto texlist = it->TexList;
-
-					CurrentTexList = texlist;
-
-					if (texlist && texlist->nbTexture)
-					{
-						Direct3D_SetTexList(texlist);
-					}
-
-					fov_orig = fov_orig_yet_again;
-					
-					Direct3D_SetZFunc(1u);
-					Direct3D_EnableZWrite(1u);
-
-					njSetConstantMaterial(&it->Color);
-					njColorBlendingMode_(0, (NJD_COLOR_BLENDING)(it->BlendMode & 0xF));
-					njColorBlendingMode_(NJD_DESTINATION_COLOR, (NJD_COLOR_BLENDING)(it->BlendMode >> 4) & 0xF);
-
-					if (fogemulation & 2 && fogemulation & 1)
-					{
-						fogemulation &= ~2u;
-					}
-
-					switch (flags & 0x0F)
-					{
-						default:
-							break;
-
-						case QueuedModelType_BasicModel:
-						{
-							if (!texlist)
-							{
-								break;
-							}
-
-							auto inst = (QueuedModelPointer*)it;
-							auto model = inst->Model;
-
-							if (fov_orig_again != fov_orig)
-							{
-								fov_orig = fov_orig_again;
-								fov_orig_yet_again = fov_orig_again;
-								njSetScreenDist(fov_orig_again);
-							}
-
-							njSetMatrix(nullptr, inst->Transform);
-
-							if ((unsigned int)model >= 0x100000)
-							{
-								DrawModel_ResetRenderFlags(model);
-							}
-							break;
-						}
-
-						case QueuedModelType_Sprite3D:
-						{
-							auto inst = (QueuedModelSprite*)it;
-
-							auto tlist = inst->Sprite.tlist;
-							if (!tlist)
-							{
-								break;
-							}
-
-							if (fov_orig_again != fov_orig)
-							{
-								fov_orig = fov_orig_again;
-								fov_orig_yet_again = fov_orig_again;
-								njSetScreenDist(fov_orig_again);
-							}
-
-							if (inst->SpriteFlags & NJD_SPRITE_SCALE)
-							{
-								param::DepthOverride = -it->Depth;
-							}
-
-							njSetMatrix(nullptr, inst->Transform);
-							njDrawSprite3D_DrawNow(&inst->Sprite, it->TexNum & 0x7FFF, inst->SpriteFlags);
-							param::DepthOverride = 0.0f;
-							break;
-						}
-					}
-
-					fogemulation = fog_emulation_orig_again;
+					guard.draw(it.node);
 				}
 
 				currUnit  = nullptr;
@@ -1350,32 +1482,6 @@ namespace local
 		param::AlphaDepth = nullptr;
 		SetShaderOptions(UseOit, false);
 		device->SetRenderTarget(1, nullptr);
-
-		njSetMatrix(nullptr, orig_matrix);
-		CurrentTexList = nullptr;
-		SetMaterialAndSpriteColor((NJS_ARGB*)0x03AB9864); // &GlobalSpriteColor
-		SetCurrentLightType_B(currentLightType_orig);
-		ScaleVectorThing_Restore();
-		Direct3D_SetZFunc(1u);
-		Direct3D_EnableZWrite(1u);
-
-		_nj_control_3d_flag_   = control_3d_orig;
-		_nj_constant_attr_and_ = attr_and_orig;
-		_nj_constant_attr_or_  = attr_or_orig;
-
-		if (fov_orig != fov_orig_again)
-		{
-			njSetScreenDist(fov_orig_again);
-		}
-
-		if (fogEnabled_orig)
-		{
-			ToggleStageFog();
-		}
-		else
-		{
-			DisableFog();
-		}
 	}
 
 	static void renderBackBuffer()
@@ -1457,7 +1563,7 @@ namespace local
 
 		device->SetRenderTarget(0, origRenderTarget);
 		device->SetDepthStencilSurface(depthSurface);
-		device->Clear(0, nullptr, D3DCLEAR_TARGET, 0, 1.0f, 0);
+		device->Clear(0, nullptr, D3DCLEAR_TARGET, 0, 0.0f, 0);
 
 		if (pad && pad->PressedButtons & Buttons_Right)
 		{
@@ -1477,6 +1583,31 @@ namespace local
 		device->SetRenderState(D3DRS_SRCBLEND, srcblend);
 		device->SetRenderState(D3DRS_DESTBLEND, dstblend);
 
+#ifdef USE_NODE_LIMIT
+		// Use native draw queue to handle overflow
+		if (!nodes.empty())
+		{
+#if 0
+			auto bias = DrawQueueDepthBias;
+			for (auto& it : nodes)
+			{
+				DrawQueueDepthBias = it.bias;
+				AddToQueue_o(it.node, it.pri, it.idk);
+			}
+			DrawQueueDepthBias = bias;
+#else
+			draw_guard guard(false);
+
+			for (auto& it : nodes)
+			{
+				guard.draw(it.node);
+			}
+#endif
+
+			nodes.clear();
+		}
+#endif
+
 		// draw hud and stuff
 		auto draw = TARGET_STATIC(DrawQueuedModels);
 		draw();
@@ -1484,22 +1615,23 @@ namespace local
 		device->SetRenderTarget(0, backBufferSurface);
 	}
 
-	bool node_sort(QueuedModelNode* a, QueuedModelNode* b)
-	{
-		return a->TexList != b->TexList
-		&& a->TexNum > b->TexNum
-		&& a->Flags != b->Flags
-		&& a->BlendMode != b->BlendMode
-		&& a->Depth < b->Depth;
-	}
-
 	static void __cdecl DrawQueuedModels_r()
 	{
 		if (!nodes.empty())
 		{
-			sort(nodes.begin(), nodes.end(), &node_sort);
+			sort_nodes();
 			renderLayerPasses();
-			nodes.clear();
+
+#ifdef USE_NODE_LIMIT
+			if (nodes.size() > NODE_LIMIT)
+			{
+				nodes.erase(nodes.begin(), nodes.begin() + NODE_LIMIT);
+			}
+			else
+#endif
+			{
+				nodes.clear();
+			}
 		}
 
 		renderBackBuffer();

@@ -278,24 +278,6 @@ float4 ps_main(PS_IN input, out float oDepth : DEPTH0, float2 vpos : VPOS) : COL
 {
 	float4 result;
 
-#ifdef USE_TEXTURE
-	result = tex2D(baseSampler, input.tex);
-	result = result * input.diffuse + input.specular;
-#else
-	result = input.diffuse + input.specular;
-#endif
-
-#if defined(USE_ALPHA)
-	#ifdef USE_OIT
-		if (result.a == 0.0f)
-		{
-			discard;
-		}
-	#else
-		clip(result.a < AlphaRef ? -1 : 1);
-	#endif
-#endif
-
 	const float C = 1.0;
 	const float offset = 1;
 
@@ -326,6 +308,17 @@ float4 ps_main(PS_IN input, out float oDepth : DEPTH0, float2 vpos : VPOS) : COL
 	blend = float4((float)SourceBlend / 15.0f, (float)DestinationBlend / 15.0f, 0, 1);
 #endif
 
+#ifdef USE_TEXTURE
+	result = tex2D(baseSampler, input.tex);
+	result = result * input.diffuse + input.specular;
+#else
+	result = input.diffuse + input.specular;
+#endif
+
+#ifdef USE_ALPHA
+	clip(result.a < AlphaRef ? -1 : 1);
+#endif
+
 #ifdef USE_FOG
 	float factor = CalcFogFactor(input.fogDist);
 	result.rgb = (factor * result + (1.0 - factor) * FogColor).rgb;
@@ -338,6 +331,11 @@ technique Main
 {
 	pass p0
 	{
+#ifdef USE_OIT
+		ZEnable = true;
+		ZWriteEnable = true;
+#endif
+
 		VertexShader = compile vs_3_0 vs_main();
 		PixelShader = compile ps_3_0 ps_main();
 	}
