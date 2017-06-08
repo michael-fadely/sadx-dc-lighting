@@ -300,6 +300,7 @@ static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
 {
 	if (texlist != Direct3D_CurrentTexList)
 	{
+		param::AllowVertexColor = true;
 		globals::no_specular = false;
 
 		if (!globals::light_type)
@@ -307,6 +308,7 @@ static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
 			if (texlist == CommonTextures)
 			{
 				globals::palettes.SetPalettes(0, 0);
+				param::AllowVertexColor = globals::object_vcolor;
 			}
 			else
 			{
@@ -319,6 +321,7 @@ static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
 
 					globals::palettes.SetPalettes(0, NJD_FLAG_IGNORE_SPECULAR);
 					globals::no_specular = true;
+					param::AllowVertexColor = globals::object_vcolor;
 					break;
 				}
 			}

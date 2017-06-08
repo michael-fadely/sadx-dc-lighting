@@ -34,6 +34,8 @@ extern "C" {
 	API void set_shader_flags(unsigned int flags, bool add);
 
 	API void landtable_allow_specular(bool allow);
+	API void allow_object_vcolor(bool allow);
+	API void use_default_diffuse(bool use);
 
 	API void set_diffuse(int n);
 	API void set_specular(int n);

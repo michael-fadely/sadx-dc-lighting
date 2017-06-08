@@ -92,6 +92,9 @@ shared float4 FogColor;
 
 shared float BlendFactor = 0.0f;
 
+shared bool AllowVertexColor = true;
+shared bool ForceDefaultDiffuse = false;
+
 #ifdef USE_SL
 
 struct SourceLight_t
@@ -114,11 +117,20 @@ shared SourceLight_t SourceLight;
 
 float4 GetDiffuse(in float4 vcolor)
 {
+	if (DiffuseSource == D3DMCS_COLOR1 && !AllowVertexColor)
+	{
+		return float4(1, 1, 1, vcolor.a);
+	}
+
+	if (DiffuseSource == D3DMCS_MATERIAL && ForceDefaultDiffuse)
+	{
+		return float4(178.0 / 255.0, 178.0 / 255.0, 178.0 / 255.0, MaterialDiffuse.a);
+	}
+
 	float4 color = (DiffuseSource == D3DMCS_COLOR1 && any(vcolor)) ? vcolor : MaterialDiffuse;
 
-	if (floor(color.r * 255) == 178
-		&& floor(color.g * 255) == 178
-		&& floor(color.b * 255) == 178)
+	int3 icolor = color.rgb * 255.0;
+	if (icolor.r == 178 && icolor.g == 178 && icolor.b == 178)
 	{
 		return float4(1, 1, 1, color.a);
 	}

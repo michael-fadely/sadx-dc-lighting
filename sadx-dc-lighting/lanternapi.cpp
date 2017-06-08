@@ -103,3 +103,13 @@ float get_blend_factor()
 {
 	return LanternInstance::BlendFactor();
 }
+
+void allow_object_vcolor(bool allow)
+{
+	object_vcolor = allow;
+}
+
+void use_default_diffuse(bool use)
+{
+	param::ForceDefaultDiffuse = use;
+}

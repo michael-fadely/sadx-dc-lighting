@@ -49,6 +49,8 @@ namespace param
 
 	extern EffectParameter<float> AlphaRef;
 	extern EffectParameter<D3DXVECTOR3> NormalScale;
+	extern EffectParameter<bool> AllowVertexColor;
+	extern EffectParameter<bool> ForceDefaultDiffuse;
 
 #ifdef USE_SL
 	extern EffectParameter<D3DXCOLOR> MaterialSpecular;

@@ -50,6 +50,8 @@ namespace param
 	EffectParameter<D3DXCOLOR>   MaterialDiffuse("MaterialDiffuse", {});
 	EffectParameter<float>       AlphaRef("AlphaRef", 0.0f);
 	EffectParameter<D3DXVECTOR3> NormalScale("NormalScale", { 1.0f, 1.0f, 1.0f });
+	EffectParameter<bool>        AllowVertexColor("AllowVertexColor", true);
+	EffectParameter<bool>        ForceDefaultDiffuse("ForceDefaultDiffuse", false);
 
 #ifdef USE_SL
 	EffectParameter<D3DXCOLOR> MaterialSpecular("MaterialSpecular", {});
@@ -81,6 +83,8 @@ namespace param
 		&MaterialDiffuse,
 		&AlphaRef,
 		&NormalScale,
+		&AllowVertexColor,
+		&ForceDefaultDiffuse,
 
 	#ifdef USE_SL
 		&SourceLight,
