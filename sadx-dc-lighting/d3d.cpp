@@ -461,12 +461,17 @@ namespace local
 			d3d::effect = e;
 		}
 
-		for (auto& it : param::parameters)
+		if (!IEffectParameter::values_assigned.empty())
 		{
-			if (it->Commit(d3d::effect))
+			for (auto& it : IEffectParameter::values_assigned)
 			{
-				changes = true;
+				if (it->Commit(d3d::effect))
+				{
+					changes = true;
+				}
 			}
+
+			IEffectParameter::values_assigned.clear();
 		}
 
 		if (beganEffect)
