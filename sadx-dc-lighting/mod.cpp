@@ -20,16 +20,16 @@
 #include "FixChaoGardenMaterials.h"
 #include "FixCharacterMaterials.h"
 
-static Trampoline* CharSel_LoadA_t            = nullptr;
-static Trampoline* Direct3D_ParseMaterial_t   = nullptr;
-static Trampoline* GoToNextLevel_t            = nullptr;
-static Trampoline* IncrementAct_t             = nullptr;
-static Trampoline* LoadLevelFiles_t           = nullptr;
-static Trampoline* SetLevelAndAct_t           = nullptr;
-static Trampoline* GoToNextChaoStage_t        = nullptr;
-static Trampoline* SetTimeOfDay_t             = nullptr;
-static Trampoline* DrawLandTable_t            = nullptr;
-static Trampoline* Direct3D_SetTexList_t      = nullptr;
+static Trampoline* CharSel_LoadA_t          = nullptr;
+static Trampoline* Direct3D_ParseMaterial_t = nullptr;
+static Trampoline* GoToNextLevel_t          = nullptr;
+static Trampoline* IncrementAct_t           = nullptr;
+static Trampoline* LoadLevelFiles_t         = nullptr;
+static Trampoline* SetLevelAndAct_t         = nullptr;
+static Trampoline* GoToNextChaoStage_t      = nullptr;
+static Trampoline* SetTimeOfDay_t           = nullptr;
+static Trampoline* DrawLandTable_t          = nullptr;
+static Trampoline* Direct3D_SetTexList_t    = nullptr;
 
 DataArray(PaletteLight, LightPaletteData, 0x00903E88, 256);
 DataArray(StageLightData, CurrentStageLights, 0x03ABD9F8, 4);
@@ -198,6 +198,25 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 	SetMaterialParameters(mat);
 
 	do_effect = true;
+
+	if (globals::material_callbacks.empty())
+	{
+		return;
+	}
+
+	auto it = globals::material_callbacks.find(material);
+	if (it == globals::material_callbacks.end())
+	{
+		return;
+	}
+
+	for (auto& cb : it->second)
+	{
+		if (cb(material, flags))
+		{
+			break;
+		}
+	}
 }
 
 static void __cdecl CharSel_LoadA_r()

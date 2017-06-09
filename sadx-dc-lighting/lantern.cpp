@@ -933,7 +933,7 @@ void LanternCollection::SetSelfBlend(Sint32 type, Sint32 diffuse, Sint32 specula
 	}
 }
 
-void LanternCollection::callback_add(std::deque<lantern_load_t>& c, lantern_load_t callback)
+void LanternCollection::callback_add(std::deque<lantern_load_cb>& c, lantern_load_cb callback)
 {
 	if (callback == nullptr)
 	{
@@ -944,7 +944,7 @@ void LanternCollection::callback_add(std::deque<lantern_load_t>& c, lantern_load
 	c.push_back(callback);
 }
 
-void LanternCollection::callback_del(std::deque<lantern_load_t>& c, lantern_load_t callback)
+void LanternCollection::callback_del(std::deque<lantern_load_cb>& c, lantern_load_cb callback)
 {
 	remove(c.begin(), c.end(), callback);
 }
@@ -960,22 +960,22 @@ void LanternCollection::Remove(size_t index)
 	instances.erase(instances.begin() + index);
 }
 
-void LanternCollection::AddPlCallback(lantern_load_t callback)
+void LanternCollection::AddPlCallback(lantern_load_cb callback)
 {
 	callback_add(pl_callbacks, callback);
 }
 
-void LanternCollection::RemovePlCallback(lantern_load_t callback)
+void LanternCollection::RemovePlCallback(lantern_load_cb callback)
 {
 	callback_del(pl_callbacks, callback);
 }
 
-void LanternCollection::AddSlCallback(lantern_load_t callback)
+void LanternCollection::AddSlCallback(lantern_load_cb callback)
 {
 	callback_add(sl_callbacks, callback);
 }
 
-void LanternCollection::RemoveSlCallback(lantern_load_t callback)
+void LanternCollection::RemoveSlCallback(lantern_load_cb callback)
 {
 	callback_del(sl_callbacks, callback);
 }

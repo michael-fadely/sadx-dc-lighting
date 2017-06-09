@@ -109,11 +109,11 @@ public:
 class LanternCollection : ILantern
 {
 	std::deque<LanternInstance> instances;
-	std::deque<lantern_load_t> pl_callbacks;
-	std::deque<lantern_load_t> sl_callbacks;
+	std::deque<lantern_load_cb> pl_callbacks;
+	std::deque<lantern_load_cb> sl_callbacks;
 
-	static void callback_add(std::deque<lantern_load_t>& c, lantern_load_t callback);
-	static void callback_del(std::deque<lantern_load_t>& c, lantern_load_t callback);
+	static void callback_add(std::deque<lantern_load_cb>& c, lantern_load_cb callback);
+	static void callback_del(std::deque<lantern_load_cb>& c, lantern_load_cb callback);
 
 public:
 	size_t Add(LanternInstance& src);
@@ -124,10 +124,10 @@ public:
 		return instances.size();
 	}
 
-	void AddPlCallback(lantern_load_t callback);
-	void RemovePlCallback(lantern_load_t callback);
-	void AddSlCallback(lantern_load_t callback);
-	void RemoveSlCallback(lantern_load_t callback);
+	void AddPlCallback(lantern_load_cb callback);
+	void RemovePlCallback(lantern_load_cb callback);
+	void AddSlCallback(lantern_load_cb callback);
+	void RemoveSlCallback(lantern_load_cb callback);
 	bool RunPlCallbacks(Sint32 level, Sint32 act, Sint8 time);
 	bool RunSlCallbacks(Sint32 level, Sint32 act, Sint8 time);
 	bool LoadFiles();

@@ -1,6 +1,8 @@
 #ifndef _LANTERNAPI_H
 #define _LANTERNAPI_H
 
+#include <ninja.h>
+
 #ifdef LANTERN_API
 #define API __declspec(dllexport)
 #else
@@ -24,12 +26,16 @@ extern "C" {
 		ShaderFlags_Count
 	} ShaderFlags;
 
-	typedef const char* (__cdecl* lantern_load_t)(int, int);
+	typedef const char* (__cdecl* lantern_load_cb)(int level, int act);
+	typedef bool (__cdecl* lantern_material_cb)(NJS_MATERIAL* material, Uint32 flags);
 
-	API void pl_load_register(lantern_load_t callback);
-	API void pl_load_unregister(lantern_load_t callback);
-	API void sl_load_register(lantern_load_t callback);
-	API void sl_load_unregister(lantern_load_t callback);
+	API void pl_load_register(lantern_load_cb callback);
+	API void pl_load_unregister(lantern_load_cb callback);
+	API void sl_load_register(lantern_load_cb callback);
+	API void sl_load_unregister(lantern_load_cb callback);
+
+	API void material_register(NJS_MATERIAL** materials, int length, lantern_material_cb callback);
+	API void material_unregister(NJS_MATERIAL** materials, int length, lantern_material_cb callback);
 
 	API void set_shader_flags(unsigned int flags, bool add);
 

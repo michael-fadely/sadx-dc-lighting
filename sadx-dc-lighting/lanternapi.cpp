@@ -8,24 +8,72 @@
 
 using namespace globals;
 
-void pl_load_register(lantern_load_t callback)
+void pl_load_register(lantern_load_cb callback)
 {
 	palettes.AddPlCallback(callback);
 }
 
-void pl_load_unregister(lantern_load_t callback)
+void pl_load_unregister(lantern_load_cb callback)
 {
 	palettes.RemovePlCallback(callback);
 }
 
-void sl_load_register(lantern_load_t callback)
+void sl_load_register(lantern_load_cb callback)
 {
 	palettes.AddSlCallback(callback);
 }
 
-void sl_load_unregister(lantern_load_t callback)
+void sl_load_unregister(lantern_load_cb callback)
 {
 	palettes.RemoveSlCallback(callback);
+}
+
+void material_register(NJS_MATERIAL** materials, int length, lantern_material_cb callback)
+{
+	if (length < 1 || materials == nullptr || callback == nullptr)
+	{
+		return;
+	}
+
+	for (int i = 0; i < length; i++)
+	{
+		auto material = materials[i];
+		auto it = material_callbacks.find(material);
+
+		if (it == material_callbacks.end())
+		{
+			material_callbacks[material] = { callback };
+		}
+		else
+		{
+			it->second.push_back(callback);
+		}
+	}
+}
+
+void material_unregister(NJS_MATERIAL** materials, int length, lantern_material_cb callback)
+{
+	if (length < 1 || materials == nullptr || callback == nullptr)
+	{
+		return;
+	}
+
+	for (int i = 0; i < length; i++)
+	{
+		auto it = material_callbacks.find(materials[i]);
+
+		if (it == material_callbacks.end())
+		{
+			continue;
+		}
+
+		remove(it->second.begin(), it->second.end(), callback);
+
+		if (it->second.empty())
+		{
+			material_callbacks.erase(it);
+		}
+	}
 }
 
 void set_shader_flags(unsigned int flags, bool add)
