@@ -70,7 +70,9 @@ public:
 	~LanternInstance();
 
 	static bool diffuse_override;
+	static bool diffuse_override_temp;
 	static bool specular_override;
+	static bool specular_override_temp;
 	static float blend_factor;
 	static bool use_palette;
 

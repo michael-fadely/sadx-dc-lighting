@@ -43,8 +43,8 @@ extern "C" {
 	API void allow_object_vcolor(bool allow);
 	API void use_default_diffuse(bool use);
 
-	API void set_diffuse(int n);
-	API void set_specular(int n);
+	API void set_diffuse(int n, bool permanent);
+	API void set_specular(int n, bool permanent);
 
 	API int get_diffuse();
 	API int get_specular();

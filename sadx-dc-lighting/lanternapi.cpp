@@ -86,7 +86,7 @@ void allow_landtable_specular(bool allow)
 	landtable_specular = allow;
 }
 
-void set_diffuse(int n)
+void set_diffuse(int n, bool permanent)
 {
 	if (palettes.Size() > 0)
 	{
@@ -94,9 +94,10 @@ void set_diffuse(int n)
 	}
 
 	LanternInstance::diffuse_override = n >= 0;
+	LanternInstance::diffuse_override_temp = !permanent;
 }
 
-void set_specular(int n)
+void set_specular(int n, bool permanent)
 {
 	if (palettes.Size() > 0)
 	{
@@ -104,6 +105,7 @@ void set_specular(int n)
 	}
 
 	LanternInstance::specular_override = n >= 0;
+	LanternInstance::specular_override_temp = !permanent;
 }
 
 int get_diffuse()

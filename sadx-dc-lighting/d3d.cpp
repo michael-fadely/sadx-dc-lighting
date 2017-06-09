@@ -406,6 +406,16 @@ namespace local
 		{
 			drawing = 0;
 			d3d::do_effect = false;
+
+			if (LanternInstance::diffuse_override_temp)
+			{
+				LanternInstance::diffuse_override = false;
+			}
+
+			if (LanternInstance::specular_override_temp)
+			{
+				LanternInstance::specular_override = false;
+			}
 		}
 	}
 

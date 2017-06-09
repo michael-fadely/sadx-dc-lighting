@@ -119,10 +119,12 @@ void UpdateLightDirections(const NJS_VECTOR& dir)
 	}
 }
 
-bool LanternInstance::diffuse_override  = false;
-bool LanternInstance::specular_override = false;
-bool LanternInstance::use_palette       = false;
-float LanternInstance::blend_factor     = 0.0f;
+bool LanternInstance::diffuse_override       = false;
+bool LanternInstance::diffuse_override_temp  = false;
+bool LanternInstance::specular_override      = false;
+bool LanternInstance::specular_override_temp = false;
+bool LanternInstance::use_palette            = false;
+float LanternInstance::blend_factor          = 0.0f;
 
 bool LanternInstance::UsePalette()
 {
