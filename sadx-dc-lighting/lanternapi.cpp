@@ -81,7 +81,7 @@ void set_shader_flags(unsigned int flags, bool add)
 	d3d::SetShaderFlags(flags, add);
 }
 
-void landtable_allow_specular(bool allow)
+void allow_landtable_specular(bool allow)
 {
 	landtable_specular = allow;
 }
