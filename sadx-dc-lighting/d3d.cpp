@@ -416,6 +416,8 @@ namespace local
 			{
 				LanternInstance::specular_override = false;
 			}
+
+			param::ForceDefaultDiffuse = false;
 		}
 	}
 
