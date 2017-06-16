@@ -546,7 +546,8 @@ void LanternInstance::SetPalettes(Sint32 type, Uint32 flags)
 	{
 		case 0:
 			diffuse = 0;
-			specular = ignore_specular && !(flags & NJD_FLAG_USE_ENV) ? 0 : 1;
+			specular = ignore_specular && (globals::landtable_specular || !(flags & NJD_FLAG_USE_ENV)) ? 0 : 1;
+
 #ifdef _DEBUG
 			globals::light_dir = *(NJS_VECTOR*)&Direct3D_CurrentLight.Direction;
 #endif
