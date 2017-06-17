@@ -55,32 +55,32 @@ static void DisplayLightDirection()
 		{}
 	};
 
-	int colors[2] = {};
+	NJS_COLOR colors[2] = {};
 
-	LineInfo info = {
-		points, colors, 0, 2
+	NJS_POINT3COL info = {
+		points, colors, nullptr, 2
 	};
 
 	points[1] = points[0];
 	points[1].x += light_dir.x * 10.0f;
-	colors[0] = colors[1] = 0xFFFF0000;
+	colors[0].color = colors[1].color = 0xFFFF0000;
 	DrawLineList(&info, 1, 0);
 
 	points[1] = points[0];
 	points[1].y += light_dir.y * 10.0f;
-	colors[0] = colors[1] = 0xFF00FF00;
+	colors[0].color = colors[1].color = 0xFF00FF00;
 	DrawLineList(&info, 1, 0);
 
 	points[1] = points[0];
 	points[1].z += light_dir.z * 10.0f;
-	colors[0] = colors[1] = 0xFF0000FF;
+	colors[0].color = colors[1].color = 0xFF0000FF;
 	DrawLineList(&info, 1, 0);
 
 	points[1] = points[0];
 	points[1].x += light_dir.x * 10.0f;
 	points[1].y += light_dir.y * 10.0f;
 	points[1].z += light_dir.z * 10.0f;
-	colors[0] = colors[1] = 0xFFFFFF00;
+	colors[0].color = colors[1].color = 0xFFFFFF00;
 	DrawLineList(&info, 1, 0);
 }
 #endif

@@ -921,7 +921,7 @@ namespace d3d
 		// This nops:
 		// mov ecx, [eax] (device)
 		// call dword ptr [ecx+94h] (device->SetTransform)
-		WriteData((void*)0x00403234, 0x90i8, 8);
+		WriteData<8>((void*)0x00403234, 0x90i8);
 		WriteCall((void*)0x00403236, SetTransformHijack);
 	}
 }
