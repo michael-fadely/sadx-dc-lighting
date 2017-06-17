@@ -545,6 +545,7 @@ void LanternInstance::SetPalettes(Sint32 type, Uint32 flags)
 	switch (type)
 	{
 		case 0:
+		case 6:
 			diffuse = 0;
 			specular = ignore_specular && (globals::landtable_specular || !(flags & NJD_FLAG_USE_ENV)) ? 0 : 1;
 
@@ -558,10 +559,6 @@ void LanternInstance::SetPalettes(Sint32 type, Uint32 flags)
 			diffuse = 2;
 			specular = ignore_specular ? 2 : 3;
 			break;
-
-		case 6:
-			diffuse = 0;
-			specular = 1;
 
 		default:
 			break;
