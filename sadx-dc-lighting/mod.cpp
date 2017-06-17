@@ -1,6 +1,5 @@
 #include "stdafx.h"
 #include <d3d9.h>
-#include <vector>
 
 // Mod loader
 #include <SADXModLoader.h>
@@ -160,6 +159,26 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 	}
 #endif
 
+	if (globals::first_material)
+	{
+		static constexpr auto FLAG_MASK = NJD_FLAG_IGNORE_SPECULAR;
+
+		_nj_constant_attr_and_ &= ~FLAG_MASK;
+
+		if (!(_nj_control_3d_flag_ & NJD_CONTROL_3D_CONSTANT_ATTR))
+		{
+			_nj_constant_attr_or_ = material->attrflags & FLAG_MASK;
+		}
+		else
+		{
+			_nj_constant_attr_or_ &= ~FLAG_MASK;
+			_nj_constant_attr_or_ |= material->attrflags & FLAG_MASK;
+		}
+
+		globals::first_material = false;
+		_nj_control_3d_flag_ |= NJD_CONTROL_3D_CONSTANT_ATTR;
+	}
+
 	Uint32 flags = material->attrflags;
 	Uint32 texid = material->attr_texId & 0xFFFF;
 
@@ -168,7 +187,7 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 		flags = _nj_constant_attr_or_ | _nj_constant_attr_and_ & flags;
 	}
 
-	globals::palettes.SetPalettes(globals::light_type, globals::no_specular ? flags | NJD_FLAG_IGNORE_SPECULAR : flags);
+	globals::palettes.SetPalettes(globals::light_type, flags);
 
 	bool use_texture = (flags & NJD_FLAG_USE_TEXTURE) != 0;
 	SetShaderFlags(ShaderFlags_Texture, use_texture);
@@ -320,7 +339,6 @@ static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
 	if (texlist != Direct3D_CurrentTexList)
 	{
 		param::AllowVertexColor = true;
-		globals::no_specular = false;
 
 		if (!globals::light_type)
 		{
@@ -338,8 +356,7 @@ static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
 						continue;
 					}
 
-					globals::palettes.SetPalettes(0, NJD_FLAG_IGNORE_SPECULAR);
-					globals::no_specular = true;
+					globals::palettes.SetPalettes(0, 0);
 					param::AllowVertexColor = globals::object_vcolor;
 					break;
 				}

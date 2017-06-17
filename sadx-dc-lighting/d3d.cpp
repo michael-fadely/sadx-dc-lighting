@@ -101,7 +101,7 @@ namespace local
 	static Trampoline* sub_77EAD0_t                       = nullptr;
 	static Trampoline* sub_77EBA0_t                       = nullptr;
 	static Trampoline* njDrawModel_SADX_t                 = nullptr;
-	static Trampoline* njDrawModel_SADX_B_t               = nullptr;
+	static Trampoline* njDrawModel_SADX_Dynamic_t         = nullptr;
 	static Trampoline* Direct3D_SetProjectionMatrix_t     = nullptr;
 	static Trampoline* Direct3D_SetViewportAndTransform_t = nullptr;
 	static Trampoline* Direct3D_SetWorldTransform_t       = nullptr;
@@ -579,14 +579,52 @@ namespace local
 	static void __cdecl njDrawModel_SADX_r(NJS_MODEL_SADX* a1)
 	{
 		begin();
-		runTrampoline(TARGET_DYNAMIC(njDrawModel_SADX), a1);
+
+		if (a1 && a1->nbMat && a1->mats)
+		{
+			globals::first_material = true;
+
+			auto _control_3d = _nj_control_3d_flag_;
+			auto _attr_or = _nj_constant_attr_or_;
+			auto _attr_and = _nj_constant_attr_and_;
+
+			runTrampoline(TARGET_DYNAMIC(njDrawModel_SADX), a1);
+
+			_nj_control_3d_flag_ = _control_3d;
+			_nj_constant_attr_and_ = _attr_and;
+			_nj_constant_attr_or_ = _attr_or;
+		}
+		else
+		{
+			runTrampoline(TARGET_DYNAMIC(njDrawModel_SADX), a1);
+		}
+
 		end();
 	}
 
-	static void __cdecl njDrawModel_SADX_B_r(NJS_MODEL_SADX* a1)
+	static void __cdecl njDrawModel_SADX_Dynamic_r(NJS_MODEL_SADX* a1)
 	{
 		begin();
-		runTrampoline(TARGET_DYNAMIC(njDrawModel_SADX_B), a1);
+
+		if (a1 && a1->nbMat && a1->mats)
+		{
+			globals::first_material = true;
+
+			auto _control_3d = _nj_control_3d_flag_;
+			auto _attr_or = _nj_constant_attr_or_;
+			auto _attr_and = _nj_constant_attr_and_;
+
+			runTrampoline(TARGET_DYNAMIC(njDrawModel_SADX_Dynamic), a1);
+
+			_nj_control_3d_flag_ = _control_3d;
+			_nj_constant_attr_and_ = _attr_and;
+			_nj_constant_attr_or_ = _attr_or;
+		}
+		else
+		{
+			runTrampoline(TARGET_DYNAMIC(njDrawModel_SADX_Dynamic), a1);
+		}
+
 		end();
 	}
 
@@ -681,7 +719,7 @@ namespace local
 			setLightParameters();
 		}
 
-		globals::palettes.SetPalettes(type, globals::no_specular ? NJD_FLAG_IGNORE_SPECULAR : 0);
+		globals::palettes.SetPalettes(type, 0);
 	}
 
 
@@ -868,7 +906,7 @@ namespace d3d
 		sub_77EAD0_t                       = new Trampoline(0x0077EAD0, 0x0077EAD7, sub_77EAD0_r);
 		sub_77EBA0_t                       = new Trampoline(0x0077EBA0, 0x0077EBA5, sub_77EBA0_r);
 		njDrawModel_SADX_t                 = new Trampoline(0x0077EDA0, 0x0077EDAA, njDrawModel_SADX_r);
-		njDrawModel_SADX_B_t               = new Trampoline(0x00784AE0, 0x00784AE5, njDrawModel_SADX_B_r);
+		njDrawModel_SADX_Dynamic_t         = new Trampoline(0x00784AE0, 0x00784AE5, njDrawModel_SADX_Dynamic_r);
 		Direct3D_SetProjectionMatrix_t     = new Trampoline(0x00791170, 0x00791175, Direct3D_SetProjectionMatrix_r);
 		Direct3D_SetViewportAndTransform_t = new Trampoline(0x007912E0, 0x007912E8, Direct3D_SetViewportAndTransform_r);
 		Direct3D_SetWorldTransform_t       = new Trampoline(0x00791AB0, 0x00791AB5, Direct3D_SetWorldTransform_r);
