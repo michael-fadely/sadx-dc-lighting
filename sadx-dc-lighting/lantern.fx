@@ -117,9 +117,7 @@ shared SourceLight_t SourceLight;
 
 float4 GetDiffuse(in float4 vcolor)
 {
-#ifndef USE_TEXTURE
-	return float4(0, 0, 0, 1);
-#else
+#ifdef USE_TEXTURE
 	if (DiffuseSource == D3DMCS_COLOR1 && !AllowVertexColor)
 	{
 		return float4(1, 1, 1, vcolor.a);
@@ -129,17 +127,21 @@ float4 GetDiffuse(in float4 vcolor)
 	{
 		return float4(178.0 / 255.0, 178.0 / 255.0, 178.0 / 255.0, MaterialDiffuse.a);
 	}
+#endif
 
 	float4 color = (DiffuseSource == D3DMCS_COLOR1 && any(vcolor)) ? vcolor : MaterialDiffuse;
 
 	int3 icolor = color.rgb * 255.0;
 	if (icolor.r == 178 && icolor.g == 178 && icolor.b == 178)
 	{
+#ifdef USE_TEXTURE
 		return float4(1, 1, 1, color.a);
+#else
+		return float4(0, 0, 0, 1);
+#endif
 	}
 
 	return color;
-#endif
 }
 
 #ifdef USE_FOG
