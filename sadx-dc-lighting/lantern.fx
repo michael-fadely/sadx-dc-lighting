@@ -117,6 +117,9 @@ shared SourceLight_t SourceLight;
 
 float4 GetDiffuse(in float4 vcolor)
 {
+#ifndef USE_TEXTURE
+	return float4(0, 0, 0, 1);
+#else
 	if (DiffuseSource == D3DMCS_COLOR1 && !AllowVertexColor)
 	{
 		return float4(1, 1, 1, vcolor.a);
@@ -136,6 +139,7 @@ float4 GetDiffuse(in float4 vcolor)
 	}
 
 	return color;
+#endif
 }
 
 #ifdef USE_FOG
@@ -187,7 +191,7 @@ PS_IN vs_main(VS_IN input)
 	output.tex = input.tex;
 #endif
 
-#ifdef USE_LIGHT
+#if defined(USE_LIGHT) && defined(USE_TEXTURE)
 	{
 		float3 worldNormal = mul(input.normal * NormalScale, (float3x3)WorldMatrix);
 
