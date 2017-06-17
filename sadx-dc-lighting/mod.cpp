@@ -159,6 +159,14 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 	}
 #endif
 
+	Uint32 flags = material->attrflags;
+	Uint32 texid = material->attr_texId & 0xFFFF;
+
+	if (material->specular.argb.a == 0)
+	{
+		flags |= NJD_FLAG_IGNORE_SPECULAR;
+	}
+
 	if (globals::first_material)
 	{
 		static constexpr auto FLAG_MASK = NJD_FLAG_IGNORE_SPECULAR;
@@ -167,20 +175,17 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 
 		if (!(_nj_control_3d_flag_ & NJD_CONTROL_3D_CONSTANT_ATTR))
 		{
-			_nj_constant_attr_or_ = material->attrflags & FLAG_MASK;
+			_nj_constant_attr_or_ = flags & FLAG_MASK;
 		}
 		else
 		{
 			_nj_constant_attr_or_ &= ~FLAG_MASK;
-			_nj_constant_attr_or_ |= material->attrflags & FLAG_MASK;
+			_nj_constant_attr_or_ |= flags & FLAG_MASK;
 		}
 
 		globals::first_material = false;
 		_nj_control_3d_flag_ |= NJD_CONTROL_3D_CONSTANT_ATTR;
 	}
-
-	Uint32 flags = material->attrflags;
-	Uint32 texid = material->attr_texId & 0xFFFF;
 
 	if (_nj_control_3d_flag_ & NJD_CONTROL_3D_CONSTANT_ATTR)
 	{
