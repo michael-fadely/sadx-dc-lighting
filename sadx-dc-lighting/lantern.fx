@@ -117,7 +117,6 @@ shared SourceLight_t SourceLight;
 
 float4 GetDiffuse(in float4 vcolor)
 {
-#ifdef USE_TEXTURE
 	if (DiffuseSource == D3DMCS_COLOR1 && !AllowVertexColor)
 	{
 		return float4(1, 1, 1, vcolor.a);
@@ -127,18 +126,13 @@ float4 GetDiffuse(in float4 vcolor)
 	{
 		return float4(178.0 / 255.0, 178.0 / 255.0, 178.0 / 255.0, MaterialDiffuse.a);
 	}
-#endif
 
 	float4 color = (DiffuseSource == D3DMCS_COLOR1 && any(vcolor)) ? vcolor : MaterialDiffuse;
 
 	int3 icolor = color.rgb * 255.0;
 	if (icolor.r == 178 && icolor.g == 178 && icolor.b == 178)
 	{
-#ifdef USE_TEXTURE
 		return float4(1, 1, 1, color.a);
-#else
-		return float4(0, 0, 0, 1);
-#endif
 	}
 
 	return color;
@@ -193,7 +187,7 @@ PS_IN vs_main(VS_IN input)
 	output.tex = input.tex;
 #endif
 
-#if defined(USE_LIGHT) && defined(USE_TEXTURE)
+#if defined(USE_LIGHT)
 	{
 		float3 worldNormal = mul(input.normal * NormalScale, (float3x3)WorldMatrix);
 
