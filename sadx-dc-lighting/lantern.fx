@@ -241,7 +241,7 @@ float4 ps_main(PS_IN input) : COLOR
 	result = tex2D(baseSampler, input.tex);
 	result = result * input.diffuse + input.specular;
 #else
-	result = input.diffuse + input.specular;
+	result = input.diffuse;
 #endif
 
 #ifdef USE_ALPHA
