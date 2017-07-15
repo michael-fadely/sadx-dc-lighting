@@ -33,7 +33,7 @@ namespace param
 
 	extern EffectParameter<float> BlendFactor;
 	extern EffectParameter<D3DXMATRIX> WorldMatrix;
-	extern EffectParameter<D3DXMATRIX> wvMatrix;
+	extern EffectParameter<D3DXMATRIX> ViewMatrix;
 	extern EffectParameter<D3DXMATRIX> ProjectionMatrix;
 	extern EffectParameter<D3DXMATRIX> wvMatrixInvT;
 	extern EffectParameter<D3DXMATRIX> TextureTransform;

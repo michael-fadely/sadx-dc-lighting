@@ -89,8 +89,7 @@ namespace param
 	#ifdef USE_SL
 		&SourceLight,
 		&MaterialSpecular,
-		&MaterialPower,
-		&UseSourceLight,
+		&MaterialPower
 	#endif
 	};
 }
@@ -294,6 +293,11 @@ namespace local
 		}
 
 		macros.clear();
+
+#ifdef USE_SL
+		macros.push_back({ "USE_SL", "1" });
+#endif
+
 		auto o = sanitize(flags);
 
 		while (o != 0)
@@ -522,9 +526,11 @@ namespace local
 			return;
 		}
 
+#ifndef USE_SL
 		D3DLIGHT9 light;
 		d3d::device->GetLight(0, &light);
 		param::LightDirection = -*(D3DXVECTOR3*)&light.Direction;
+#endif
 	}
 
 	static void hookVtbl()

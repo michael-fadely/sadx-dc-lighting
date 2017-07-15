@@ -100,12 +100,12 @@ shared bool ForceDefaultDiffuse = false;
 struct SourceLight_t
 {
 	int y, z;
-	float3 ambient;
-	float2 unknown;
+	float3 color;
+	float3 unknown;
 	float power;
+	float unknown2[14];
 };
 
-shared bool   UseSourceLight   = false;
 shared float4 MaterialSpecular = float4(0.0f, 0.0f, 0.0f, 0.0f);
 shared float  MaterialPower    = 1.0f;
 
@@ -190,12 +190,31 @@ PS_IN vs_main(VS_IN input)
 #if defined(USE_LIGHT)
 	{
 		float3 worldNormal = mul(input.normal * NormalScale, (float3x3)WorldMatrix);
+		float4 diffuse = GetDiffuse(input.color);
 
 		// This is the "brightness index" calculation. Just a dot product
 		// of the vertex normal (in world space) and the light direction.
 		float _dot = dot(LightDirection, worldNormal);
-		float4 diffuse = GetDiffuse(input.color);
 
+	#ifdef USE_SL
+		output.diffuse = diffuse;
+
+		//float3 h = normalize(normalize(float3(0, 0, 1)) + LightDirection);
+		float3 ha = normalize(normalize(float3(0, 0, 1)) + LightDirection);
+		float3 hb = normalize(normalize(float3(0, 0, -1)) + LightDirection);
+
+		_dot = dot(worldNormal, ha);
+		float p = pow(max(0, _dot), MaterialPower);
+
+		output.specular.rgb = 2 * float3(p, p, p);
+
+		_dot = dot(worldNormal, hb);
+		p = pow(max(0, _dot), MaterialPower);
+		output.specular.rgb += SourceLight.color * p;
+
+		output.specular.a = 0;
+		output.specular = saturate(output.specular);
+	#else
 		// The palette's brightest point is 0, and its darkest point is 1,
 		// so we push the dot product (-1 .. 1) into the rage 0 .. 1, and
 		// subtract it from 1. This is the value we use for indexing into
@@ -203,20 +222,16 @@ PS_IN vs_main(VS_IN input)
 		// HACK: This clamp prevents a visual bug in the Mystic Ruins past (shrine on fire)
 		float i = floor(clamp(1 - (_dot + 1) / 2, 0, 0.99) * 255) / 255;
 
-	#ifdef USE_SL
-		output.diffuse = max(0, float4(diffuse.rgb * SourceLight.ambient * _dot, diffuse.a));
-		output.specular = max(0, float4(1, 1, 1, 0.0f) * pow(_dot, MaterialPower));
-	#else
 		float4 pdiffuse = tex2Dlod(atlasSamplerA, float4(i, DiffuseIndexA, 0, 0));
 		float4 pspecular = tex2Dlod(atlasSamplerA, float4(i, SpecularIndexA, 0, 0));
 
-	#ifdef USE_BLEND
-		float4 bdiffuse = tex2Dlod(atlasSamplerB, float4(i, DiffuseIndexB, 0, 0));
-		float4 bspecular = tex2Dlod(atlasSamplerB, float4(i, SpecularIndexB, 0, 0));
+		#ifdef USE_BLEND
+			float4 bdiffuse = tex2Dlod(atlasSamplerB, float4(i, DiffuseIndexB, 0, 0));
+			float4 bspecular = tex2Dlod(atlasSamplerB, float4(i, SpecularIndexB, 0, 0));
 
-		pdiffuse = lerp(pdiffuse, bdiffuse, BlendFactor);
-		pspecular = lerp(pspecular, bspecular, BlendFactor);
-	#endif
+			pdiffuse = lerp(pdiffuse, bdiffuse, BlendFactor);
+			pspecular = lerp(pspecular, bspecular, BlendFactor);
+		#endif
 
 		output.diffuse = float4((diffuse * pdiffuse).rgb, diffuse.a);
 		output.specular = float4(pspecular.rgb, 0.0f);

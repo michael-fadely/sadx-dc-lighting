@@ -14,9 +14,10 @@ struct SourceLight_t
 {
 	Angle y, z;
 
-	float ambient[3];
-	float unknown[2];
-	float ambient_power;
+	float color[3];
+	float specular_b[3];
+	float power;
+	float unknown2[14];
 
 	bool operator==(const SourceLight_t& rhs) const;
 	bool operator!=(const SourceLight_t& rhs) const;

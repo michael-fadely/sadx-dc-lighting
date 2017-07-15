@@ -112,6 +112,15 @@ void UpdateLightDirections(const NJS_VECTOR& dir)
 	int act = CurrentAct;
 	GetTimeOfDayLevelAndAct(&level, &act);
 
+	// HACK:
+#ifdef USE_SL
+	auto l = GetStageLight(level, act, 0);
+	if (l != nullptr)
+	{
+		param::LightDirection = -*(D3DXVECTOR3*)&l->xyz;
+	}
+#endif
+
 	int n = 0;
 	for (StageLightData* i = GetStageLight(level, act, n); i != nullptr; i = GetStageLight(level, act, ++n))
 	{
