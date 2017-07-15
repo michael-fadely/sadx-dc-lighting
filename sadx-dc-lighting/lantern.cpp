@@ -392,8 +392,8 @@ bool LanternInstance::LoadSource(const std::string& path)
 		njRotateZ(m, SourceLights[15].stage.z);
 
 		// Default light direction is down, so we want to rotate relative to that.
-		static const NJS_VECTOR vs = { 0.0f, -1.0f, 0.0f };
-		njCalcVector(m, (NJS_VECTOR*)&vs, &dir);
+		NJS_VECTOR vs = { 0.0f, -1.0f, 0.0f };
+		njCalcVector(m, &vs, &dir);
 	}
 
 	UpdateLightDirections(dir);
