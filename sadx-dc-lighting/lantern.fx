@@ -206,29 +206,6 @@ PS_IN vs_main(VS_IN input)
 		float3 worldNormal = mul(input.normal * NormalScale, (float3x3)WorldMatrix);
 		float4 diffuse = GetDiffuse(input.color);
 
-	#ifdef USE_SL
-		output.diffuse = (float4)0;
-		output.specular = (float4)0;
-		StageLight light = Lights[0];
-
-		float3 dir = -light.direction;
-		float _dot = dot(dir, worldNormal);
-
-		float3 fuck = SourceLight.unknown;
-
-		float4 ambient = float4(SourceLight.color * fuck, 1);
-
-		output.diffuse += diffuse * float4(_dot, _dot, _dot, 1) + ambient;
-		output.diffuse.a = diffuse.a;
-
-		//float3 halfv = normalize(float3(0, 0, -1) + dir);
-		//_dot = dot(halfv, worldNormal);
-
-		//output.specular = max(0, pow(max(0, _dot), MaterialPower)) * float4(1, 1, 1, 1);
-
-		output.specular.a = 0;
-		output.specular = saturate(output.specular);
-	#else
 		// This is the "brightness index" calculation. Just a dot product
 		// of the vertex normal (in world space) and the light direction.
 		float _dot = dot(LightDirection, worldNormal);
@@ -253,7 +230,6 @@ PS_IN vs_main(VS_IN input)
 
 		output.diffuse = float4((diffuse * pdiffuse).rgb, diffuse.a);
 		output.specular = float4(pspecular.rgb, 0.0f);
-	#endif
 	}
 #else
 	{
