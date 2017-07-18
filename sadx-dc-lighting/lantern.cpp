@@ -37,12 +37,52 @@ bool SourceLight_t::operator!=(const SourceLight_t& rhs) const
 	return !operator==(rhs);
 }
 
+bool StageLight::operator==(const StageLight& rhs) const
+{
+	return !memcmp(&direction, &rhs.direction, sizeof(NJS_VECTOR))
+		&& specular == rhs.specular
+		&& multiplier == rhs.multiplier
+		&& !memcmp(&diffuse, &rhs.diffuse, sizeof(NJS_VECTOR))
+		&& !memcmp(&ambient, &rhs.ambient, sizeof(NJS_VECTOR));
+}
+
+bool StageLight::operator!=(const StageLight& rhs) const
+{
+	return !(*this == rhs);
+}
+
+bool StageLights::operator==(const StageLights& rhs) const
+{
+	return lights[0] == rhs.lights[0]
+		&& lights[1] == rhs.lights[1]
+		&& lights[2] == rhs.lights[2]
+		&& lights[3] == rhs.lights[3];
+}
+
+bool StageLights::operator!=(const StageLights& rhs) const
+{
+	return !(*this == rhs);
+}
+
 template<>
 bool EffectParameter<SourceLight_t>::Commit(Effect effect)
 {
 	if (Modified())
 	{
 		effect->SetValue(handle, &current, sizeof(SourceLight_t));
+		Clear();
+		return true;
+	}
+
+	return false;
+}
+
+template<>
+bool EffectParameter<StageLights>::Commit(Effect effect)
+{
+	if (Modified())
+	{
+		effect->SetValue(handle, &current, sizeof(StageLights));
 		Clear();
 		return true;
 	}
@@ -112,20 +152,28 @@ void UpdateLightDirections(const NJS_VECTOR& dir)
 	int act = CurrentAct;
 	GetTimeOfDayLevelAndAct(&level, &act);
 
-	// HACK:
-#ifdef USE_SL
-	auto l = GetStageLight(level, act, 0);
-	if (l != nullptr)
-	{
-		param::LightDirection = -*(D3DXVECTOR3*)&l->xyz;
-	}
-#endif
+	StageLights lights = {};
 
 	int n = 0;
 	for (StageLightData* i = GetStageLight(level, act, n); i != nullptr; i = GetStageLight(level, act, ++n))
 	{
-		i->xyz = dir;
+		auto& light = lights.lights[n];
+
+		if (i->use_direction)
+		{
+			light.direction = i->direction;
+			light.specular = i->specular;
+			light.multiplier = i->multiplier;
+			light.diffuse = *(NJS_VECTOR*)i->diffuse;
+			light.ambient = *(NJS_VECTOR*)i->ambient;
+		}
+
+		i->direction = dir;
 	}
+
+#ifdef USE_SL
+	param::Lights = lights;
+#endif
 }
 
 bool LanternInstance::diffuse_override       = false;

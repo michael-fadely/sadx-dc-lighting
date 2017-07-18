@@ -111,6 +111,18 @@ shared float  MaterialPower    = 1.0f;
 
 shared SourceLight_t SourceLight;
 
+struct StageLight
+{
+	float3 direction;
+	float specular;
+	float multiplier;
+	float3 diffuse;
+	float3 ambient;
+	float padding[5];
+};
+
+shared StageLight Lights[4];
+
 #endif
 
 // Helpers
@@ -173,9 +185,11 @@ PS_IN vs_main(VS_IN input)
 	PS_IN output;
 
 	float4 position;
+	float3 wv;
 
 	position = mul(float4(input.position, 1), wvMatrix);
 	output.fogDist = position.z;
+	wv = position.xyz;
 	position = mul(position, ProjectionMatrix);
 
 	output.position = position;
@@ -192,29 +206,33 @@ PS_IN vs_main(VS_IN input)
 		float3 worldNormal = mul(input.normal * NormalScale, (float3x3)WorldMatrix);
 		float4 diffuse = GetDiffuse(input.color);
 
-		// This is the "brightness index" calculation. Just a dot product
-		// of the vertex normal (in world space) and the light direction.
-		float _dot = dot(LightDirection, worldNormal);
-
 	#ifdef USE_SL
-		output.diffuse = diffuse;
+		output.diffuse = (float4)0;
+		output.specular = (float4)0;
+		StageLight light = Lights[0];
 
-		//float3 h = normalize(normalize(float3(0, 0, 1)) + LightDirection);
-		float3 ha = normalize(normalize(float3(0, 0, 1)) + LightDirection);
-		float3 hb = normalize(normalize(float3(0, 0, -1)) + LightDirection);
+		float3 dir = -light.direction;
+		float _dot = dot(dir, worldNormal);
 
-		_dot = dot(worldNormal, ha);
-		float p = pow(max(0, _dot), MaterialPower);
+		float3 fuck = SourceLight.unknown;
 
-		output.specular.rgb = 2 * float3(p, p, p);
+		float4 ambient = float4(SourceLight.color * fuck, 1);
 
-		_dot = dot(worldNormal, hb);
-		p = pow(max(0, _dot), MaterialPower);
-		output.specular.rgb += SourceLight.color * p;
+		output.diffuse += diffuse * float4(_dot, _dot, _dot, 1) + ambient;
+		output.diffuse.a = diffuse.a;
+
+		//float3 halfv = normalize(float3(0, 0, -1) + dir);
+		//_dot = dot(halfv, worldNormal);
+
+		//output.specular = max(0, pow(max(0, _dot), MaterialPower)) * float4(1, 1, 1, 1);
 
 		output.specular.a = 0;
 		output.specular = saturate(output.specular);
 	#else
+		// This is the "brightness index" calculation. Just a dot product
+		// of the vertex normal (in world space) and the light direction.
+		float _dot = dot(LightDirection, worldNormal);
+
 		// The palette's brightest point is 0, and its darkest point is 1,
 		// so we push the dot product (-1 .. 1) into the rage 0 .. 1, and
 		// subtract it from 1. This is the value we use for indexing into

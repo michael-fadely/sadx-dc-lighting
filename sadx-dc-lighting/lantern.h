@@ -10,6 +10,7 @@
 #include "../include/lanternapi.h"
 
 #pragma pack(push, 1)
+
 struct SourceLight_t
 {
 	Angle y, z;
@@ -28,10 +29,33 @@ union SourceLight
 	SourceLight_t stage;
 	PaletteLight source;
 };
+
+struct StageLight
+{
+	NJS_VECTOR direction;
+	float specular;
+	float multiplier;
+	NJS_VECTOR diffuse;
+	NJS_VECTOR ambient;
+	float padding[5];
+
+	bool operator==(const StageLight& rhs) const;
+	bool operator!=(const StageLight& rhs) const;
+};
+
+struct StageLights
+{
+	StageLight lights[4]{};
+
+	bool operator==(const StageLights& rhs) const;
+	bool operator!=(const StageLights& rhs) const;
+};
+
 #pragma pack(pop)
 
 static_assert(sizeof(SourceLight) == 0x60, "SourceLight size mismatch");
 template<> bool EffectParameter<SourceLight_t>::Commit(Effect effect);
+template<> bool EffectParameter<StageLights>::Commit(Effect effect);
 
 class LanternInstance;
 

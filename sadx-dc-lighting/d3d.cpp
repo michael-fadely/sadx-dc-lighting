@@ -57,6 +57,7 @@ namespace param
 	EffectParameter<D3DXCOLOR> MaterialSpecular("MaterialSpecular", {});
 	EffectParameter<float> MaterialPower("MaterialPower", 1.0f);
 	EffectParameter<SourceLight_t> SourceLight("SourceLight", {});
+	EffectParameter<StageLights> Lights("Lights", {});
 #endif
 
 	IEffectParameter* const parameters[] = {
@@ -89,7 +90,8 @@ namespace param
 	#ifdef USE_SL
 		&SourceLight,
 		&MaterialSpecular,
-		&MaterialPower
+		&MaterialPower,
+		&Lights
 	#endif
 	};
 }

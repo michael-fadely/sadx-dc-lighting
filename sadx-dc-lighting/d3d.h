@@ -56,6 +56,7 @@ namespace param
 	extern EffectParameter<D3DXCOLOR> MaterialSpecular;
 	extern EffectParameter<float> MaterialPower;
 	extern EffectParameter<SourceLight_t> SourceLight;
+	extern EffectParameter<StageLights> Lights;
 #endif
 }
 
