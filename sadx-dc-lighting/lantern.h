@@ -11,14 +11,16 @@
 
 #pragma pack(push, 1)
 
+// RY RZ R G B SP DI AM
 struct SourceLight_t
 {
 	Angle y, z;
 
 	float color[3];
-	float specular_b[3];
-	float power;
-	float unknown2[14];
+	float specular;
+	float diffuse;
+	float ambient;
+	float unknown2[15];
 
 	bool operator==(const SourceLight_t& rhs) const;
 	bool operator!=(const SourceLight_t& rhs) const;

@@ -101,9 +101,10 @@ struct SourceLight_t
 {
 	int y, z;
 	float3 color;
-	float3 unknown;
-	float power;
-	float unknown2[14];
+	float specular;
+	float diffuse;
+	float ambient;
+	float unknown2[15];
 };
 
 shared float4 MaterialSpecular = float4(0.0f, 0.0f, 0.0f, 0.0f);
