@@ -8,6 +8,14 @@
 
 using namespace globals;
 
+void check_blend()
+{
+	if (param::PaletteB.Value() == nullptr)
+	{
+		param::PaletteB = param::PaletteA;
+	}
+}
+
 void pl_load_register(lantern_load_cb callback)
 {
 	palettes.AddPlCallback(callback);
@@ -120,6 +128,7 @@ int get_specular()
 
 void set_diffuse_blend(int n)
 {
+	check_blend();
 	if (palettes.Size() > 0)
 	{
 		palettes[0].SetDiffuseB(n);
@@ -128,6 +137,7 @@ void set_diffuse_blend(int n)
 
 void set_specular_blend(int n)
 {
+	check_blend();
 	if (palettes.Size() > 0)
 	{
 		palettes[0].SetSpecularB(n);
@@ -146,6 +156,7 @@ int get_specular_blend()
 
 void set_blend_factor(float factor)
 {
+	check_blend();
 	LanternInstance::SetBlendFactor(factor);
 }
 

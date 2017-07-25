@@ -43,6 +43,7 @@ public:
 	void Clear() override;
 	bool Commit(Effect effect) override;
 	void Release() override;
+	T Value() const;
 	void operator=(const T& value);
 	void operator=(const EffectParameter<T>& value);
 };
@@ -73,6 +74,11 @@ template <typename T>
 void EffectParameter<T>::Release()
 {
 	Clear();
+}
+template <typename T>
+T EffectParameter<T>::Value() const
+{
+	return current;
 }
 
 template <typename T>
