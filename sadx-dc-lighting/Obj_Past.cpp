@@ -55,7 +55,7 @@ static void __cdecl Obj_Past_r(ObjectMaster *_this)
 				}
 				else if (CurrentAct == 2 && d3d::effect)
 				{
-					entity->Rotation.x += NJM_DEG_ANG(2.8125f);
+					entity->Rotation.x += NJM_DEG_ANG(4.561875f);
 					entity->Rotation.x %= 65536;
 					auto f = (njSin(entity->Rotation.x) + 1.0f) / 2.0f;
 					LanternInstance::SetBlendFactor(f);

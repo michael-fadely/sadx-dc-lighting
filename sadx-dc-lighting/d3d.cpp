@@ -849,7 +849,7 @@ namespace local
 			param::ProjectionMatrix = *matrix;
 		}
 
-		return Direct3D_Device->SetTransform(type, matrix);
+		return _device->SetTransform(type, matrix);
 	}
 #pragma endregion
 }
