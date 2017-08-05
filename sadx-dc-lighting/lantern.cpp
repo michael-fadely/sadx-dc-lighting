@@ -971,7 +971,7 @@ void LanternCollection::SetLightDirection(const NJS_VECTOR& d)
 
 const NJS_VECTOR& LanternCollection::GetLightDirection()
 {
-	return instances.empty() ? NJS_VECTOR{} : instances[0].GetLightDirection();
+	return instances[0].GetLightDirection();
 }
 
 void LanternCollection::callback_add(std::deque<lantern_load_cb>& c, lantern_load_cb callback)
