@@ -142,6 +142,38 @@ static bool UseTimeOfDay(Uint32 level, Uint32 act)
 	}
 }
 
+DataArray(StageLightData, StageLightList, 0x00900E88, 255);
+
+StageLightData* GetStageLightEx(int level, int act, int light_num)
+{
+	StageLightData* act_zero = nullptr;
+
+	for (int i = 0; i < 255; i++)
+	{
+		auto light = &StageLightList[i];
+
+		if (light->level == 0xFF)
+		{
+			break;
+		}
+
+		if (light->level == level && light->index == light_num)
+		{
+			if (light->act == act)
+			{
+				return light;
+			}
+
+			if (!light->act)
+			{
+				act_zero = light;
+			}
+		}
+	}
+
+	return act_zero;
+}
+
 /// <summary>
 /// Overwrites light directions for the current stage with the specified direction.
 /// </summary>
@@ -155,7 +187,7 @@ void UpdateLightDirections(const NJS_VECTOR& dir)
 	StageLights lights = {};
 
 	int n = 0;
-	for (StageLightData* i = GetStageLight(level, act, n); i != nullptr; i = GetStageLight(level, act, ++n))
+	for (StageLightData* i = GetStageLightEx(level, act, n); i != nullptr; i = GetStageLightEx(level, act, ++n))
 	{
 		auto& light = lights.lights[n];
 

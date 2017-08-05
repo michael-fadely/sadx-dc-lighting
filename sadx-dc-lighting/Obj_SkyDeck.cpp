@@ -35,6 +35,7 @@ static void __cdecl SkyBox_SkyDeck_Delete(ObjectMaster*)
 {
 	d3d::SetShaderFlags(ShaderFlags_Blend, false);
 }
+
 static void __cdecl SkyBox_SkyDeck_r(ObjectMaster* _this)
 {
 	if (_this->DeleteSub != SkyBox_SkyDeck_Delete)
@@ -51,6 +52,7 @@ static void __cdecl Obj_SkyDeck_Delete(ObjectMaster* _this)
 	d3d::SetShaderFlags(ShaderFlags_Blend, false);
 	handle = 0;
 }
+
 static void __cdecl Obj_SkyDeck_r(ObjectMaster* _this)
 {
 	TARGET_DYNAMIC(Obj_SkyDeck)(_this);
@@ -68,11 +70,14 @@ static void __cdecl Obj_SkyDeck_r(ObjectMaster* _this)
 	constexpr auto level = LevelIDs_SkyDeck;
 	auto light = GetStageLight(level, 0, 0);
 
+	// This forcefully updates acts 1 and 2's light directions.
+	// Act 3 uses act 1's light direction, but I'm leaving this
+	// code in place for the possibility of light list expansion.
 	for (size_t act = 1; act < 3; act++)
 	{
 		size_t n = 0;
 
-		for (StageLightData* i = GetStageLight(level, act, n); i != nullptr; i = GetStageLight(level, act, ++n))
+		for (StageLightData* i = GetStageLightEx(level, act, n); i != nullptr; i = GetStageLight(level, act, ++n))
 		{
 			i->direction = light->direction;
 		}

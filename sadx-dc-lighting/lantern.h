@@ -185,4 +185,5 @@ public:
 	LanternInstance& operator[](size_t i) { return instances[i]; }
 };
 
+StageLightData* GetStageLightEx(int level, int act, int light_num);
 void UpdateLightDirections(const NJS_VECTOR& dir);
