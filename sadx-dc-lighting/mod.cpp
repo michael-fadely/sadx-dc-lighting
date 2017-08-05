@@ -19,16 +19,18 @@
 #include "FixChaoGardenMaterials.h"
 #include "FixCharacterMaterials.h"
 
-static Trampoline* CharSel_LoadA_t          = nullptr;
-static Trampoline* Direct3D_ParseMaterial_t = nullptr;
-static Trampoline* GoToNextLevel_t          = nullptr;
-static Trampoline* IncrementAct_t           = nullptr;
-static Trampoline* LoadLevelFiles_t         = nullptr;
-static Trampoline* SetLevelAndAct_t         = nullptr;
-static Trampoline* GoToNextChaoStage_t      = nullptr;
-static Trampoline* SetTimeOfDay_t           = nullptr;
-static Trampoline* DrawLandTable_t          = nullptr;
-static Trampoline* Direct3D_SetTexList_t    = nullptr;
+static Trampoline* CharSel_LoadA_t                 = nullptr;
+static Trampoline* Direct3D_ParseMaterial_t        = nullptr;
+static Trampoline* GoToNextLevel_t                 = nullptr;
+static Trampoline* IncrementAct_t                  = nullptr;
+static Trampoline* LoadLevelFiles_t                = nullptr;
+static Trampoline* SetLevelAndAct_t                = nullptr;
+static Trampoline* GoToNextChaoStage_t             = nullptr;
+static Trampoline* SetTimeOfDay_t                  = nullptr;
+static Trampoline* DrawLandTable_t                 = nullptr;
+static Trampoline* Direct3D_SetTexList_t           = nullptr;
+static Trampoline* SetCurrentStageLights_t         = nullptr;
+static Trampoline* SetCurrentStageLight_EggViper_t = nullptr;
 
 DataArray(PaletteLight, LightPaletteData, 0x00903E88, 256);
 DataArray(StageLightData, CurrentStageLights, 0x03ABD9F8, 4);
@@ -247,13 +249,12 @@ static void __cdecl CharSel_LoadA_r()
 {
 	auto original = TARGET_DYNAMIC(CharSel_LoadA);
 
-	NJS_VECTOR dir = { 1.0f, -1.0f, -1.0f };
-
-	njUnitVector(&dir);
-	UpdateLightDirections(dir);
-
 	globals::palettes.LoadPalette(LevelIDs_SkyDeck, 0);
 	globals::palettes.SetLastLevel(CurrentLevel, CurrentAct);
+
+	NJS_VECTOR dir = { 1.0f, -1.0f, -1.0f };
+	njUnitVector(&dir);
+	globals::palettes.SetLightDirection(dir);
 
 	original();
 }
@@ -384,6 +385,30 @@ static void __cdecl NormalScale(float x, float y, float z)
 	}
 }
 
+void setStageLightDirection()
+{
+	if (globals::palettes.Size())
+	{
+		const auto& dir = globals::palettes.GetLightDirection();
+		CurrentStageLights[0].direction = dir;
+		CurrentStageLights[1].direction = dir;
+		CurrentStageLights[2].direction = dir;
+		CurrentStageLights[3].direction = dir;
+	}
+}
+
+void __cdecl SetCurrentStageLights_r(int level, int act)
+{
+	TARGET_DYNAMIC(SetCurrentStageLights)(level, act);
+	setStageLightDirection();
+}
+
+void __cdecl SetCurrentStageLight_EggViper_r(ObjectMaster* a1)
+{
+	TARGET_DYNAMIC(SetCurrentStageLight_EggViper)(a1);
+	setStageLightDirection();
+}
+
 extern "C"
 {
 	EXPORT ModInfo SADXModInfo = { ModLoaderVer };
@@ -406,16 +431,18 @@ extern "C"
 		globals::system.append("\\system\\");
 
 		d3d::InitTrampolines();
-		CharSel_LoadA_t          = new Trampoline(0x00512BC0, 0x00512BC6, CharSel_LoadA_r);
-		Direct3D_ParseMaterial_t = new Trampoline(0x00784850, 0x00784858, Direct3D_ParseMaterial_r);
-		GoToNextLevel_t          = new Trampoline(0x00414610, 0x00414616, GoToNextLevel_r);
-		IncrementAct_t           = new Trampoline(0x004146E0, 0x004146E5, IncrementAct_r);
-		LoadLevelFiles_t         = new Trampoline(0x00422AD0, 0x00422AD8, LoadLevelFiles_r);
-		SetLevelAndAct_t         = new Trampoline(0x00414570, 0x00414576, SetLevelAndAct_r);
-		GoToNextChaoStage_t      = new Trampoline(0x00715130, 0x00715135, GoToNextChaoStage_r);
-		SetTimeOfDay_t           = new Trampoline(0x00412C00, 0x00412C05, SetTimeOfDay_r);
-		DrawLandTable_t          = new Trampoline(0x0043A6A0, 0x0043A6A8, DrawLandTable_r);
-		Direct3D_SetTexList_t    = new Trampoline(0x0077F3D0, 0x0077F3D8, Direct3D_SetTexList_r);
+		CharSel_LoadA_t                 = new Trampoline(0x00512BC0, 0x00512BC6, CharSel_LoadA_r);
+		Direct3D_ParseMaterial_t        = new Trampoline(0x00784850, 0x00784858, Direct3D_ParseMaterial_r);
+		GoToNextLevel_t                 = new Trampoline(0x00414610, 0x00414616, GoToNextLevel_r);
+		IncrementAct_t                  = new Trampoline(0x004146E0, 0x004146E5, IncrementAct_r);
+		LoadLevelFiles_t                = new Trampoline(0x00422AD0, 0x00422AD8, LoadLevelFiles_r);
+		SetLevelAndAct_t                = new Trampoline(0x00414570, 0x00414576, SetLevelAndAct_r);
+		GoToNextChaoStage_t             = new Trampoline(0x00715130, 0x00715135, GoToNextChaoStage_r);
+		SetTimeOfDay_t                  = new Trampoline(0x00412C00, 0x00412C05, SetTimeOfDay_r);
+		DrawLandTable_t                 = new Trampoline(0x0043A6A0, 0x0043A6A8, DrawLandTable_r);
+		Direct3D_SetTexList_t           = new Trampoline(0x0077F3D0, 0x0077F3D8, Direct3D_SetTexList_r);
+		SetCurrentStageLights_t         = new Trampoline(0x0040A950, 0x0040A955, SetCurrentStageLights_r);
+		SetCurrentStageLight_EggViper_t = new Trampoline(0x0057E560, 0x0057E567, SetCurrentStageLight_EggViper_r);
 
 		// Correcting a function call since they're relative
 		WriteCall(IncrementAct_t->Target(), (void*)0x00424830);

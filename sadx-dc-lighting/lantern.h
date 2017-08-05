@@ -77,6 +77,8 @@ public:
 	virtual Sint32 GetDiffuse() = 0;
 	virtual Sint32 GetSpecular() = 0;
 	virtual void SetSelfBlend(Sint32 type, Sint32 diffuse, Sint32 specular) = 0;
+	virtual void SetLightDirection(const NJS_VECTOR& d) = 0;
+	virtual const NJS_VECTOR& GetLightDirection() = 0;
 };
 
 class LanternInstance : ILantern
@@ -84,6 +86,8 @@ class LanternInstance : ILantern
 	EffectParameter<Texture>* atlas;
 	EffectParameter<float>* diffuse_param;
 	EffectParameter<float>* specular_param;
+	SourceLight source_lights[16] = {};
+	NJS_VECTOR sl_direction = {};
 
 	void copy(LanternInstance& inst);
 
@@ -128,6 +132,8 @@ public:
 	Sint32 GetDiffuse() override;
 	Sint32 GetSpecular() override;
 	void SetSelfBlend(Sint32 type, Sint32 diffuse, Sint32 specular) override;
+	void SetLightDirection(const NJS_VECTOR& d) override;
+	const NJS_VECTOR& GetLightDirection() override;
 
 	void SetDiffuseB(Sint32 n);
 	void SetSpecularB(Sint32 n);
@@ -181,9 +187,8 @@ public:
 	}
 
 	void SetSelfBlend(Sint32 type, Sint32 diffuse, Sint32 specular) override;
+	void SetLightDirection(const NJS_VECTOR& d) override;
+	const NJS_VECTOR& GetLightDirection() override;
 
 	LanternInstance& operator[](size_t i) { return instances[i]; }
 };
-
-StageLightData* GetStageLightEx(int level, int act, int light_num);
-void UpdateLightDirections(const NJS_VECTOR& dir);

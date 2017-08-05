@@ -142,72 +142,6 @@ static bool UseTimeOfDay(Uint32 level, Uint32 act)
 	}
 }
 
-DataArray(StageLightData, StageLightList, 0x00900E88, 255);
-
-StageLightData* GetStageLightEx(int level, int act, int light_num)
-{
-	StageLightData* act_zero = nullptr;
-
-	for (int i = 0; i < 255; i++)
-	{
-		auto light = &StageLightList[i];
-
-		if (light->level == 0xFF)
-		{
-			break;
-		}
-
-		if (light->level == level && light->index == light_num)
-		{
-			if (light->act == act)
-			{
-				return light;
-			}
-
-			if (!light->act)
-			{
-				act_zero = light;
-			}
-		}
-	}
-
-	return act_zero;
-}
-
-/// <summary>
-/// Overwrites light directions for the current stage with the specified direction.
-/// </summary>
-/// <param name="dir">The direction with which to overwrite.</param>
-void UpdateLightDirections(const NJS_VECTOR& dir)
-{
-	int level = CurrentLevel;
-	int act = CurrentAct;
-	GetTimeOfDayLevelAndAct(&level, &act);
-
-	StageLights lights = {};
-
-	int n = 0;
-	for (StageLightData* i = GetStageLightEx(level, act, n); i != nullptr; i = GetStageLightEx(level, act, ++n))
-	{
-		auto& light = lights.lights[n];
-
-		if (i->use_direction)
-		{
-			light.direction = i->direction;
-			light.specular = i->specular;
-			light.multiplier = i->multiplier;
-			light.diffuse = *(NJS_VECTOR*)i->diffuse;
-			light.ambient = *(NJS_VECTOR*)i->ambient;
-		}
-
-		i->direction = dir;
-	}
-
-#ifdef USE_SL
-	param::Lights = lights;
-#endif
-}
-
 bool LanternInstance::diffuse_override       = false;
 bool LanternInstance::diffuse_override_temp  = false;
 bool LanternInstance::specular_override      = false;
@@ -430,8 +364,6 @@ void LanternInstance::SetLastLevel(Sint32 level, Sint32 act)
 	last_act = act;
 }
 
-static SourceLight SourceLights[16] = {};
-
 /// <summary>
 /// Loads palette parameter data (light direction) from the specified path.
 /// </summary>
@@ -442,12 +374,10 @@ bool LanternInstance::LoadSource(const std::string& path)
 	bool result = true;
 	auto file = std::ifstream(path, std::ios::binary);
 
-	NJS_VECTOR dir;
-
 	if (!file.is_open())
 	{
 		PrintDebug("[lantern] Lantern source not found: %s\n", path.c_str());
-		dir = { 0.0f, -1.0f, 0.0f };
+		sl_direction = { 0.0f, -1.0f, 0.0f };
 		result = false;
 	}
 	else
@@ -456,7 +386,7 @@ bool LanternInstance::LoadSource(const std::string& path)
 
 		for (int i = 0; i < 16; i++)
 		{
-			file.read((char*)&SourceLights[i], sizeof(SourceLight));
+			file.read((char*)&source_lights[i], sizeof(SourceLight));
 		}
 
 		file.close();
@@ -468,15 +398,14 @@ bool LanternInstance::LoadSource(const std::string& path)
 		NJS_MATRIX m;
 
 		njUnitMatrix(m);
-		njRotateY(m, SourceLights[15].stage.y);
-		njRotateZ(m, SourceLights[15].stage.z);
+		njRotateY(m, source_lights[15].stage.y);
+		njRotateZ(m, source_lights[15].stage.z);
 
 		// Default light direction is down, so we want to rotate relative to that.
 		NJS_VECTOR vs = { 0.0f, -1.0f, 0.0f };
-		njCalcVector(m, &vs, &dir);
+		njCalcVector(m, &vs, &sl_direction);
 	}
 
-	UpdateLightDirections(dir);
 	return result;
 }
 
@@ -758,6 +687,16 @@ void LanternInstance::SetSelfBlend(Sint32 type, Sint32 diffuse, Sint32 specular)
 	SetSpecularB(specular);
 }
 
+void LanternInstance::SetLightDirection(const NJS_VECTOR& d)
+{
+	sl_direction = d;
+}
+
+const NJS_VECTOR& LanternInstance::GetLightDirection()
+{
+	return sl_direction;
+}
+
 // Collection
 
 void LanternCollection::SetLastLevel(Sint32 level, Sint32 act)
@@ -1020,6 +959,19 @@ void LanternCollection::SetSelfBlend(Sint32 type, Sint32 diffuse, Sint32 specula
 	{
 		i.SetSelfBlend(type, diffuse, specular);
 	}
+}
+
+void LanternCollection::SetLightDirection(const NJS_VECTOR& d)
+{
+	for (auto& i : instances)
+	{
+		i.SetLightDirection(d);
+	}
+}
+
+const NJS_VECTOR& LanternCollection::GetLightDirection()
+{
+	return instances.empty() ? NJS_VECTOR{} : instances[0].GetLightDirection();
 }
 
 void LanternCollection::callback_add(std::deque<lantern_load_cb>& c, lantern_load_cb callback)
