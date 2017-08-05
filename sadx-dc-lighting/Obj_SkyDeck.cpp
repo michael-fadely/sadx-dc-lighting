@@ -65,6 +65,19 @@ static void __cdecl Obj_SkyDeck_r(ObjectMaster* _this)
 	globals::palettes.LoadPalette(LevelIDs_SkyDeck, 0);
 	globals::palettes.LoadSource(LevelIDs_SkyDeck, 0);
 
+	constexpr auto level = LevelIDs_SkyDeck;
+	auto light = GetStageLight(level, 0, 0);
+
+	for (size_t act = 1; act < 3; act++)
+	{
+		size_t n = 0;
+
+		for (StageLightData* i = GetStageLight(level, act, n); i != nullptr; i = GetStageLight(level, act, ++n))
+		{
+			i->direction = light->direction;
+		}
+	}
+
 	LanternInstance lantern(&param::PaletteB, &param::DiffuseIndexB, &param::SpecularIndexB);
 	lantern.LoadPalette(LevelIDs_SkyDeck, 1);
 	handle = globals::palettes.Add(lantern);
