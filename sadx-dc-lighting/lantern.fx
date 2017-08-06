@@ -1,17 +1,3 @@
-// Based on FixedFuncEMU.fx
-// Copyright (c) 2005 Microsoft Corporation. All rights reserved.
-//
-
-#define FOGMODE_NONE   0
-#define FOGMODE_EXP    1
-#define FOGMODE_EXP2   2
-#define FOGMODE_LINEAR 3
-#define E 2.71828
-
-#define D3DMCS_MATERIAL 0 // Color from material is used
-#define D3DMCS_COLOR1   1 // Diffuse vertex color is used
-#define D3DMCS_COLOR2   2 // Specular vertex color is used
-
 struct VS_IN
 {
 	float3 position : POSITION;
@@ -29,24 +15,56 @@ struct PS_IN
 	float  fogDist  : FOG;
 };
 
+#ifdef USE_SL
+struct SourceLight_t
+{
+	int y, z;
+	float3 color;
+	float specular;
+	float diffuse;
+	float ambient;
+	float unknown2[15];
+};
+
+struct StageLight
+{
+	float3 direction;
+	float specular;
+	float multiplier;
+	float3 diffuse;
+	float3 ambient;
+	float padding[5];
+};
+#endif
+
+// From FixedFuncEMU.fx
+// Copyright (c) 2005 Microsoft Corporation. All rights reserved.
+#define FOGMODE_NONE   0
+#define FOGMODE_EXP    1
+#define FOGMODE_EXP2   2
+#define FOGMODE_LINEAR 3
+#define E 2.71828
+
+#define D3DMCS_MATERIAL 0 // Color from material is used
+#define D3DMCS_COLOR1   1 // Diffuse vertex color is used
+#define D3DMCS_COLOR2   2 // Specular vertex color is used
+
 // This never changes
 static float AlphaRef = 16.0f / 255.0f;
+
+// Diffuse texture
+shared Texture2D BaseTexture;
+// Palette atlas A
+shared Texture2D PaletteA;
+// Palette atlas B
+shared Texture2D PaletteB;
 
 shared float4x4 WorldMatrix;
 shared float4x4 wvMatrix;
 shared float4x4 ProjectionMatrix;
-
-shared float4 MaterialDiffuse = float4(1.0f, 1.0f, 1.0f, 1.0f);
-shared uint   DiffuseSource = (uint)D3DMCS_COLOR1;
-
-shared Texture2D BaseTexture;
-sampler2D baseSampler = sampler_state
-{
-	Texture = <BaseTexture>;
-};
-
 // The inverse transpose of the world view matrix - used for environment mapping.
 shared float4x4 wvMatrixInvT;
+
 // Used primarily for environment mapping.
 shared float4x4 TextureTransform = {
 	-0.5, 0.0, 0.0, 0.0,
@@ -55,27 +73,11 @@ shared float4x4 TextureTransform = {
 	 0.5, 0.5, 0.0, 1.0
 };
 
-shared Texture2D PaletteA;
-sampler2D atlasSamplerA = sampler_state
-{
-	Texture   = <PaletteA>;
-	MinFilter = Point;
-	MagFilter = Point;
-	AddressU  = Clamp;
-	AddressV  = Clamp;
-};
-
-shared Texture2D PaletteB;
-sampler2D atlasSamplerB = sampler_state
-{
-	Texture   = <PaletteB>;
-	MinFilter = Point;
-	MagFilter = Point;
-	AddressU  = Clamp;
-	AddressV  = Clamp;
-};
+shared uint DiffuseSource = (uint)D3DMCS_COLOR1;
+shared float4 MaterialDiffuse = float4(1.0f, 1.0f, 1.0f, 1.0f);
 
 // Pre-adjusted on the CPU before being sent to the shader.
+// Used for sampling colors from the palette atlases.
 shared float DiffuseIndexA  = 0;
 shared float DiffuseIndexB  = 0;
 shared float SpecularIndexA = 0;
@@ -98,62 +100,41 @@ shared bool DiffuseOverride        = false;
 shared float3 DiffuseOverrideColor = float3(1, 1, 1);
 
 #ifdef USE_SL
-
-struct SourceLight_t
-{
-	int y, z;
-	float3 color;
-	float specular;
-	float diffuse;
-	float ambient;
-	float unknown2[15];
-};
-
 shared float4 MaterialSpecular = float4(0.0f, 0.0f, 0.0f, 0.0f);
-shared float  MaterialPower    = 1.0f;
-
+shared float  MaterialPower = 1.0f;
 shared SourceLight_t SourceLight;
+shared StageLight Lights[4];
+#endif
 
-struct StageLight
+// Samplers
+sampler2D baseSampler = sampler_state
 {
-	float3 direction;
-	float specular;
-	float multiplier;
-	float3 diffuse;
-	float3 ambient;
-	float padding[5];
+	Texture = <BaseTexture>;
 };
 
-shared StageLight Lights[4];
+sampler2D atlasSamplerA = sampler_state
+{
+	Texture = <PaletteA>;
+	MinFilter = Point;
+	MagFilter = Point;
+	AddressU = Clamp;
+	AddressV = Clamp;
+};
 
-#endif
+sampler2D atlasSamplerB = sampler_state
+{
+	Texture = <PaletteB>;
+	MinFilter = Point;
+	MagFilter = Point;
+	AddressU = Clamp;
+	AddressV = Clamp;
+};
 
 // Helpers
 
-float4 GetDiffuse(in float4 vcolor)
-{
-	if (DiffuseSource == D3DMCS_COLOR1 && !AllowVertexColor)
-	{
-		return float4(1, 1, 1, vcolor.a);
-	}
-
-	if (DiffuseSource == D3DMCS_MATERIAL && ForceDefaultDiffuse)
-	{
-		return float4(178.0 / 255.0, 178.0 / 255.0, 178.0 / 255.0, MaterialDiffuse.a);
-	}
-
-	float4 color = (DiffuseSource == D3DMCS_COLOR1 && any(vcolor)) ? vcolor : MaterialDiffuse;
-
-	int3 icolor = color.rgb * 255.0;
-	if (icolor.r == 178 && icolor.g == 178 && icolor.b == 178)
-	{
-		return float4(1, 1, 1, color.a);
-	}
-
-	return color;
-}
-
 #ifdef USE_FOG
+// From FixedFuncEMU.fx
+// Copyright (c) 2005 Microsoft Corporation. All rights reserved.
 
 float CalcFogFactor(float d)
 {
@@ -181,21 +162,38 @@ float CalcFogFactor(float d)
 }
 #endif
 
+float4 GetDiffuse(in float4 vcolor)
+{
+	if (DiffuseSource == D3DMCS_COLOR1 && !AllowVertexColor)
+	{
+		return float4(1, 1, 1, vcolor.a);
+	}
+
+	if (DiffuseSource == D3DMCS_MATERIAL && ForceDefaultDiffuse)
+	{
+		return float4(178.0 / 255.0, 178.0 / 255.0, 178.0 / 255.0, MaterialDiffuse.a);
+	}
+
+	float4 color = (DiffuseSource == D3DMCS_COLOR1 && any(vcolor)) ? vcolor : MaterialDiffuse;
+
+	int3 icolor = color.rgb * 255.0;
+	if (icolor.r == 178 && icolor.g == 178 && icolor.b == 178)
+	{
+		return float4(1, 1, 1, color.a);
+	}
+
+	return color;
+}
+
 // Vertex shaders
 
 PS_IN vs_main(VS_IN input)
 {
 	PS_IN output;
 
-	float4 position;
-	float3 wv;
-
-	position = mul(float4(input.position, 1), wvMatrix);
-	output.fogDist = position.z;
-	wv = position.xyz;
-	position = mul(position, ProjectionMatrix);
-
-	output.position = position;
+	output.position = mul(float4(input.position, 1), wvMatrix);
+	output.fogDist  = output.position.z;
+	output.position = mul(output.position, ProjectionMatrix);
 
 #if defined(USE_TEXTURE) && defined(USE_ENVMAP)
 	output.tex = (float2)mul(float4(input.normal, 1), wvMatrixInvT);
