@@ -166,3 +166,14 @@ void use_default_diffuse(bool use)
 {
 	param::ForceDefaultDiffuse = use;
 }
+
+void diffuse_override(bool enable)
+{
+	param::DiffuseOverride = enable;
+}
+
+void diffuse_override_rgb(float r, float g, float b)
+{
+	D3DXVECTOR3 color = { r, g, b };
+	param::DiffuseOverrideColor = color;
+}

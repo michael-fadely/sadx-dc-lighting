@@ -46,6 +46,9 @@ extern "C" {
 	API void set_diffuse(int n, bool permanent);
 	API void set_specular(int n, bool permanent);
 
+	API void diffuse_override(bool enable);
+	API void diffuse_override_rgb(float r, float g, float b);
+
 	API int get_diffuse();
 	API int get_specular();
 

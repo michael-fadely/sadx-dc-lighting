@@ -92,8 +92,10 @@ shared float4 FogColor;
 
 shared float BlendFactor = 0.0f;
 
-shared bool AllowVertexColor = true;
-shared bool ForceDefaultDiffuse = false;
+shared bool AllowVertexColor       = true;
+shared bool ForceDefaultDiffuse    = false;
+shared bool DiffuseOverride        = false;
+shared float3 DiffuseOverrideColor = float3(1, 1, 1);
 
 #ifdef USE_SL
 
@@ -218,7 +220,17 @@ PS_IN vs_main(VS_IN input)
 		// HACK: This clamp prevents a visual bug in the Mystic Ruins past (shrine on fire)
 		float i = floor(clamp(1 - (_dot + 1) / 2, 0, 0.99) * 255) / 255;
 
-		float4 pdiffuse = tex2Dlod(atlasSamplerA, float4(i, DiffuseIndexA, 0, 0));
+		float4 pdiffuse;
+
+		if (DiffuseOverride)
+		{
+			pdiffuse = float4(DiffuseOverrideColor, 1);
+		}
+		else
+		{
+			pdiffuse = tex2Dlod(atlasSamplerA, float4(i, DiffuseIndexA, 0, 0));
+		}
+
 		float4 pspecular = tex2Dlod(atlasSamplerA, float4(i, SpecularIndexA, 0, 0));
 
 		#ifdef USE_BLEND

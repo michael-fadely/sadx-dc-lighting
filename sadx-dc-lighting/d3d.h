@@ -51,6 +51,8 @@ namespace param
 	extern EffectParameter<D3DXVECTOR3> NormalScale;
 	extern EffectParameter<bool> AllowVertexColor;
 	extern EffectParameter<bool> ForceDefaultDiffuse;
+	extern EffectParameter<bool> DiffuseOverride;
+	extern EffectParameter<D3DXVECTOR3> DiffuseOverrideColor;
 
 #ifdef USE_SL
 	extern EffectParameter<D3DXCOLOR> MaterialSpecular;

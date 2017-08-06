@@ -52,6 +52,8 @@ namespace param
 	EffectParameter<D3DXVECTOR3> NormalScale("NormalScale", { 1.0f, 1.0f, 1.0f });
 	EffectParameter<bool>        AllowVertexColor("AllowVertexColor", true);
 	EffectParameter<bool>        ForceDefaultDiffuse("ForceDefaultDiffuse", false);
+	EffectParameter<bool>        DiffuseOverride("DiffuseOverride", false);
+	EffectParameter<D3DXVECTOR3> DiffuseOverrideColor("DiffuseOverrideColor", { 1.0f, 1.0f, 1.0f });
 
 #ifdef USE_SL
 	EffectParameter<D3DXCOLOR> MaterialSpecular("MaterialSpecular", {});
@@ -86,6 +88,8 @@ namespace param
 		&NormalScale,
 		&AllowVertexColor,
 		&ForceDefaultDiffuse,
+		&DiffuseOverride,
+		&DiffuseOverrideColor
 
 	#ifdef USE_SL
 		&SourceLight,
@@ -415,6 +419,7 @@ namespace local
 
 			if (LanternInstance::diffuse_override_temp)
 			{
+				param::DiffuseOverride = false;
 				LanternInstance::diffuse_override = false;
 			}
 
