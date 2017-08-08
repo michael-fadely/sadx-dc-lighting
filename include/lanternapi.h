@@ -49,64 +49,90 @@ extern "C" {
 	API void diffuse_override(bool enable);
 	API void diffuse_override_rgb(float r, float g, float b);
 
+	/**
+	 * Gets the currently set diffuse index.
+	 */
 	API int get_diffuse();
+
+	/**
+	 * Gets the currently set specular index.
+	 */
 	API int get_specular();
 
 	/**
-	* \brief Enable blending from a source diffuse
-	* index to a destination diffuse index.
-	* 
-	* \param src Source index in the range 0 to 7.
-	* -1 to apply to all indices.
-	* \param dest Destination index in the range 0 to 7.
-	*/
+	 * \brief Enable blending from a source diffuse
+	 * index to a destination diffuse index.
+
+	 * \param src Source index in the range 0 to 7.
+	 * -1 to apply to all indices.
+	 * \param dest Destination index in the range 0 to 7.
+	 */
 	API void set_diffuse_blend(int src, int dest);
 
 	/**
-	* \brief Enable blending from a source specular
-	* index to a destination specular index.
-	*
-	* \param src Source index in the range 0 to 7.
-	* -1 to apply to all indices.
-	* \param dest Destination index in the range 0 to 7.
-	*/
+	 * \brief Enable blending from a source specular
+	 * index to a destination specular index.
+
+	 * \param src Source index in the range 0 to 7.
+	 * -1 to apply to all indices.
+	 * \param dest Destination index in the range 0 to 7.
+	 */
 	API void set_specular_blend(int src, int dest);
 
 	/**
-	* \brief Returns the current destination blend index
-	* for the specified source diffuse index.
-	* 
-	* \param src Source index in the range 0 to 7.
-	* Values outside this range will always return -1.
-	* 
-	* \return A value in the range 0 to 7, or -1 if not set.
-	*/
+	 * \brief Returns the current destination blend index
+	 * for the specified source diffuse index.
+
+	 * \param src Source index in the range 0 to 7.
+	 * Values outside this range will always return -1.
+
+	 * \return A value in the range 0 to 7, or -1 if not set.
+	 */
 	API int get_diffuse_blend(int src);
 
 	/**
-	* \brief Returns the current destination blend index
-	* for the specified source specular index.
-	*
-	* \param src Source index in the range 0 to 7.
-	* Values outside this range will always return -1.
-	*
-	* \return A value in the range 0 to 7, or -1 if not set.
-	*/
+	 * \brief Returns the current destination blend index
+	 * for the specified source specular index.
+
+	 * \param src Source index in the range 0 to 7.
+	 * Values outside this range will always return -1.
+
+	 * \return A value in the range 0 to 7, or -1 if not set.
+	 */
 	API int get_specular_blend(int src);
 
+	/**
+	 * \brief Set diffuse index blending factor.
+	 * \param factor A blending factor in the range 0.0f to 1.0f.
+	 * Behavior of values outside this range is undefined.
+	 */
 	API void set_diffuse_blend_factor(float factor);
+
+	/**
+	 * \brief Set specular index blending factor.
+	 * \param factor A blending factor in the range 0.0f to 1.0f.
+	 * Behavior of values outside this range is undefined.
+	 */
 	API void set_specular_blend_factor(float factor);
+
+	/**
+	 * \brief Gets the diffuse blend factor set by set_diffuse_blend_factor.
+	 */
 	API float get_diffuse_blend_factor();
+
+	/**
+	 * \brief Gets the specular blend factor set by set_specular_blend_factor.
+	 */
 	API float get_specular_blend_factor();
 
 	/**
-	* \brief Set diffuse and specular index blending factor simultaneously.
-	* \param factor A blending factor in the range 0.0f to 1.0f.
-	* Behavior for values outside this range is undefined.
-	* 
-	* \see set_diffuse_blend_factor
-	* \see set_specular_blend_factor
-	*/
+	 * \brief Set diffuse and specular index blending factor simultaneously.
+	 * \param factor A blending factor in the range 0.0f to 1.0f.
+	 * Behavior of values outside this range is undefined.
+
+	 * \see set_diffuse_blend_factor
+	 * \see set_specular_blend_factor
+	 */
 	API void set_blend_factor(float factor);
 
 #ifdef __cplusplus
