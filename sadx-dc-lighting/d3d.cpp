@@ -410,25 +410,14 @@ namespace local
 	{
 		++drawing;
 	}
+
 	static void end()
 	{
 		if (d3d::effect == nullptr || drawing > 0 && --drawing < 1)
 		{
 			drawing = 0;
 			d3d::do_effect = false;
-
-			if (LanternInstance::diffuse_override_temp)
-			{
-				param::DiffuseOverride = false;
-				LanternInstance::diffuse_override = false;
-			}
-
-			if (LanternInstance::specular_override_temp)
-			{
-				LanternInstance::specular_override = false;
-			}
-
-			param::ForceDefaultDiffuse = false;
+			d3d::ResetOverrides();
 		}
 	}
 
@@ -864,6 +853,22 @@ namespace d3d
 	IDirect3DDevice9* device = nullptr;
 	Effect effect = nullptr;
 	bool do_effect = false;
+
+	void ResetOverrides()
+	{
+		if (LanternInstance::diffuse_override_temp)
+		{
+			LanternInstance::diffuse_override = false;
+			param::DiffuseOverride = false;
+		}
+
+		if (LanternInstance::specular_override_temp)
+		{
+			LanternInstance::specular_override = false;
+		}
+
+		param::ForceDefaultDiffuse = false;
+	}
 
 	void LoadShader()
 	{

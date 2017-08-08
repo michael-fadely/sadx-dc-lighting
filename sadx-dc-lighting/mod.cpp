@@ -153,6 +153,8 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 		return;
 	}
 
+	ResetOverrides();
+
 #ifdef _DEBUG
 	auto pad = ControllerPointers[0];
 	if (pad && pad->HeldButtons & Buttons_Z)
