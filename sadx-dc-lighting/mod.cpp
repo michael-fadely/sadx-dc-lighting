@@ -256,7 +256,7 @@ static void __cdecl CharSel_LoadA_r()
 
 	NJS_VECTOR dir = { 1.0f, -1.0f, -1.0f };
 	njUnitVector(&dir);
-	globals::palettes.SetLightDirection(dir);
+	globals::palettes.LightDirection(dir);
 
 	original();
 }
@@ -391,7 +391,7 @@ void setStageLightDirection()
 {
 	if (globals::palettes.Size())
 	{
-		const auto& dir = globals::palettes.GetLightDirection();
+		const auto& dir = globals::palettes.LightDirection();
 		CurrentStageLights[0].direction = dir;
 		CurrentStageLights[1].direction = dir;
 		CurrentStageLights[2].direction = dir;

@@ -98,26 +98,26 @@ void allow_landtable_specular(bool allow)
 
 void set_diffuse(int n, bool permanent)
 {
-	palettes.SetDiffuse(n);
+	palettes.DiffuseIndex(n);
 	LanternInstance::diffuse_override = n >= 0;
 	LanternInstance::diffuse_override_temp = !permanent;
 }
 
 void set_specular(int n, bool permanent)
 {
-	palettes.SetSpecular(n);
+	palettes.SpecularIndex(n);
 	LanternInstance::specular_override = n >= 0;
 	LanternInstance::specular_override_temp = !permanent;
 }
 
 int get_diffuse()
 {
-	return (!palettes.Size()) ? -1 : palettes[0].GetDiffuse();
+	return (!palettes.Size()) ? -1 : palettes[0].DiffuseIndex();
 }
 
 int get_specular()
 {
-	return (!palettes.Size()) ? -1 : palettes[0].GetSpecular();
+	return (!palettes.Size()) ? -1 : palettes[0].SpecularIndex();
 }
 
 void set_blend_factor(float factor)
@@ -158,7 +158,7 @@ void set_diffuse_blend(int src, int dest)
 
 	if (src == -1)
 	{
-		palettes.BlendAllDiffuse(dest);
+		palettes.DiffuseBlendAll(dest);
 		return;
 	}
 
@@ -167,7 +167,7 @@ void set_diffuse_blend(int src, int dest)
 		return;
 	}
 
-	palettes.BlendDiffuse(src, dest);
+	palettes.DiffuseBlend(src, dest);
 }
 
 void set_specular_blend(int src, int dest)
@@ -181,7 +181,7 @@ void set_specular_blend(int src, int dest)
 
 	if (src == -1)
 	{
-		palettes.BlendAllSpecular(dest);
+		palettes.SpecularBlendAll(dest);
 		return;
 	}
 
@@ -190,7 +190,7 @@ void set_specular_blend(int src, int dest)
 		return;
 	}
 
-	palettes.BlendSpecular(src, dest);
+	palettes.SpecularBlend(src, dest);
 }
 
 int get_diffuse_blend(int src)
@@ -200,7 +200,7 @@ int get_diffuse_blend(int src)
 		return -1;
 	}
 
-	return palettes.GetDiffuseBlend(src);
+	return palettes.DiffuseBlend(src);
 }
 
 int get_specular_blend(int src)
@@ -210,19 +210,19 @@ int get_specular_blend(int src)
 		return -1;
 	}
 
-	return palettes.GetSpecularBlend(src);
+	return palettes.SpecularBlend(src);
 }
 
 void set_diffuse_blend_factor(float factor)
 {
 	check_blend();
-	LanternInstance::SetDiffuseBlendFactor(factor);
+	LanternInstance::DiffuseBlendFactor(factor);
 }
 
 void set_specular_blend_factor(float factor)
 {
 	check_blend();
-	LanternInstance::SetSpecularBlendFactor(factor);
+	LanternInstance::SpecularBlendFactor(factor);
 }
 
 float get_diffuse_blend_factor()

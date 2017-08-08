@@ -507,24 +507,14 @@ bool LanternInstance::LoadPalette(Sint32 level, Sint32 act)
 	return LoadPalette(name.str());
 }
 
-void LanternInstance::SetDiffuseBlendFactor(float f)
+void LanternInstance::DiffuseBlendFactor(float f)
 {
-	if (!d3d::effect)
-	{
-		return;
-	}
-
 	param::DiffuseBlendFactor = f;
 	diffuse_blend_factor = f;
 }
 
-void LanternInstance::SetSpecularBlendFactor(float f)
+void LanternInstance::SpecularBlendFactor(float f)
 {
-	if (!d3d::effect)
-	{
-		return;
-	}
-
 	param::SpecularBlendFactor = f;
 	specular_blend_factor = f;
 }
@@ -597,53 +587,53 @@ void LanternInstance::SetPalettes(Sint32 type, Uint32 flags)
 
 	if (!diffuse_override)
 	{
-		SetDiffuse(diffuse);
+		DiffuseIndex(diffuse);
 	}
 
 	if (!specular_override)
 	{
-		SetSpecular(specular);
+		SpecularIndex(specular);
 	}
 
 	d3d::do_effect = use_palette = diffuse > -1 && specular > -1;
 }
 
-void LanternInstance::SetDiffuse(Sint32 n)
+void LanternInstance::DiffuseIndex(Sint32 value)
 {
-	if (n >= 0 && diffuse_param != nullptr)
+	if (value >= 0 && diffuse_param != nullptr)
 	{
-		*diffuse_param = _index_float(n, 0);
+		*diffuse_param = _index_float(value, 0);
 	}
 
-	diffuse_index = n;
+	diffuse_index = value;
 }
 
-void LanternInstance::SetSpecular(Sint32 n)
+void LanternInstance::SpecularIndex(Sint32 value)
 {
-	if (n >= 0 && specular_param != nullptr)
+	if (value >= 0 && specular_param != nullptr)
 	{
-		*specular_param = _index_float(n, 1);
+		*specular_param = _index_float(value, 1);
 	}
 
-	specular_index = n;
+	specular_index = value;
 }
 
-Sint32 LanternInstance::GetDiffuse()
+Sint32 LanternInstance::DiffuseIndex()
 {
 	return diffuse_index;
 }
 
-Sint32 LanternInstance::GetSpecular()
+Sint32 LanternInstance::SpecularIndex()
 {
 	return specular_index;
 }
 
-void LanternInstance::SetLightDirection(const NJS_VECTOR& d)
+void LanternInstance::LightDirection(const NJS_VECTOR& d)
 {
 	sl_direction = d;
 }
 
-const NJS_VECTOR& LanternInstance::GetLightDirection()
+const NJS_VECTOR& LanternInstance::LightDirection()
 {
 	return sl_direction;
 }
@@ -888,36 +878,36 @@ void LanternCollection::SetPalettes(Sint32 type, Uint32 flags)
 	}
 }
 
-void LanternCollection::SetDiffuse(Sint32 n)
+void LanternCollection::DiffuseIndex(Sint32 value)
 {
 	for (auto& i : instances)
 	{
-		i.SetDiffuse(n);
+		i.DiffuseIndex(value);
 	}
 }
 
-void LanternCollection::SetSpecular(Sint32 n)
+void LanternCollection::SpecularIndex(Sint32 value)
 {
 	for (auto& i : instances)
 	{
-		i.SetSpecular(n);
+		i.SpecularIndex(value);
 	}
 }
 
-void LanternCollection::SetLightDirection(const NJS_VECTOR& d)
+void LanternCollection::LightDirection(const NJS_VECTOR& d)
 {
 	for (auto& i : instances)
 	{
-		i.SetLightDirection(d);
+		i.LightDirection(d);
 	}
 }
 
-const NJS_VECTOR& LanternCollection::GetLightDirection()
+const NJS_VECTOR& LanternCollection::LightDirection()
 {
-	return instances[0].GetLightDirection();
+	return instances[0].LightDirection();
 }
 
-void LanternCollection::SetAllBlend(bool enable)
+void LanternCollection::ForwardBlendAll(bool enable)
 {
 	for (int i = 0; i < 8; i++)
 	{
@@ -928,42 +918,42 @@ void LanternCollection::SetAllBlend(bool enable)
 }
 
 __forceinline
-void _blend_all(Sint32(&srcArray)[8], int dest)
+void _blend_all(Sint32(&srcArray)[8], int value)
 {
 	for (auto& i : srcArray)
 	{
-		i = dest;
+		i = value;
 	}
 }
 
-void LanternCollection::BlendAllDiffuse(int dest)
+void LanternCollection::DiffuseBlendAll(int value)
 {
-	_blend_all(diffuse_blend, dest);
+	_blend_all(diffuse_blend, value);
 }
 
-void LanternCollection::BlendAllSpecular(int dest)
+void LanternCollection::SpecularBlendAll(int value)
 {
-	_blend_all(specular_blend, dest);
+	_blend_all(specular_blend, value);
 }
 
-void LanternCollection::BlendDiffuse(int src, int dest)
+void LanternCollection::DiffuseBlend(int index, int value)
 {
-	diffuse_blend[src] = dest;
+	diffuse_blend[index] = value;
 }
 
-void LanternCollection::BlendSpecular(int src, int dest)
+void LanternCollection::SpecularBlend(int index, int value)
 {
-	specular_blend[src] = dest;
+	specular_blend[index] = value;
 }
 
-int LanternCollection::GetDiffuseBlend(int src) const
+int LanternCollection::DiffuseBlend(int index) const
 {
-	return diffuse_blend[src];
+	return diffuse_blend[index];
 }
 
-int LanternCollection::GetSpecularBlend(int src) const
+int LanternCollection::SpecularBlend(int index) const
 {
-	return specular_blend[src];
+	return specular_blend[index];
 }
 
 void LanternCollection::ApplyBlend()
@@ -975,7 +965,7 @@ void LanternCollection::ApplyBlend()
 
 	auto& i = instances[0];
 
-	auto d = i.GetDiffuse();
+	auto d = i.DiffuseIndex();
 	param::DiffuseBlendFactor = 0.0f;
 
 	if (d >= 0 && diffuse_blend[d] >= 0)
@@ -984,7 +974,7 @@ void LanternCollection::ApplyBlend()
 		param::DiffuseBlendFactor = LanternInstance::diffuse_blend_factor;
 	}
 
-	auto s = i.GetSpecular();
+	auto s = i.SpecularIndex();
 	param::SpecularBlendFactor = 0.0f;
 
 	if (s >= 0 && specular_blend[s] >= 0)

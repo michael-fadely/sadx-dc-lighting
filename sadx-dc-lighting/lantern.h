@@ -70,12 +70,12 @@ public:
 	virtual bool LoadSource(const std::string& path) = 0;
 	virtual void SetLastLevel(Sint32 level, Sint32 act) = 0;
 	virtual void SetPalettes(Sint32 type, Uint32 flags) = 0;
-	virtual void SetDiffuse(Sint32 n) = 0;
-	virtual void SetSpecular(Sint32 n) = 0;
-	virtual Sint32 GetDiffuse() = 0;
-	virtual Sint32 GetSpecular() = 0;
-	virtual void SetLightDirection(const NJS_VECTOR& d) = 0;
-	virtual const NJS_VECTOR& GetLightDirection() = 0;
+	virtual void DiffuseIndex(Sint32 value) = 0;
+	virtual void SpecularIndex(Sint32 value) = 0;
+	virtual Sint32 DiffuseIndex() = 0;
+	virtual Sint32 SpecularIndex() = 0;
+	virtual void LightDirection(const NJS_VECTOR& d) = 0;
+	virtual const NJS_VECTOR& LightDirection() = 0;
 };
 
 class LanternInstance : ILantern
@@ -114,8 +114,9 @@ public:
 	static bool UsePalette();
 	static float DiffuseBlendFactor();
 	static float SpecularBlendFactor();
-	static void SetDiffuseBlendFactor(float f);
-	static void SetSpecularBlendFactor(float f);
+	static void DiffuseBlendFactor(float f);
+	static void SpecularBlendFactor(float f);
+
 	static std::string PaletteId(Sint32 level, Sint32 act);
 
 	bool LoadPalette(Sint32 level, Sint32 act) override;
@@ -124,12 +125,12 @@ public:
 	bool LoadSource(const std::string& path) override;
 	void SetLastLevel(Sint32 level, Sint32 act) override;
 	void SetPalettes(Sint32 type, Uint32 flags) override;
-	void SetDiffuse(Sint32 n) override;
-	void SetSpecular(Sint32 n) override;
-	Sint32 GetDiffuse() override;
-	Sint32 GetSpecular() override;
-	void SetLightDirection(const NJS_VECTOR& d) override;
-	const NJS_VECTOR& GetLightDirection() override;
+	void DiffuseIndex(Sint32 value) override;
+	void SpecularIndex(Sint32 value) override;
+	Sint32 DiffuseIndex() override;
+	Sint32 SpecularIndex() override;
+	void LightDirection(const NJS_VECTOR& d) override;
+	const NJS_VECTOR& LightDirection() override;
 };
 
 class LanternCollection : ILantern
@@ -161,13 +162,22 @@ public:
 	bool RunSlCallbacks(Sint32 level, Sint32 act, Sint8 time);
 	bool LoadFiles();
 
-	void SetAllBlend(bool enable);
-	void BlendAllDiffuse(int dest);
-	void BlendAllSpecular(int dest);
-	void BlendDiffuse(int src, int dest);
-	void BlendSpecular(int src, int dest);
-	int GetDiffuseBlend(int src) const;
-	int GetSpecularBlend(int src) const;
+	/// Blend all indices of diffuse and specular to the same index
+	/// of a secondary palette atlas.
+	void ForwardBlendAll(bool enable);
+	/// Blend all diffuse indices to a single destination index.
+	void DiffuseBlendAll(int value);
+	/// Blend all specular indices to a single destination index.
+	void SpecularBlendAll(int value);
+	/// Blend a single diffuse index to a single destination index.
+	void DiffuseBlend(int index, int value);
+	/// Get current diffuse blend destination index.
+	int DiffuseBlend(int index) const;
+	/// Blend a single specular index to a single destination index.
+	void SpecularBlend(int index, int value);
+	/// Get current specular blend destination index.
+	int SpecularBlend(int index) const;
+	/// Apply necessary shader parameters.
 	void ApplyBlend();
 
 	LanternInstance& operator[](size_t i) { return instances[i]; }
@@ -178,19 +188,19 @@ public:
 	bool LoadSource(const std::string& path) override;
 	void SetLastLevel(Sint32 level, Sint32 act) override;
 	void SetPalettes(Sint32 type, Uint32 flags) override;
-	void SetDiffuse(Sint32 n) override;
-	void SetSpecular(Sint32 n) override;
+	void DiffuseIndex(Sint32 value) override;
+	void SpecularIndex(Sint32 value) override;
 
-	Sint32 GetDiffuse() override
+	Sint32 DiffuseIndex() override
 	{
 		return -1;
 	}
 
-	Sint32 GetSpecular() override
+	Sint32 SpecularIndex() override
 	{
 		return -1;
 	}
 
-	void SetLightDirection(const NJS_VECTOR& d) override;
-	const NJS_VECTOR& GetLightDirection() override;
+	void LightDirection(const NJS_VECTOR& d) override;
+	const NJS_VECTOR& LightDirection() override;
 };

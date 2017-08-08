@@ -52,7 +52,7 @@ static void __cdecl Obj_SkyDeck_Delete(ObjectMaster* _this)
 {
 	globals::palettes.Remove(handle);
 	d3d::SetShaderFlags(ShaderFlags_Blend, false);
-	globals::palettes.SetAllBlend(false);
+	globals::palettes.ForwardBlendAll(false);
 	handle = 0;
 }
 
@@ -76,7 +76,7 @@ static void __cdecl Obj_SkyDeck_r(ObjectMaster* _this)
 	lantern.LoadPalette(LevelIDs_SkyDeck, 1);
 	handle = globals::palettes.Add(lantern);
 	globals::palettes.SetLastLevel(-1, -1);
-	globals::palettes.SetAllBlend(true);
+	globals::palettes.ForwardBlendAll(true);
 	d3d::SetShaderFlags(ShaderFlags_Blend, true);
 }
 
