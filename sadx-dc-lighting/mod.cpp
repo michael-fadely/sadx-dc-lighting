@@ -426,7 +426,7 @@ extern "C"
 
 		MH_Initialize();
 
-		LanternInstance base(&param::PaletteA, &param::DiffuseIndexA, &param::SpecularIndexA);
+		LanternInstance base(&param::PaletteA);
 		globals::palettes.Add(base);
 
 		globals::system = path;

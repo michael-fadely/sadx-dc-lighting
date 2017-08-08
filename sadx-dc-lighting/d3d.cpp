@@ -443,7 +443,7 @@ namespace local
 			return;
 		}
 
-		globals::palettes.ApplyBlend();
+		globals::palettes.ApplyShaderParameters();
 
 		bool changes = false;
 

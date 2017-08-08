@@ -80,16 +80,15 @@ public:
 
 class LanternInstance : ILantern
 {
+	// TODO: handle externally
 	EffectParameter<Texture>* atlas;
-	EffectParameter<float>* diffuse_param;
-	EffectParameter<float>* specular_param;
 	SourceLight source_lights[16] = {};
 	NJS_VECTOR sl_direction = {};
 
 	void copy(LanternInstance& inst);
 
 public:
-	LanternInstance(EffectParameter<Texture>* atlas, EffectParameter<float>* diffuse_param, EffectParameter<float>* specular_param);
+	LanternInstance(EffectParameter<Texture>* atlas);
 	LanternInstance(LanternInstance&& instance) noexcept;
 
 	LanternInstance(const LanternInstance&) = default;
@@ -178,7 +177,7 @@ public:
 	/// Get current specular blend destination index.
 	int SpecularBlend(int index) const;
 	/// Apply necessary shader parameters.
-	void ApplyBlend();
+	void ApplyShaderParameters();
 
 	LanternInstance& operator[](size_t i) { return instances[i]; }
 

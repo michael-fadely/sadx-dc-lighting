@@ -70,8 +70,7 @@ static void __cdecl Obj_SkyDeck_r(ObjectMaster* _this)
 	globals::palettes.LoadPalette(LevelIDs_SkyDeck, 0);
 	globals::palettes.LoadSource(LevelIDs_SkyDeck, 0);
 
-	// TODO: manage index parameters outside of LanternInstance
-	LanternInstance lantern(&param::PaletteB, nullptr, nullptr);
+	LanternInstance lantern(&param::PaletteB);
 
 	lantern.LoadPalette(LevelIDs_SkyDeck, 1);
 	handle = globals::palettes.Add(lantern);

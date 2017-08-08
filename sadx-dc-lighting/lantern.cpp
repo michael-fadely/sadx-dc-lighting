@@ -330,8 +330,6 @@ std::string LanternInstance::PaletteId(Sint32 level, Sint32 act)
 void LanternInstance::copy(LanternInstance& inst)
 {
 	atlas          = inst.atlas;
-	diffuse_param  = inst.diffuse_param;
-	specular_param = inst.specular_param;
 	last_time      = inst.last_time;
 	last_act       = inst.last_act;
 	last_level     = inst.last_level;
@@ -339,8 +337,7 @@ void LanternInstance::copy(LanternInstance& inst)
 	specular_index = inst.specular_index;
 }
 
-LanternInstance::LanternInstance(EffectParameter<Texture>* atlas, EffectParameter<float>* diffuse_param, EffectParameter<float>* specular_param)
-	: atlas(atlas), diffuse_param(diffuse_param), specular_param(specular_param)
+LanternInstance::LanternInstance(EffectParameter<Texture>* atlas) : atlas(atlas)
 {
 }
 
@@ -453,14 +450,23 @@ bool LanternInstance::LoadPalette(const std::string& path)
 
 	file.close();
 
-	Texture texture = nullptr;
+	Texture texture = atlas->Value();
 
-	if (FAILED(d3d::device->CreateTexture(256, 16, 1, 0, D3DFMT_X8R8G8B8, D3DPOOL_MANAGED, &texture, nullptr)))
+	if (texture == nullptr)
 	{
-		throw std::exception("Failed to create palette texture!");
-	}
+		if (FAILED(d3d::device->CreateTexture(256, 16, 1, 0, D3DFMT_X8R8G8B8, D3DPOOL_MANAGED, &texture, nullptr)))
+		{
+			throw std::exception("Failed to create palette texture!");
+		}
 
-	*atlas = texture;
+		*atlas = texture;
+	}
+	else
+	{
+		// Release all of its references in case there are lingering textures.
+		atlas->Release();
+		*atlas = texture;
+	}
 
 	D3DLOCKED_RECT rect;
 	if (FAILED(texture->LockRect(0, &rect, nullptr, 0)))
@@ -600,21 +606,11 @@ void LanternInstance::SetPalettes(Sint32 type, Uint32 flags)
 
 void LanternInstance::DiffuseIndex(Sint32 value)
 {
-	if (value >= 0 && diffuse_param != nullptr)
-	{
-		*diffuse_param = _index_float(value, 0);
-	}
-
 	diffuse_index = value;
 }
 
 void LanternInstance::SpecularIndex(Sint32 value)
 {
-	if (value >= 0 && specular_param != nullptr)
-	{
-		*specular_param = _index_float(value, 1);
-	}
-
 	specular_index = value;
 }
 
@@ -802,7 +798,7 @@ bool LanternCollection::LoadFiles()
 
 	if (instances.empty())
 	{
-		instances.emplace_back(&param::PaletteA, &param::DiffuseIndexA, &param::SpecularIndexA);
+		instances.emplace_back(&param::PaletteA);
 	}
 
 	bool pl_handled = RunPlCallbacks(CurrentLevel, CurrentAct, time);
@@ -956,7 +952,7 @@ int LanternCollection::SpecularBlend(int index) const
 	return specular_blend[index];
 }
 
-void LanternCollection::ApplyBlend()
+void LanternCollection::ApplyShaderParameters()
 {
 	if (instances.empty())
 	{
@@ -968,19 +964,29 @@ void LanternCollection::ApplyBlend()
 	auto d = i.DiffuseIndex();
 	param::DiffuseBlendFactor = 0.0f;
 
-	if (d >= 0 && diffuse_blend[d] >= 0)
+	if (d >= 0)
 	{
-		param::DiffuseIndexB = _index_float(diffuse_blend[d], 0);
-		param::DiffuseBlendFactor = LanternInstance::diffuse_blend_factor;
+		param::DiffuseIndexA = _index_float(d, 0);
+
+		if (diffuse_blend[d] >= 0)
+		{
+			param::DiffuseIndexB = _index_float(diffuse_blend[d], 0);
+			param::DiffuseBlendFactor = LanternInstance::diffuse_blend_factor;
+		}
 	}
 
 	auto s = i.SpecularIndex();
 	param::SpecularBlendFactor = 0.0f;
 
-	if (s >= 0 && specular_blend[s] >= 0)
+	if (s >= 0)
 	{
-		param::SpecularIndexB = _index_float(specular_blend[s], 1);
-		param::SpecularBlendFactor = LanternInstance::specular_blend_factor;
+		param::SpecularIndexA = _index_float(s, 1);
+
+		if (specular_blend[s] >= 0)
+		{
+			param::SpecularIndexB = _index_float(specular_blend[s], 1);
+			param::SpecularBlendFactor = LanternInstance::specular_blend_factor;
+		}
 	}
 }
 
