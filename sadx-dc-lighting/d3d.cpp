@@ -7,7 +7,7 @@
 #include <d3d8to9.hpp>
 
 // Mod loader
-#include <SADXFunctions.h>
+#include <SADXModLoader.h>
 #include <Trampoline.h>
 
 // MinHook
@@ -34,7 +34,8 @@ namespace param
 	EffectParameter<Texture>     PaletteB("PaletteB", nullptr);
 	EffectParameter<float>       DiffuseIndexB("DiffuseIndexB", 0.0f);
 	EffectParameter<float>       SpecularIndexB("SpecularIndexB", 0.0f);
-	EffectParameter<float>       BlendFactor("BlendFactor", 0.0f);
+	EffectParameter<float>       DiffuseBlendFactor("DiffuseBlendFactor", 0.0f);
+	EffectParameter<float>       SpecularBlendFactor("SpecularBlendFactor", 0.0f);
 	EffectParameter<D3DXMATRIX>  WorldMatrix("WorldMatrix", {});
 	EffectParameter<D3DXMATRIX>  wvMatrix("wvMatrix", {});
 	EffectParameter<D3DXMATRIX>  ProjectionMatrix("ProjectionMatrix", {});
@@ -70,7 +71,8 @@ namespace param
 		&PaletteB,
 		&DiffuseIndexB,
 		&SpecularIndexB,
-		&BlendFactor,
+		&DiffuseBlendFactor,
+		&SpecularBlendFactor,
 		&WorldMatrix,
 		&wvMatrix,
 		&ProjectionMatrix,
@@ -440,6 +442,8 @@ namespace local
 			endEffect();
 			return;
 		}
+
+		globals::palettes.ApplyBlend();
 
 		bool changes = false;
 

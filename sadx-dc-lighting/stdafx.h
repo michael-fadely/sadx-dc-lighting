@@ -21,7 +21,7 @@
 
 #define WIN32_LEAN_AND_MEAN
 
-#if 1
+#ifdef _DEBUG
 
 // Windows API
 #include <Windows.h>

@@ -92,7 +92,8 @@ shared float  FogEnd;
 shared float  FogDensity;
 shared float4 FogColor;
 
-shared float BlendFactor = 0.0f;
+shared float DiffuseBlendFactor = 0.0f;
+shared float SpecularBlendFactor = 0.0f;
 
 shared bool AllowVertexColor       = true;
 shared bool ForceDefaultDiffuse    = false;
@@ -235,8 +236,8 @@ PS_IN vs_main(VS_IN input)
 			float4 bdiffuse = tex2Dlod(atlasSamplerB, float4(i, DiffuseIndexB, 0, 0));
 			float4 bspecular = tex2Dlod(atlasSamplerB, float4(i, SpecularIndexB, 0, 0));
 
-			pdiffuse = lerp(pdiffuse, bdiffuse, BlendFactor);
-			pspecular = lerp(pspecular, bspecular, BlendFactor);
+			pdiffuse = lerp(pdiffuse, bdiffuse, DiffuseBlendFactor);
+			pspecular = lerp(pspecular, bspecular, SpecularBlendFactor);
 		#endif
 
 		output.diffuse = float4((diffuse * pdiffuse).rgb, diffuse.a);

@@ -4,7 +4,6 @@
 #include <d3d9.h>
 
 #include <algorithm>
-#include <exception>
 #include <string>
 #include <sstream>
 #include <vector>
@@ -147,16 +146,22 @@ bool LanternInstance::diffuse_override_temp  = false;
 bool LanternInstance::specular_override      = false;
 bool LanternInstance::specular_override_temp = false;
 bool LanternInstance::use_palette            = false;
-float LanternInstance::blend_factor          = 0.0f;
+float LanternInstance::diffuse_blend_factor  = 0.0f;
+float LanternInstance::specular_blend_factor = 0.0f;
 
 bool LanternInstance::UsePalette()
 {
 	return use_palette;
 }
 
-float LanternInstance::BlendFactor()
+float LanternInstance::DiffuseBlendFactor()
 {
-	return blend_factor;
+	return diffuse_blend_factor;
+}
+
+float LanternInstance::SpecularBlendFactor()
+{
+	return specular_blend_factor;
 }
 
 inline bool GameModeIngame()
@@ -324,17 +329,14 @@ std::string LanternInstance::PaletteId(Sint32 level, Sint32 act)
 
 void LanternInstance::copy(LanternInstance& inst)
 {
-	atlas            = inst.atlas;
-	diffuse_param    = inst.diffuse_param;
-	specular_param   = inst.specular_param;
-	blend_type       = inst.blend_type;
-	last_time        = inst.last_time;
-	last_act         = inst.last_act;
-	last_level       = inst.last_level;
-	diffuse_index    = inst.diffuse_index;
-	specular_index   = inst.specular_index;
-	diffuse_index_b  = inst.diffuse_index_b;
-	specular_index_b = inst.specular_index_b;
+	atlas          = inst.atlas;
+	diffuse_param  = inst.diffuse_param;
+	specular_param = inst.specular_param;
+	last_time      = inst.last_time;
+	last_act       = inst.last_act;
+	last_level     = inst.last_level;
+	diffuse_index  = inst.diffuse_index;
+	specular_index = inst.specular_index;
 }
 
 LanternInstance::LanternInstance(EffectParameter<Texture>* atlas, EffectParameter<float>* diffuse_param, EffectParameter<float>* specular_param)
@@ -505,15 +507,26 @@ bool LanternInstance::LoadPalette(Sint32 level, Sint32 act)
 	return LoadPalette(name.str());
 }
 
-void LanternInstance::SetBlendFactor(float f)
+void LanternInstance::SetDiffuseBlendFactor(float f)
 {
 	if (!d3d::effect)
 	{
 		return;
 	}
 
-	param::BlendFactor = f;
-	blend_factor = f;
+	param::DiffuseBlendFactor = f;
+	diffuse_blend_factor = f;
+}
+
+void LanternInstance::SetSpecularBlendFactor(float f)
+{
+	if (!d3d::effect)
+	{
+		return;
+	}
+
+	param::SpecularBlendFactor = f;
+	specular_blend_factor = f;
 }
 
 inline float _index_float(Sint32 i, Sint32 offset)
@@ -582,21 +595,6 @@ void LanternInstance::SetPalettes(Sint32 type, Uint32 flags)
 			break;
 	}
 
-	// blend_type is used exclusively for local blending
-	if (blend_type > -1)
-	{
-		// not calling SetBlendFactor because the value is saved
-		// and restored when the light type matches the target type.
-		if (type == blend_type)
-		{
-			param::BlendFactor = blend_factor;
-		}
-		else if (blend_factor != 0.0f)
-		{
-			param::BlendFactor = 0.0f;
-		}
-	}
-
 	if (!diffuse_override)
 	{
 		SetDiffuse(diffuse);
@@ -612,7 +610,7 @@ void LanternInstance::SetPalettes(Sint32 type, Uint32 flags)
 
 void LanternInstance::SetDiffuse(Sint32 n)
 {
-	if (n >= 0)
+	if (n >= 0 && diffuse_param != nullptr)
 	{
 		*diffuse_param = _index_float(n, 0);
 	}
@@ -622,7 +620,7 @@ void LanternInstance::SetDiffuse(Sint32 n)
 
 void LanternInstance::SetSpecular(Sint32 n)
 {
-	if (n >= 0)
+	if (n >= 0 && specular_param != nullptr)
 	{
 		*specular_param = _index_float(n, 1);
 	}
@@ -638,53 +636,6 @@ Sint32 LanternInstance::GetDiffuse()
 Sint32 LanternInstance::GetSpecular()
 {
 	return specular_index;
-}
-
-void LanternInstance::SetDiffuseB(Sint32 n)
-{
-	if (n > -1)
-	{
-		param::DiffuseIndexB = _index_float(n, 0);
-	}
-
-	diffuse_index_b = n;
-}
-
-void LanternInstance::SetSpecularB(Sint32 n)
-{
-	if (n > -1)
-	{
-		param::SpecularIndexB = _index_float(n, 1);
-	}
-
-	specular_index_b = n;
-}
-
-Sint32 LanternInstance::GetDiffuseB() const
-{
-	return diffuse_index_b;
-}
-
-Sint32 LanternInstance::GetSpecularB() const
-{
-	return specular_index_b;
-}
-
-// hard coded crap
-void LanternInstance::SetSelfBlend(Sint32 type, Sint32 diffuse, Sint32 specular)
-{
-	if (type < 0)
-	{
-		blend_type = -1;
-		param::PaletteB = nullptr;
-		return;
-	}
-
-	blend_type = type;
-	param::PaletteB = param::PaletteA;
-
-	SetDiffuseB(diffuse);
-	SetSpecularB(specular);
 }
 
 void LanternInstance::SetLightDirection(const NJS_VECTOR& d)
@@ -953,14 +904,6 @@ void LanternCollection::SetSpecular(Sint32 n)
 	}
 }
 
-void LanternCollection::SetSelfBlend(Sint32 type, Sint32 diffuse, Sint32 specular)
-{
-	for (auto& i : instances)
-	{
-		i.SetSelfBlend(type, diffuse, specular);
-	}
-}
-
 void LanternCollection::SetLightDirection(const NJS_VECTOR& d)
 {
 	for (auto& i : instances)
@@ -972,6 +915,83 @@ void LanternCollection::SetLightDirection(const NJS_VECTOR& d)
 const NJS_VECTOR& LanternCollection::GetLightDirection()
 {
 	return instances[0].GetLightDirection();
+}
+
+void LanternCollection::SetAllBlend(bool enable)
+{
+	for (int i = 0; i < 8; i++)
+	{
+		auto n = enable ? i : -1;
+		diffuse_blend[i] = n;
+		specular_blend[i] = n;
+	}
+}
+
+__forceinline
+void _blend_all(Sint32(&srcArray)[8], int dest)
+{
+	for (auto& i : srcArray)
+	{
+		i = dest;
+	}
+}
+
+void LanternCollection::BlendAllDiffuse(int dest)
+{
+	_blend_all(diffuse_blend, dest);
+}
+
+void LanternCollection::BlendAllSpecular(int dest)
+{
+	_blend_all(specular_blend, dest);
+}
+
+void LanternCollection::BlendDiffuse(int src, int dest)
+{
+	diffuse_blend[src] = dest;
+}
+
+void LanternCollection::BlendSpecular(int src, int dest)
+{
+	specular_blend[src] = dest;
+}
+
+int LanternCollection::GetDiffuseBlend(int src) const
+{
+	return diffuse_blend[src];
+}
+
+int LanternCollection::GetSpecularBlend(int src) const
+{
+	return specular_blend[src];
+}
+
+void LanternCollection::ApplyBlend()
+{
+	if (instances.empty())
+	{
+		return;
+	}
+
+	auto& i = instances[0];
+
+	auto d = i.GetDiffuse();
+	param::DiffuseBlendFactor = 0.0f;
+
+	if (d >= 0 && diffuse_blend[d] >= 0)
+	{
+		param::DiffuseIndexB = _index_float(diffuse_blend[d], 0);
+		param::DiffuseBlendFactor = LanternInstance::diffuse_blend_factor;
+	}
+
+	auto s = i.GetSpecular();
+	param::SpecularBlendFactor = 0.0f;
+
+	if (s >= 0 && specular_blend[s] >= 0)
+	{
+		param::SpecularIndexB = _index_float(specular_blend[s], 1);
+		param::SpecularBlendFactor = LanternInstance::specular_blend_factor;
+	}
 }
 
 void LanternCollection::callback_add(std::deque<lantern_load_cb>& c, lantern_load_cb callback)

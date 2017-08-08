@@ -1,5 +1,7 @@
 #include "stdafx.h"
 
+#include <algorithm>
+
 #include "lantern.h"
 #include "globals.h"
 #include "d3d.h"
@@ -8,7 +10,7 @@
 
 using namespace globals;
 
-void check_blend()
+inline void check_blend()
 {
 	if (param::PaletteB.Value() == nullptr)
 	{
@@ -118,43 +120,10 @@ int get_specular()
 	return (!palettes.Size()) ? -1 : palettes[0].GetSpecular();
 }
 
-void set_diffuse_blend(int n)
-{
-	check_blend();
-	if (palettes.Size() > 0)
-	{
-		palettes[0].SetDiffuseB(n);
-	}
-}
-
-void set_specular_blend(int n)
-{
-	check_blend();
-	if (palettes.Size() > 0)
-	{
-		palettes[0].SetSpecularB(n);
-	}
-}
-
-int get_diffuse_blend()
-{
-	return (!palettes.Size()) ? -1 : palettes[0].GetDiffuseB();
-}
-
-int get_specular_blend()
-{
-	return (!palettes.Size()) ? -1 : palettes[0].GetSpecularB();
-}
-
 void set_blend_factor(float factor)
 {
-	check_blend();
-	LanternInstance::SetBlendFactor(factor);
-}
-
-float get_blend_factor()
-{
-	return LanternInstance::BlendFactor();
+	set_diffuse_blend_factor(factor);
+	set_specular_blend_factor(factor);
 }
 
 void allow_object_vcolor(bool allow)
@@ -176,4 +145,92 @@ void diffuse_override_rgb(float r, float g, float b)
 {
 	D3DXVECTOR3 color = { r, g, b };
 	param::DiffuseOverrideColor = color;
+}
+
+void set_diffuse_blend(int src, int dest)
+{
+	if (dest < -1 || dest > 7)
+	{
+		return;
+	}
+
+	check_blend();
+
+	if (src == -1)
+	{
+		palettes.BlendAllDiffuse(dest);
+		return;
+	}
+
+	if (src < 0 || src > 7)
+	{
+		return;
+	}
+
+	palettes.BlendDiffuse(src, dest);
+}
+
+void set_specular_blend(int src, int dest)
+{
+	if (dest < -1 || dest > 7)
+	{
+		return;
+	}
+
+	check_blend();
+
+	if (src == -1)
+	{
+		palettes.BlendAllSpecular(dest);
+		return;
+	}
+
+	if (src < 0 || src > 7)
+	{
+		return;
+	}
+
+	palettes.BlendSpecular(src, dest);
+}
+
+int get_diffuse_blend(int src)
+{
+	if (src < 0 || src > 7)
+	{
+		return -1;
+	}
+
+	return palettes.GetDiffuseBlend(src);
+}
+
+int get_specular_blend(int src)
+{
+	if (src < 0 || src > 7)
+	{
+		return -1;
+	}
+
+	return palettes.GetSpecularBlend(src);
+}
+
+void set_diffuse_blend_factor(float factor)
+{
+	check_blend();
+	LanternInstance::SetDiffuseBlendFactor(factor);
+}
+
+void set_specular_blend_factor(float factor)
+{
+	check_blend();
+	LanternInstance::SetSpecularBlendFactor(factor);
+}
+
+float get_diffuse_blend_factor()
+{
+	return LanternInstance::DiffuseBlendFactor();
+}
+
+float get_specular_blend_factor()
+{
+	return LanternInstance::SpecularBlendFactor();
 }

@@ -1,8 +1,6 @@
 #pragma once
 
-#include <string>
 #include <ninja.h>
-#include <d3d9.h>
 #include <deque>
 #include <SADXStructs.h>
 
@@ -76,7 +74,6 @@ public:
 	virtual void SetSpecular(Sint32 n) = 0;
 	virtual Sint32 GetDiffuse() = 0;
 	virtual Sint32 GetSpecular() = 0;
-	virtual void SetSelfBlend(Sint32 type, Sint32 diffuse, Sint32 specular) = 0;
 	virtual void SetLightDirection(const NJS_VECTOR& d) = 0;
 	virtual const NJS_VECTOR& GetLightDirection() = 0;
 };
@@ -104,22 +101,22 @@ public:
 	static bool diffuse_override_temp;
 	static bool specular_override;
 	static bool specular_override_temp;
-	static float blend_factor;
+	static float diffuse_blend_factor;
+	static float specular_blend_factor;
 	static bool use_palette;
 
-	Sint32 blend_type       = -1;
-	Sint8 last_time         = -1;
-	Sint32 last_act         = -1;
-	Sint32 last_level       = -1;
-	Sint32 diffuse_index    = -1;
-	Sint32 specular_index   = -1;
-	Sint32 diffuse_index_b  = -1;
-	Sint32 specular_index_b = -1;
+	Sint8 last_time       = -1;
+	Sint32 last_act       = -1;
+	Sint32 last_level     = -1;
+	Sint32 diffuse_index  = -1;
+	Sint32 specular_index = -1;
 
 	static bool UsePalette();
-	static float BlendFactor();
+	static float DiffuseBlendFactor();
+	static float SpecularBlendFactor();
+	static void SetDiffuseBlendFactor(float f);
+	static void SetSpecularBlendFactor(float f);
 	static std::string PaletteId(Sint32 level, Sint32 act);
-	static void SetBlendFactor(float f);
 
 	bool LoadPalette(Sint32 level, Sint32 act) override;
 	bool LoadPalette(const std::string& path) override;
@@ -131,14 +128,8 @@ public:
 	void SetSpecular(Sint32 n) override;
 	Sint32 GetDiffuse() override;
 	Sint32 GetSpecular() override;
-	void SetSelfBlend(Sint32 type, Sint32 diffuse, Sint32 specular) override;
 	void SetLightDirection(const NJS_VECTOR& d) override;
 	const NJS_VECTOR& GetLightDirection() override;
-
-	void SetDiffuseB(Sint32 n);
-	void SetSpecularB(Sint32 n);
-	Sint32 GetDiffuseB() const;
-	Sint32 GetSpecularB() const;
 };
 
 class LanternCollection : ILantern
@@ -149,6 +140,9 @@ class LanternCollection : ILantern
 
 	static void callback_add(std::deque<lantern_load_cb>& c, lantern_load_cb callback);
 	static void callback_del(std::deque<lantern_load_cb>& c, lantern_load_cb callback);
+
+	Sint32 diffuse_blend[8] = { -1, -1, -1, -1, -1, -1, -1, -1 };
+	Sint32 specular_blend[8] = { -1, -1, -1, -1, -1, -1, -1, -1 };
 
 public:
 	size_t Add(LanternInstance& src);
@@ -166,6 +160,17 @@ public:
 	bool RunPlCallbacks(Sint32 level, Sint32 act, Sint8 time);
 	bool RunSlCallbacks(Sint32 level, Sint32 act, Sint8 time);
 	bool LoadFiles();
+
+	void SetAllBlend(bool enable);
+	void BlendAllDiffuse(int dest);
+	void BlendAllSpecular(int dest);
+	void BlendDiffuse(int src, int dest);
+	void BlendSpecular(int src, int dest);
+	int GetDiffuseBlend(int src) const;
+	int GetSpecularBlend(int src) const;
+	void ApplyBlend();
+
+	LanternInstance& operator[](size_t i) { return instances[i]; }
 
 	bool LoadPalette(Sint32 level, Sint32 act) override;
 	bool LoadPalette(const std::string& path) override;
@@ -186,9 +191,6 @@ public:
 		return -1;
 	}
 
-	void SetSelfBlend(Sint32 type, Sint32 diffuse, Sint32 specular) override;
 	void SetLightDirection(const NJS_VECTOR& d) override;
 	const NJS_VECTOR& GetLightDirection() override;
-
-	LanternInstance& operator[](size_t i) { return instances[i]; }
 };

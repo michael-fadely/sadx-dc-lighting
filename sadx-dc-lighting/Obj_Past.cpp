@@ -18,6 +18,8 @@ static Trampoline* Obj_Past_t = nullptr;
 static void __cdecl Obj_Past_Delete_r(ObjectMaster* _this)
 {
 	d3d::SetShaderFlags(ShaderFlags_Blend, false);
+	set_diffuse_blend(-1, -1);
+	set_specular_blend(-1, -1);
 	Obj_Past_Delete(_this);
 }
 
@@ -58,8 +60,10 @@ static void __cdecl Obj_Past_r(ObjectMaster *_this)
 					entity->Rotation.x += NJM_DEG_ANG(4.561875f);
 					entity->Rotation.x %= 65536;
 					auto f = (njSin(entity->Rotation.x) + 1.0f) / 2.0f;
-					LanternInstance::SetBlendFactor(f);
-					globals::palettes.SetSelfBlend(0, 5, 5);
+					set_diffuse_blend(0, 5);
+					set_specular_blend(0, 5);
+					set_specular_blend(1, 5);
+					set_blend_factor(f);
 				}
 			}
 			else
