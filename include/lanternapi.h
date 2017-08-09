@@ -63,9 +63,13 @@ extern "C" {
 	 * \brief Enable blending from a source diffuse
 	 * index to a destination diffuse index.
 
-	 * \param src Source index in the range 0 to 7.
-	 * -1 to apply to all indices.
-	 * \param dest Destination index in the range 0 to 7.
+	 * \param src
+	 * Source index in the range -1 to 7.
+	 * -1 applies to all source indices.
+
+	 * \param dest
+	 * Destination index in the range -1 to 7.
+	 * -1 disables blending for the specified source index.
 	 */
 	API void set_diffuse_blend(int src, int dest);
 
@@ -73,11 +77,22 @@ extern "C" {
 	 * \brief Enable blending from a source specular
 	 * index to a destination specular index.
 
-	 * \param src Source index in the range 0 to 7.
-	 * -1 to apply to all indices.
-	 * \param dest Destination index in the range 0 to 7.
+	 * \param src
+	 * Source index in the range -1 to 7.
+	 * -1 applies to all source indices.
+
+	 * \param dest
+	 * Destination index in the range -1 to 7.
+	 * -1 disables blending for the specified source index.
 	 */
 	API void set_specular_blend(int src, int dest);
+
+	/**
+	 * \brief Sets blend indices for diffuse and specular simultaneously.
+	 * \see set_diffuse_blend
+	 * \see set_specular_blend
+	 */
+	API void set_blend(int src, int dest);
 
 	/**
 	 * \brief Returns the current destination blend index

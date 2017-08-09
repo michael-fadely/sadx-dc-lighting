@@ -234,3 +234,9 @@ float get_specular_blend_factor()
 {
 	return LanternInstance::SpecularBlendFactor();
 }
+
+void set_blend(int src, int dest)
+{
+	set_diffuse_blend(src, dest);
+	set_specular_blend(src, dest);
+}
