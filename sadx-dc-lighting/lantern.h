@@ -161,6 +161,7 @@ public:
 	bool RunSlCallbacks(Sint32 level, Sint32 act, Sint8 time);
 	bool LoadFiles();
 
+	// TODO: Expose to API when explicit multi-palette management is implemented.
 	/// Blend all indices of diffuse and specular to the same index
 	/// of a secondary palette atlas.
 	void ForwardBlendAll(bool enable);
