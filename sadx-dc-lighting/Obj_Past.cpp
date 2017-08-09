@@ -4,7 +4,6 @@
 #include <SADXModLoader.h>
 #include <Trampoline.h>
 
-#include "lantern.h"
 #include "../include/lanternapi.h"
 #include "globals.h"
 
@@ -17,9 +16,12 @@ static Trampoline* Obj_Past_t = nullptr;
 
 static void __cdecl Obj_Past_Delete_r(ObjectMaster* _this)
 {
-	d3d::SetShaderFlags(ShaderFlags_Blend, false);
-	set_diffuse_blend(-1, -1);
-	set_specular_blend(-1, -1);
+	// Disable blending in the shader so it doesn't do extra work.
+	set_shader_flags(ShaderFlags_Blend, false);
+
+	// Reset blend indices.
+	set_blend(-1, -1);
+
 	Obj_Past_Delete(_this);
 }
 
@@ -29,7 +31,8 @@ static void __cdecl Obj_Past_r(ObjectMaster *_this)
 	switch (entity->Action)
 	{
 		case 0:
-			d3d::SetShaderFlags(ShaderFlags_Blend, true);
+			// Enables palette blending in the shader.
+			set_shader_flags(ShaderFlags_Blend, true);
 
 			entity->InvulnerableTime = CurrentAct;
 			sub_543F20();
@@ -60,9 +63,10 @@ static void __cdecl Obj_Past_r(ObjectMaster *_this)
 					entity->Rotation.x += NJM_DEG_ANG(4.561875f);
 					entity->Rotation.x %= 65536;
 					auto f = (njSin(entity->Rotation.x) + 1.0f) / 2.0f;
-					set_diffuse_blend(0, 5);
-					set_specular_blend(0, 5);
-					set_specular_blend(1, 5);
+
+					// Blend both diffuse and specular index 0 to index 5.
+					set_blend(0, 5);
+					// Set the blend factor, where 0 is the source index and 1 is the target.
 					set_blend_factor(f);
 				}
 			}
