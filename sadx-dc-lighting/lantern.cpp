@@ -454,7 +454,8 @@ bool LanternInstance::LoadPalette(const std::string& path)
 
 	if (texture == nullptr)
 	{
-		if (FAILED(d3d::device->CreateTexture(256, 16, 1, 0, D3DFMT_X8R8G8B8, D3DPOOL_MANAGED, &texture, nullptr)))
+		// Using a floating point texture to support the GeForce 6000 series cards.
+		if (FAILED(d3d::device->CreateTexture(256, 16, 1, 0, D3DFMT_A32B32G32R32F, D3DPOOL_MANAGED, &texture, nullptr)))
 		{
 			throw std::exception("Failed to create palette texture!");
 		}
@@ -474,7 +475,13 @@ bool LanternInstance::LoadPalette(const std::string& path)
 		throw std::exception("Failed to lock texture rect!");
 	}
 
-	auto pixels = (NJS_COLOR*)rect.pBits;
+	struct ABGR32F
+	{
+		float r, g, b, a;
+	};
+
+	static_assert(sizeof(ABGR32F) == sizeof(float) * 4, "nope");
+	auto pixels = (ABGR32F*)rect.pBits;
 
 	for (size_t i = 0; i < 8; i++)
 	{
@@ -490,8 +497,20 @@ bool LanternInstance::LoadPalette(const std::string& path)
 			auto& diffuse = pixels[y + x];
 			auto& specular = pixels[256 + y + x];
 			const auto& color = colorData[index + x];
-			diffuse = color.diffuse;
-			specular = color.specular;
+
+			auto& _diffuse = color.diffuse.argb;
+
+			diffuse.r = _diffuse.r / 255.0f;
+			diffuse.g = _diffuse.g / 255.0f;
+			diffuse.b = _diffuse.b / 255.0f;
+			diffuse.a = _diffuse.a / 255.0f;
+
+			auto& _specular = color.specular.argb;
+
+			specular.r = _specular.r / 255.0f;
+			specular.g = _specular.g / 255.0f;
+			specular.b = _specular.b / 255.0f;
+			specular.a = _specular.a / 255.0f;
 		}
 	}
 
