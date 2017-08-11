@@ -28,12 +28,15 @@
     <Filter Include="Header Files\include">
       <UniqueIdentifier>{d4770a4b-f08e-4b73-a9f8-1a7cefc3dfe9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\external">
+      <UniqueIdentifier>{f82c6054-813b-4fe2-b79b-25b2bf6ce260}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\external">
+      <UniqueIdentifier>{cdf248a8-f140-419f-a33f-e662ae601f58}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\sadx-mod-loader\libmodutils\Trampoline.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="d3d.h">
@@ -78,15 +81,15 @@
     <ClInclude Include="..\include\lanternapi.h">
       <Filter>Header Files\include</Filter>
     </ClInclude>
+    <ClInclude Include="..\sadx-mod-loader\libmodutils\Trampoline.h">
+      <Filter>Header Files\external</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="mod.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\sadx-mod-loader\libmodutils\Trampoline.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="fog.cpp">
@@ -118,6 +121,9 @@
     </ClCompile>
     <ClCompile Include="lanternapi.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sadx-mod-loader\libmodutils\Trampoline.cpp">
+      <Filter>Source Files\external</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

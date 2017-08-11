@@ -446,9 +446,6 @@ extern "C"
 		SetCurrentStageLights_t         = new Trampoline(0x0040A950, 0x0040A955, SetCurrentStageLights_r);
 		SetCurrentStageLight_EggViper_t = new Trampoline(0x0057E560, 0x0057E567, SetCurrentStageLight_EggViper_r);
 
-		// Correcting a function call since they're relative
-		WriteCall(IncrementAct_t->Target(), (void*)0x00424830);
-
 		// Material callback hijack
 		WriteJump((void*)0x0040A340, CorrectMaterial_r);
 
