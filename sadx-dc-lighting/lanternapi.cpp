@@ -56,7 +56,7 @@ void material_register(NJS_MATERIAL** materials, int length, lantern_material_cb
 		}
 		else
 		{
-			it->second.push_back(callback);
+			it->second.push_front(callback);
 		}
 	}
 }

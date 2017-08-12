@@ -2,7 +2,7 @@
 
 #include <string>
 #include <unordered_map>
-#include <vector>
+#include <deque>
 #include <ninja.h>
 #include "lantern.h"
 
@@ -12,7 +12,7 @@ namespace globals
 	NJS_VECTOR light_dir = {};
 #endif
 
-	std::unordered_map<NJS_MATERIAL*, std::vector<lantern_material_cb>> material_callbacks {};
+	std::unordered_map<NJS_MATERIAL*, std::deque<lantern_material_cb>> material_callbacks {};
 
 	Sint32 light_type       = 0;
 	bool landtable_specular = false;
