@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "EffectParameter.h"
 
+std::vector<IEffectParameter*> IEffectParameter::values_assigned {};
+
 template<>
 bool EffectParameter<bool>::Commit(Effect effect)
 {
@@ -11,6 +13,7 @@ bool EffectParameter<bool>::Commit(Effect effect)
 		return true;
 	}
 
+	assigned = false;
 	return false;
 }
 
@@ -24,6 +27,7 @@ bool EffectParameter<int>::Commit(Effect effect)
 		return true;
 	}
 
+	assigned = false;
 	return false;
 }
 
@@ -37,6 +41,7 @@ bool EffectParameter<float>::Commit(Effect effect)
 		return true;
 	}
 
+	assigned = false;
 	return false;
 }
 
@@ -50,6 +55,7 @@ bool EffectParameter<D3DXVECTOR4>::Commit(Effect effect)
 		return true;
 	}
 
+	assigned = false;
 	return false;
 }
 
@@ -63,6 +69,7 @@ bool EffectParameter<D3DXVECTOR3>::Commit(Effect effect)
 		return true;
 	}
 
+	assigned = false;
 	return false;
 }
 
@@ -90,6 +97,7 @@ bool EffectParameter<D3DXCOLOR>::Commit(Effect effect)
 		return true;
 	}
 
+	assigned = false;
 	return false;
 }
 
@@ -103,6 +111,7 @@ bool EffectParameter<D3DXMATRIX>::Commit(Effect effect)
 		return true;
 	}
 
+	assigned = false;
 	return false;
 }
 
@@ -116,6 +125,7 @@ bool EffectParameter<Texture>::Commit(Effect effect)
 		return true;
 	}
 
+	assigned = false;
 	return false;
 }
 

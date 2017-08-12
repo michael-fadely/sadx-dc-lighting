@@ -8,7 +8,7 @@
 
 // Local
 #include "d3d.h"
-#include "globals.h"
+#include "../include/lanternapi.h"
 
 static D3DFOGMODE fog_mode = D3DFOG_NONE;
 
@@ -30,7 +30,7 @@ static void __cdecl njDisableFog_r()
 
 	if (effect != nullptr)
 	{
-		SetShaderOptions(ShaderOptions::UseFog, false);
+		SetShaderFlags(ShaderFlags_Fog, false);
 	}
 }
 
@@ -41,7 +41,7 @@ static void __cdecl njEnableFog_r()
 	if (effect != nullptr)
 	{
 		param::FogMode = fog_mode;
-		SetShaderOptions(ShaderOptions::UseFog, true);
+		SetShaderFlags(ShaderFlags_Fog, true);
 	}
 }
 
@@ -66,7 +66,7 @@ static void __cdecl njSetFogTable_r(NJS_FOG_TABLE fogtable)
 
 	device->GetRenderState(D3DRS_FOGTABLEMODE, (DWORD*)&fog_mode);
 	param::FogMode = fog_mode;
-	SetShaderOptions(ShaderOptions::UseFog, true);
+	SetShaderFlags(ShaderFlags_Fog, true);
 
 	float start, end, density;
 	device->GetRenderState(D3DRS_FOGSTART, (DWORD*)&start);

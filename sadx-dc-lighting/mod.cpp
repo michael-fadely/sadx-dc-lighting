@@ -1,6 +1,5 @@
 #include "stdafx.h"
 #include <d3d9.h>
-#include <vector>
 
 // Mod loader
 #include <SADXModLoader.h>
@@ -14,21 +13,25 @@
 #include "datapointers.h"
 #include "globals.h"
 #include "lantern.h"
+#include "../include/lanternapi.h"
 #include "Obj_Past.h"
 #include "Obj_SkyDeck.h"
+#include "Obj_Chaos7.h"
 #include "FixChaoGardenMaterials.h"
 #include "FixCharacterMaterials.h"
 
-static Trampoline* CharSel_LoadA_t            = nullptr;
-static Trampoline* Direct3D_ParseMaterial_t   = nullptr;
-static Trampoline* GoToNextLevel_t            = nullptr;
-static Trampoline* IncrementAct_t             = nullptr;
-static Trampoline* LoadLevelFiles_t           = nullptr;
-static Trampoline* SetLevelAndAct_t           = nullptr;
-static Trampoline* GoToNextChaoStage_t        = nullptr;
-static Trampoline* SetTimeOfDay_t             = nullptr;
-static Trampoline* DrawLandTable_t            = nullptr;
-static Trampoline* Direct3D_SetTexList_t      = nullptr;
+static Trampoline* CharSel_LoadA_t                 = nullptr;
+static Trampoline* Direct3D_ParseMaterial_t        = nullptr;
+static Trampoline* GoToNextLevel_t                 = nullptr;
+static Trampoline* IncrementAct_t                  = nullptr;
+static Trampoline* LoadLevelFiles_t                = nullptr;
+static Trampoline* SetLevelAndAct_t                = nullptr;
+static Trampoline* GoToNextChaoStage_t             = nullptr;
+static Trampoline* SetTimeOfDay_t                  = nullptr;
+static Trampoline* DrawLandTable_t                 = nullptr;
+static Trampoline* Direct3D_SetTexList_t           = nullptr;
+static Trampoline* SetCurrentStageLights_t         = nullptr;
+static Trampoline* SetCurrentStageLight_EggViper_t = nullptr;
 
 DataArray(PaletteLight, LightPaletteData, 0x00903E88, 256);
 DataArray(StageLightData, CurrentStageLights, 0x03ABD9F8, 4);
@@ -56,32 +59,32 @@ static void DisplayLightDirection()
 		{}
 	};
 
-	int colors[2] = {};
+	NJS_COLOR colors[2] = {};
 
-	LineInfo info = {
-		points, colors, 0, 2
+	NJS_POINT3COL info = {
+		points, colors, nullptr, 2
 	};
 
 	points[1] = points[0];
 	points[1].x += light_dir.x * 10.0f;
-	colors[0] = colors[1] = 0xFFFF0000;
+	colors[0].color = colors[1].color = 0xFFFF0000;
 	DrawLineList(&info, 1, 0);
 
 	points[1] = points[0];
 	points[1].y += light_dir.y * 10.0f;
-	colors[0] = colors[1] = 0xFF00FF00;
+	colors[0].color = colors[1].color = 0xFF00FF00;
 	DrawLineList(&info, 1, 0);
 
 	points[1] = points[0];
 	points[1].z += light_dir.z * 10.0f;
-	colors[0] = colors[1] = 0xFF0000FF;
+	colors[0].color = colors[1].color = 0xFF0000FF;
 	DrawLineList(&info, 1, 0);
 
 	points[1] = points[0];
 	points[1].x += light_dir.x * 10.0f;
 	points[1].y += light_dir.y * 10.0f;
 	points[1].z += light_dir.z * 10.0f;
-	colors[0] = colors[1] = 0xFFFFFF00;
+	colors[0].color = colors[1].color = 0xFFFFFF00;
 	DrawLineList(&info, 1, 0);
 }
 #endif
@@ -152,6 +155,8 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 		return;
 	}
 
+	ResetOverrides();
+
 #ifdef _DEBUG
 	auto pad = ControllerPointers[0];
 	if (pad && pad->HeldButtons & Buttons_Z)
@@ -163,18 +168,43 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 	Uint32 flags = material->attrflags;
 	Uint32 texid = material->attr_texId & 0xFFFF;
 
+	if (material->specular.argb.a == 0)
+	{
+		flags |= NJD_FLAG_IGNORE_SPECULAR;
+	}
+
+	if (globals::first_material)
+	{
+		static constexpr auto FLAG_MASK = NJD_FLAG_IGNORE_SPECULAR;
+
+		_nj_constant_attr_and_ &= ~FLAG_MASK;
+
+		if (!(_nj_control_3d_flag_ & NJD_CONTROL_3D_CONSTANT_ATTR))
+		{
+			_nj_constant_attr_or_ = flags & FLAG_MASK;
+		}
+		else
+		{
+			_nj_constant_attr_or_ &= ~FLAG_MASK;
+			_nj_constant_attr_or_ |= flags & FLAG_MASK;
+		}
+
+		globals::first_material = false;
+		_nj_control_3d_flag_ |= NJD_CONTROL_3D_CONSTANT_ATTR;
+	}
+
 	if (_nj_control_3d_flag_ & NJD_CONTROL_3D_CONSTANT_ATTR)
 	{
 		flags = _nj_constant_attr_or_ | _nj_constant_attr_and_ & flags;
 	}
 
-	globals::palettes.SetPalettes(globals::light_type, globals::no_specular ? flags | NJD_FLAG_IGNORE_SPECULAR : flags);
+	globals::palettes.SetPalettes(globals::light_type, flags);
 
 	bool use_texture = (flags & NJD_FLAG_USE_TEXTURE) != 0;
-	SetShaderOptions(ShaderOptions::UseTexture, use_texture);
-	SetShaderOptions(ShaderOptions::UseAlpha, (flags & NJD_FLAG_USE_ALPHA) != 0);
-	SetShaderOptions(ShaderOptions::UseEnvMap, (flags & NJD_FLAG_USE_ENV) != 0);
-	SetShaderOptions(ShaderOptions::UseLight, (flags & NJD_FLAG_IGNORE_LIGHT) == 0);
+	SetShaderFlags(ShaderFlags_Texture, use_texture);
+	SetShaderFlags(ShaderFlags_Alpha, (flags & NJD_FLAG_USE_ALPHA) != 0);
+	SetShaderFlags(ShaderFlags_EnvMap, (flags & NJD_FLAG_USE_ENV) != 0);
+	SetShaderFlags(ShaderFlags_Light, (flags & NJD_FLAG_IGNORE_LIGHT) == 0);
 
 	param::SourceBlend = NJD_FLAG_D3DBLEND[flags >> 29];
 	param::DestinationBlend = NJD_FLAG_D3DBLEND[flags >> 26 & 7];
@@ -201,19 +231,37 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 	SetMaterialParameters(mat);
 
 	do_effect = true;
+
+	if (globals::material_callbacks.empty())
+	{
+		return;
+	}
+
+	auto it = globals::material_callbacks.find(material);
+	if (it == globals::material_callbacks.end())
+	{
+		return;
+	}
+
+	for (auto& cb : it->second)
+	{
+		if (cb(material, flags))
+		{
+			break;
+		}
+	}
 }
 
 static void __cdecl CharSel_LoadA_r()
 {
 	auto original = TARGET_DYNAMIC(CharSel_LoadA);
 
-	NJS_VECTOR dir = { 1.0f, -1.0f, -1.0f };
-
-	njUnitVector(&dir);
-	UpdateLightDirections(dir);
-
 	globals::palettes.LoadPalette(LevelIDs_SkyDeck, 0);
 	globals::palettes.SetLastLevel(CurrentLevel, CurrentAct);
+
+	NJS_VECTOR dir = { 1.0f, -1.0f, -1.0f };
+	njUnitVector(&dir);
+	globals::palettes.LightDirection(dir);
 
 	original();
 }
@@ -281,6 +329,12 @@ static void __cdecl LoadLevelFiles_r()
 
 static void __cdecl DrawLandTable_r()
 {
+	if (globals::landtable_specular)
+	{
+		TARGET_DYNAMIC(DrawLandTable)();
+		return;
+	}
+
 	auto flag = _nj_control_3d_flag_;
 	auto or = _nj_constant_attr_or_;
 
@@ -297,23 +351,26 @@ static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
 {
 	if (texlist != Direct3D_CurrentTexList)
 	{
-		globals::no_specular = false;
+		param::AllowVertexColor = true;
 
 		if (!globals::light_type)
 		{
 			if (texlist == CommonTextures)
 			{
 				globals::palettes.SetPalettes(0, 0);
+				param::AllowVertexColor = globals::object_vcolor;
 			}
 			else
 			{
 				for (int i = 0; i < 4; i++)
 				{
 					if (LevelObjTexlists[i] != texlist)
+					{
 						continue;
+					}
 
-					globals::palettes.SetPalettes(0, NJD_FLAG_IGNORE_SPECULAR);
-					globals::no_specular = true;
+					globals::palettes.SetPalettes(0, 0);
+					param::AllowVertexColor = globals::object_vcolor;
 					break;
 				}
 			}
@@ -335,6 +392,30 @@ static void __cdecl NormalScale(float x, float y, float z)
 	}
 }
 
+void setStageLightDirection()
+{
+	if (globals::palettes.Size())
+	{
+		const auto& dir = globals::palettes.LightDirection();
+		CurrentStageLights[0].direction = dir;
+		CurrentStageLights[1].direction = dir;
+		CurrentStageLights[2].direction = dir;
+		CurrentStageLights[3].direction = dir;
+	}
+}
+
+void __cdecl SetCurrentStageLights_r(int level, int act)
+{
+	TARGET_DYNAMIC(SetCurrentStageLights)(level, act);
+	setStageLightDirection();
+}
+
+void __cdecl SetCurrentStageLight_EggViper_r(ObjectMaster* a1)
+{
+	TARGET_DYNAMIC(SetCurrentStageLight_EggViper)(a1);
+	setStageLightDirection();
+}
+
 extern "C"
 {
 	EXPORT ModInfo SADXModInfo = { ModLoaderVer };
@@ -348,28 +429,28 @@ extern "C"
 			return;
 		}
 
-		auto init = MH_Initialize();
+		MH_Initialize();
 
-		LanternInstance base(&param::PaletteA, &param::DiffuseIndexA, &param::SpecularIndexA);
+		LanternInstance base(&param::PaletteA);
 		globals::palettes.Add(base);
 
 		globals::system = path;
 		globals::system.append("\\system\\");
 
 		d3d::InitTrampolines();
-		CharSel_LoadA_t          = new Trampoline(0x00512BC0, 0x00512BC6, CharSel_LoadA_r);
-		Direct3D_ParseMaterial_t = new Trampoline(0x00784850, 0x00784858, Direct3D_ParseMaterial_r);
-		GoToNextLevel_t          = new Trampoline(0x00414610, 0x00414616, GoToNextLevel_r);
-		IncrementAct_t           = new Trampoline(0x004146E0, 0x004146E5, IncrementAct_r);
-		LoadLevelFiles_t         = new Trampoline(0x00422AD0, 0x00422AD8, LoadLevelFiles_r);
-		SetLevelAndAct_t         = new Trampoline(0x00414570, 0x00414576, SetLevelAndAct_r);
-		GoToNextChaoStage_t      = new Trampoline(0x00715130, 0x00715135, GoToNextChaoStage_r);
-		SetTimeOfDay_t           = new Trampoline(0x00412C00, 0x00412C05, SetTimeOfDay_r);
-		DrawLandTable_t          = new Trampoline(0x0043A6A0, 0x0043A6A8, DrawLandTable_r);
-		Direct3D_SetTexList_t    = new Trampoline(0x0077F3D0, 0x0077F3D8, Direct3D_SetTexList_r);
 
-		// Correcting a function call since they're relative
-		WriteCall(IncrementAct_t->Target(), (void*)0x00424830);
+		CharSel_LoadA_t                 = new Trampoline(0x00512BC0, 0x00512BC6, CharSel_LoadA_r);
+		Direct3D_ParseMaterial_t        = new Trampoline(0x00784850, 0x00784858, Direct3D_ParseMaterial_r);
+		GoToNextLevel_t                 = new Trampoline(0x00414610, 0x00414616, GoToNextLevel_r);
+		IncrementAct_t                  = new Trampoline(0x004146E0, 0x004146E5, IncrementAct_r);
+		LoadLevelFiles_t                = new Trampoline(0x00422AD0, 0x00422AD8, LoadLevelFiles_r);
+		SetLevelAndAct_t                = new Trampoline(0x00414570, 0x00414576, SetLevelAndAct_r);
+		GoToNextChaoStage_t             = new Trampoline(0x00715130, 0x00715135, GoToNextChaoStage_r);
+		SetTimeOfDay_t                  = new Trampoline(0x00412C00, 0x00412C05, SetTimeOfDay_r);
+		DrawLandTable_t                 = new Trampoline(0x0043A6A0, 0x0043A6A8, DrawLandTable_r);
+		Direct3D_SetTexList_t           = new Trampoline(0x0077F3D0, 0x0077F3D8, Direct3D_SetTexList_r);
+		SetCurrentStageLights_t         = new Trampoline(0x0040A950, 0x0040A955, SetCurrentStageLights_r);
+		SetCurrentStageLight_EggViper_t = new Trampoline(0x0057E560, 0x0057E567, SetCurrentStageLight_EggViper_r);
 
 		// Material callback hijack
 		WriteJump((void*)0x0040A340, CorrectMaterial_r);
@@ -378,6 +459,7 @@ extern "C"
 		FixChaoGardenMaterials();
 		Past_Init();
 		SkyDeck_Init();
+		Chaos7_Init();
 
 		// Vertex normal correction for certain objects in
 		// Red Mountain and Sky Deck.

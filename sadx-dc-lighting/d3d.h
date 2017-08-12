@@ -12,25 +12,12 @@
 
 namespace d3d
 {
-	enum ShaderOptions : Uint32
-	{
-		None,
-		UseTexture = 1 << 0,
-		UseEnvMap  = 1 << 1,
-		UseAlpha   = 1 << 2,
-		UseLight   = 1 << 3,
-		UseBlend   = 1 << 4,
-		UseFog     = 1 << 5,
-		UseOit     = 1 << 6,
-		Mask       = 0x7F,
-		Count
-	};
-
 	extern IDirect3DDevice9* device;
 	extern Effect effect;
 	extern bool do_effect;
+	void ResetOverrides();
 	void LoadShader();
-	void SetShaderOptions(Uint32 options, bool add = true);
+	void SetShaderFlags(Uint32 flags, bool add = true);
 	void InitTrampolines();
 }
 
@@ -46,9 +33,10 @@ namespace param
 	extern EffectParameter<float> DiffuseIndexB;
 	extern EffectParameter<float> SpecularIndexB;
 
-	extern EffectParameter<float> BlendFactor;
+	extern EffectParameter<float> DiffuseBlendFactor;
+	extern EffectParameter<float> SpecularBlendFactor;
 	extern EffectParameter<D3DXMATRIX> WorldMatrix;
-	extern EffectParameter<D3DXMATRIX> wvMatrix;
+	extern EffectParameter<D3DXMATRIX> ViewMatrix;
 	extern EffectParameter<D3DXMATRIX> ProjectionMatrix;
 	extern EffectParameter<D3DXMATRIX> wvMatrixInvT;
 	extern EffectParameter<D3DXMATRIX> TextureTransform;
@@ -64,6 +52,10 @@ namespace param
 
 	extern EffectParameter<float> AlphaRef;
 	extern EffectParameter<D3DXVECTOR3> NormalScale;
+	extern EffectParameter<bool> AllowVertexColor;
+	extern EffectParameter<bool> ForceDefaultDiffuse;
+	extern EffectParameter<bool> DiffuseOverride;
+	extern EffectParameter<D3DXVECTOR3> DiffuseOverrideColor;
 
 #ifdef USE_OIT
 	extern EffectParameter<Texture> AlphaDepth;
@@ -79,6 +71,7 @@ namespace param
 	extern EffectParameter<D3DXCOLOR> MaterialSpecular;
 	extern EffectParameter<float> MaterialPower;
 	extern EffectParameter<SourceLight_t> SourceLight;
+	extern EffectParameter<StageLights> Lights;
 #endif
 }
 

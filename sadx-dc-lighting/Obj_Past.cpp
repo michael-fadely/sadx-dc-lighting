@@ -4,7 +4,7 @@
 #include <SADXModLoader.h>
 #include <Trampoline.h>
 
-#include "lantern.h"
+#include "../include/lanternapi.h"
 #include "globals.h"
 
 VoidFunc(sub_541990, 0x541990);
@@ -16,7 +16,12 @@ static Trampoline* Obj_Past_t = nullptr;
 
 static void __cdecl Obj_Past_Delete_r(ObjectMaster* _this)
 {
-	SetShaderOptions(d3d::ShaderOptions::UseBlend, false);
+	// Disable blending in the shader so it doesn't do extra work.
+	set_shader_flags(ShaderFlags_Blend, false);
+
+	// Reset blend indices.
+	set_blend(-1, -1);
+
 	Obj_Past_Delete(_this);
 }
 
@@ -26,7 +31,8 @@ static void __cdecl Obj_Past_r(ObjectMaster *_this)
 	switch (entity->Action)
 	{
 		case 0:
-			SetShaderOptions(d3d::ShaderOptions::UseBlend, true);
+			// Enables palette blending in the shader.
+			set_shader_flags(ShaderFlags_Blend, true);
 
 			entity->InvulnerableTime = CurrentAct;
 			sub_543F20();
@@ -50,15 +56,18 @@ static void __cdecl Obj_Past_r(ObjectMaster *_this)
 			{
 				if (!entity->InvulnerableTime)
 				{
-					QueueSound_DualEntity(1108, entity, 1, 0, 2);
+					QueueSound_DualEntity(1108, entity, 1, nullptr, 2);
 				}
 				else if (CurrentAct == 2 && d3d::effect)
 				{
-					entity->Rotation.x += NJM_DEG_ANG(2.8125f);
+					entity->Rotation.x += NJM_DEG_ANG(4.561875f);
 					entity->Rotation.x %= 65536;
 					auto f = (njSin(entity->Rotation.x) + 1.0f) / 2.0f;
-					LanternInstance::SetBlendFactor(f);
-					globals::palettes.SetSelfBlend(0, 5, 5);
+
+					// Blend both diffuse and specular index 0 to index 5.
+					set_blend(0, 5);
+					// Set the blend factor, where 0 is the source index and 1 is the target.
+					set_blend_factor(f);
 				}
 			}
 			else

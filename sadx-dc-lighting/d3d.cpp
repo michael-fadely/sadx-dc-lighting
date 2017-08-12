@@ -7,7 +7,7 @@
 #include <d3d8to9.hpp>
 
 // Mod loader
-#include <SADXFunctions.h>
+#include <SADXModLoader.h>
 #include <Trampoline.h>
 
 // MinHook
@@ -22,6 +22,7 @@
 #include "datapointers.h"
 #include "globals.h"
 #include "lantern.h"
+#include "../include/lanternapi.h"
 #include "EffectParameter.h"
 #include <algorithm>
 
@@ -34,7 +35,8 @@ namespace param
 	EffectParameter<Texture>     PaletteB("PaletteB", nullptr);
 	EffectParameter<float>       DiffuseIndexB("DiffuseIndexB", 0.0f);
 	EffectParameter<float>       SpecularIndexB("SpecularIndexB", 0.0f);
-	EffectParameter<float>       BlendFactor("BlendFactor", 0.0f);
+	EffectParameter<float>       DiffuseBlendFactor("DiffuseBlendFactor", 0.0f);
+	EffectParameter<float>       SpecularBlendFactor("SpecularBlendFactor", 0.0f);
 	EffectParameter<D3DXMATRIX>  WorldMatrix("WorldMatrix", {});
 	EffectParameter<D3DXMATRIX>  wvMatrix("wvMatrix", {});
 	EffectParameter<D3DXMATRIX>  ProjectionMatrix("ProjectionMatrix", {});
@@ -50,6 +52,10 @@ namespace param
 	EffectParameter<D3DXCOLOR>   MaterialDiffuse("MaterialDiffuse", {});
 	EffectParameter<float>       AlphaRef("AlphaRef", 0.0f);
 	EffectParameter<D3DXVECTOR3> NormalScale("NormalScale", { 1.0f, 1.0f, 1.0f });
+	EffectParameter<bool>        AllowVertexColor("AllowVertexColor", true);
+	EffectParameter<bool>        ForceDefaultDiffuse("ForceDefaultDiffuse", false);
+	EffectParameter<bool>        DiffuseOverride("DiffuseOverride", false);
+	EffectParameter<D3DXVECTOR3> DiffuseOverrideColor("DiffuseOverrideColor", { 1.0f, 1.0f, 1.0f });
 
 #ifdef USE_OIT
 	EffectParameter<Texture>     AlphaDepth("AlphaDepth", nullptr);
@@ -65,6 +71,7 @@ namespace param
 	EffectParameter<D3DXCOLOR> MaterialSpecular("MaterialSpecular", {});
 	EffectParameter<float> MaterialPower("MaterialPower", 1.0f);
 	EffectParameter<SourceLight_t> SourceLight("SourceLight", {});
+	EffectParameter<StageLights> Lights("Lights", {});
 #endif
 
 	IEffectParameter* const parameters[] = {
@@ -75,7 +82,8 @@ namespace param
 		&PaletteB,
 		&DiffuseIndexB,
 		&SpecularIndexB,
-		&BlendFactor,
+		&DiffuseBlendFactor,
+		&SpecularBlendFactor,
 		&WorldMatrix,
 		&wvMatrix,
 		&ProjectionMatrix,
@@ -91,6 +99,10 @@ namespace param
 		&MaterialDiffuse,
 		&AlphaRef,
 		&NormalScale,
+		&AllowVertexColor,
+		&ForceDefaultDiffuse,
+		&DiffuseOverride,
+		&DiffuseOverrideColor,
 
 	#ifdef USE_OIT
 		&AlphaDepth,
@@ -106,7 +118,7 @@ namespace param
 		&SourceLight,
 		&MaterialSpecular,
 		&MaterialPower,
-		&UseSourceLight,
+		&Lights
 	#endif
 	};
 }
@@ -117,7 +129,7 @@ namespace local
 	static Trampoline* sub_77EAD0_t                       = nullptr;
 	static Trampoline* sub_77EBA0_t                       = nullptr;
 	static Trampoline* njDrawModel_SADX_t                 = nullptr;
-	static Trampoline* njDrawModel_SADX_B_t               = nullptr;
+	static Trampoline* njDrawModel_SADX_Dynamic_t         = nullptr;
 	static Trampoline* Direct3D_SetProjectionMatrix_t     = nullptr;
 	static Trampoline* Direct3D_SetViewportAndTransform_t = nullptr;
 	static Trampoline* Direct3D_SetWorldTransform_t       = nullptr;
@@ -160,14 +172,14 @@ namespace local
 	static decltype(DrawPrimitiveUP_r)*        DrawPrimitiveUP_t        = nullptr;
 	static decltype(DrawIndexedPrimitiveUP_r)* DrawIndexedPrimitiveUP_t = nullptr;
 
-	constexpr auto DEFAULT_OPTIONS = d3d::UseAlpha | d3d::UseFog | d3d::UseLight | d3d::UseTexture;
+	constexpr auto DEFAULT_FLAGS = ShaderFlags_Alpha | ShaderFlags_Fog | ShaderFlags_Light | ShaderFlags_Texture;
 
-	static Uint32 shader_options = DEFAULT_OPTIONS;
-	static Uint32 last_options = DEFAULT_OPTIONS;
+	static Uint32 shader_flags = DEFAULT_FLAGS;
+	static Uint32 last_flags = DEFAULT_FLAGS;
 
 	static std::vector<Uint8> shaderFile;
 	static Uint32 shaderCount = 0;
-	static Effect shaders[d3d::ShaderOptions::Count] = {};
+	static Effect shaders[ShaderFlags_Count] = {};
 	static CComPtr<ID3DXEffectPool> pool = nullptr;
 
 	static bool initialized = false;
@@ -199,21 +211,21 @@ namespace local
 	DataPointer(D3DXMATRIX, _ProjectionMatrix, 0x03D129C0);
 	DataPointer(int, TransformAndViewportInvalid, 0x03D0FD1C);
 
-	static auto sanitize(Uint32& options)
+	static auto sanitize(Uint32& flags)
 	{
-		options &= d3d::Mask;
+		flags &= ShaderFlags_Mask;
 
-		if (options & d3d::UseBlend && !(options & d3d::UseLight))
+		if (flags & ShaderFlags_Blend && !(flags & ShaderFlags_Light))
 		{
-			options &= ~d3d::UseBlend;
+			flags &= ~ShaderFlags_Blend;
 		}
 
-		if (options & d3d::UseEnvMap && !(options & d3d::UseTexture))
+		if (flags & ShaderFlags_EnvMap && !(flags & ShaderFlags_Texture))
 		{
-			options &= ~d3d::UseEnvMap;
+			flags &= ~ShaderFlags_EnvMap;
 		}
 
-		return options;
+		return flags;
 	}
 
 	static void updateHandles()
@@ -353,7 +365,7 @@ namespace local
 
 #endif
 
-	static std::string shaderOptionsString(Uint32 o)
+	static std::string shaderFlagsString(Uint32 o)
 	{
 		std::stringstream result;
 
@@ -367,57 +379,57 @@ namespace local
 				result << " | ";
 			}
 
-			if (o & UseFog)
+			if (o & ShaderFlags_Fog)
 			{
-				o &= ~UseFog;
+				o &= ~ShaderFlags_Fog;
 				result << "USE_FOG";
 				thing = true;
 				continue;
 			}
 
-			if (o & UseBlend)
+			if (o & ShaderFlags_Blend)
 			{
-				o &= ~UseBlend;
+				o &= ~ShaderFlags_Blend;
 				result << "USE_BLEND";
 				thing = true;
 				continue;
 			}
 
-			if (o & UseLight)
+			if (o & ShaderFlags_Light)
 			{
-				o &= ~UseLight;
+				o &= ~ShaderFlags_Light;
 				result << "USE_LIGHT";
 				thing = true;
 				continue;
 			}
 
-			if (o & UseAlpha)
+			if (o & ShaderFlags_Alpha)
 			{
-				o &= ~UseAlpha;
+				o &= ~ShaderFlags_Alpha;
 				result << "USE_ALPHA";
 				thing = true;
 				continue;
 			}
 
-			if (o & UseEnvMap)
+			if (o & ShaderFlags_EnvMap)
 			{
-				o &= ~UseEnvMap;
+				o &= ~ShaderFlags_EnvMap;
 				result << "USE_ENVMAP";
 				thing = true;
 				continue;
 			}
 
-			if (o & UseTexture)
+			if (o & ShaderFlags_Texture)
 			{
-				o &= ~UseTexture;
+				o &= ~ShaderFlags_Texture;
 				result << "USE_TEXTURE";
 				thing = true;
 				continue;
 			}
 
-			if (o & UseOit)
+			if (o & ShaderFlags_OIT)
 			{
-				o &= ~UseOit;
+				o &= ~ShaderFlags_OIT;
 				result << "USE_OIT";
 				thing = true;
 				continue;
@@ -429,10 +441,10 @@ namespace local
 		return result.str();
 	}
 
-	static Effect compileShader(Uint32 options)
+	static Effect compileShader(Uint32 flags)
 	{
-		PrintDebug("[lantern] Compiling shader #%02d: %08X (%s)\n", ++shaderCount, options,
-			shaderOptionsString(options).c_str());
+		PrintDebug("[lantern] Compiling shader #%02d: %08X (%s)\n", ++shaderCount, flags,
+			shaderFlagsString(flags).c_str());
 
 		if (pool == nullptr)
 		{
@@ -443,57 +455,62 @@ namespace local
 		}
 
 		macros.clear();
-		auto o = sanitize(options);
+
+#ifdef USE_SL
+		macros.push_back({ "USE_SL", "1" });
+#endif
+
+		auto o = sanitize(flags);
 
 		while (o != 0)
 		{
 			using namespace d3d;
 
-			if (o & UseTexture)
+			if (o & ShaderFlags_Texture)
 			{
-				o &= ~UseTexture;
+				o &= ~ShaderFlags_Texture;
 				macros.push_back({ "USE_TEXTURE", "1" });
 				continue;
 			}
 
-			if (o & UseEnvMap)
+			if (o & ShaderFlags_EnvMap)
 			{
-				o &= ~UseEnvMap;
+				o &= ~ShaderFlags_EnvMap;
 				macros.push_back({ "USE_ENVMAP", "1" });
 				continue;
 			}
 
-			if (o & UseLight)
+			if (o & ShaderFlags_Light)
 			{
-				o &= ~UseLight;
+				o &= ~ShaderFlags_Light;
 				macros.push_back({ "USE_LIGHT", "1" });
 				continue;
 			}
 
-			if (o & UseBlend)
+			if (o & ShaderFlags_Blend)
 			{
-				o &= ~UseBlend;
+				o &= ~ShaderFlags_Blend;
 				macros.push_back({ "USE_BLEND", "1" });
 				continue;
 			}
 
-			if (o & UseAlpha)
+			if (o & ShaderFlags_Alpha)
 			{
-				o &= ~UseAlpha;
+				o &= ~ShaderFlags_Alpha;
 				macros.push_back({ "USE_ALPHA", "1" });
 				continue;
 			}
 
-			if (o & UseFog)
+			if (o & ShaderFlags_Fog)
 			{
-				o &= ~UseFog;
+				o &= ~ShaderFlags_Fog;
 				macros.push_back({ "USE_FOG", "1" });
 				continue;
 			}
 
-			if (o & UseOit)
+			if (o & ShaderFlags_OIT)
 			{
-				o &= ~UseOit;
+				o &= ~ShaderFlags_OIT;
 				macros.push_back({ "USE_OIT", "1" });
 				continue;
 			}
@@ -548,7 +565,7 @@ namespace local
 		}
 
 		effect->SetTechnique("Main");
-		shaders[options] = effect;
+		shaders[flags] = effect;
 		return effect;
 	}
 
@@ -556,12 +573,14 @@ namespace local
 	{
 		++drawing;
 	}
+
 	static void end()
 	{
 		if (d3d::effect == nullptr || drawing > 0 && --drawing < 1)
 		{
 			drawing = 0;
 			d3d::do_effect = false;
+			d3d::ResetOverrides();
 		}
 	}
 
@@ -585,47 +604,53 @@ namespace local
 			return 1;
 		}
 
+		globals::palettes.ApplyShaderParameters();
+
 		bool changes = false;
 
 		// The value here is copied so that UseBlend can be safely removed
 		// when possible without permanently removing it. It's required by
 		// Sky Deck, and it's only added to the flags once on stage load.
-		auto options = shader_options;
+		auto flags = shader_flags;
 
 		if (d3d::effect != blender)
 		{
-			if (sanitize(options) && options != last_options)
+			if (sanitize(flags) && flags != last_flags)
 			{
 				endEffect();
 				changes = true;
 
-				last_options = options;
-				auto e = shaders[options];
-
+				last_flags = flags;
+				auto e = shaders[flags];
 				if (e == nullptr)
 				{
 					try
 					{
-						e = compileShader(shader_options);
+						e = compileShader(flags);
 					}
 					catch (std::exception& ex)
 					{
 						d3d::effect = nullptr;
 						endEffect();
 						MessageBoxA(WindowHandle, ex.what(), "Shader creation failed", MB_OK | MB_ICONERROR);
-						return -1;
+						return 0;
 					}
 				}
 
 				d3d::effect = e;
 			}
 
-			for (auto& it : param::parameters)
+			if (!IEffectParameter::values_assigned.empty())
 			{
-				if (it->Commit(d3d::effect))
+				for (auto& it : IEffectParameter::values_assigned)
 				{
-					changes = true;
+					if (it->Commit(d3d::effect))
+					{
+						changes = true;
+					}
 				}
+
+				IEffectParameter::values_assigned.clear();
 			}
 		}
 
@@ -663,9 +688,11 @@ namespace local
 			return;
 		}
 
+#ifndef USE_SL
 		D3DLIGHT9 light;
 		d3d::device->GetLight(0, &light);
 		param::LightDirection = -*(D3DXVECTOR3*)&light.Direction;
+#endif
 	}
 
 	static void hookVtbl()
@@ -722,14 +749,52 @@ namespace local
 	static void __cdecl njDrawModel_SADX_r(NJS_MODEL_SADX* a1)
 	{
 		begin();
-		runTrampoline(TARGET_DYNAMIC(njDrawModel_SADX), a1);
+
+		if (a1 && a1->nbMat && a1->mats)
+		{
+			globals::first_material = true;
+
+			auto _control_3d = _nj_control_3d_flag_;
+			auto _attr_or = _nj_constant_attr_or_;
+			auto _attr_and = _nj_constant_attr_and_;
+
+			runTrampoline(TARGET_DYNAMIC(njDrawModel_SADX), a1);
+
+			_nj_control_3d_flag_ = _control_3d;
+			_nj_constant_attr_and_ = _attr_and;
+			_nj_constant_attr_or_ = _attr_or;
+		}
+		else
+		{
+			runTrampoline(TARGET_DYNAMIC(njDrawModel_SADX), a1);
+		}
+
 		end();
 	}
 
-	static void __cdecl njDrawModel_SADX_B_r(NJS_MODEL_SADX* a1)
+	static void __cdecl njDrawModel_SADX_Dynamic_r(NJS_MODEL_SADX* a1)
 	{
 		begin();
-		runTrampoline(TARGET_DYNAMIC(njDrawModel_SADX_B), a1);
+
+		if (a1 && a1->nbMat && a1->mats)
+		{
+			globals::first_material = true;
+
+			auto _control_3d = _nj_control_3d_flag_;
+			auto _attr_or = _nj_constant_attr_or_;
+			auto _attr_and = _nj_constant_attr_and_;
+
+			runTrampoline(TARGET_DYNAMIC(njDrawModel_SADX_Dynamic), a1);
+
+			_nj_control_3d_flag_ = _control_3d;
+			_nj_constant_attr_and_ = _attr_and;
+			_nj_constant_attr_or_ = _attr_or;
+		}
+		else
+		{
+			runTrampoline(TARGET_DYNAMIC(njDrawModel_SADX_Dynamic), a1);
+		}
+
 		end();
 	}
 
@@ -820,14 +885,14 @@ namespace local
 		// This specifically force light type 0 to prevent
 		// the light direction from being overwritten.
 		target(0);
-		SetShaderOptions(d3d::UseLight, true);
+		d3d::SetShaderFlags(ShaderFlags_Light, true);
 
 		if (type != globals::light_type)
 		{
 			setLightParameters();
 		}
 
-		globals::palettes.SetPalettes(type, globals::no_specular ? NJD_FLAG_IGNORE_SPECULAR : 0);
+		globals::palettes.SetPalettes(type, 0);
 	}
 
 
@@ -972,7 +1037,7 @@ namespace local
 			param::ProjectionMatrix = *matrix;
 		}
 
-		return Direct3D_Device->SetTransform(type, matrix);
+		return _device->SetTransform(type, matrix);
 	}
 #pragma endregion
 
@@ -1537,7 +1602,7 @@ namespace local
 
 		int passes = guard.passes;
 
-		SetShaderOptions(UseOit, true);
+		SetShaderFlags(ShaderFlags_OIT, true);
 		param::OpaqueDepth = depthBuffer;
 		peeling = true;
 		do_effect = true;
@@ -1580,7 +1645,10 @@ namespace local
 
 				param::AlphaDepth = lastUnit;
 
+#ifdef USE_NODE_LIMIT
 				size_t index = 0;
+#endif
+
 				for (auto& it : nodes)
 				{
 #ifdef USE_NODE_LIMIT
@@ -1606,7 +1674,7 @@ namespace local
 		peeling = false;
 		param::OpaqueDepth = nullptr;
 		param::AlphaDepth = nullptr;
-		SetShaderOptions(UseOit, false);
+		SetShaderFlags(ShaderFlags_OIT, false);
 		device->SetRenderTarget(1, nullptr);
 	}
 
@@ -1859,6 +1927,22 @@ namespace d3d
 	Effect effect = nullptr;
 	bool do_effect = false;
 
+	void ResetOverrides()
+	{
+		if (LanternInstance::diffuse_override_temp)
+		{
+			LanternInstance::diffuse_override = false;
+			param::DiffuseOverride = false;
+		}
+
+		if (LanternInstance::specular_override_temp)
+		{
+			LanternInstance::specular_override = false;
+		}
+
+		param::ForceDefaultDiffuse = false;
+	}
+
 	void LoadShader()
 	{
 		if (!local::initialized)
@@ -1892,16 +1976,16 @@ namespace d3d
 				throw std::runtime_error("Shader creation failed with an unknown error. (Does blender.fx exist?)");
 			}
 
-			effect = local::compileShader(local::DEFAULT_OPTIONS);
+			effect = local::compileShader(local::DEFAULT_FLAGS);
 
 		#ifdef PRECOMPILE_SHADERS
-			for (Uint32 i = 1; i < ShaderOptions::Count; i++)
+			for (Uint32 i = 1; i < ShaderFlags_Count; i++)
 			{
-				auto options = i;
-				local::sanitize(options);
-				if (options && local::shaders[options] == nullptr)
+				auto flags = i;
+				local::sanitize(flags);
+				if (flags && local::shaders[flags] == nullptr)
 				{
-					local::compileShader(options);
+					local::compileShader(flags);
 				}
 			}
 		#endif
@@ -1915,15 +1999,15 @@ namespace d3d
 		}
 	}
 
-	void SetShaderOptions(Uint32 options, bool add)
+	void SetShaderFlags(Uint32 flags, bool add)
 	{
 		if (add)
 		{
-			local::shader_options |= options;
+			local::shader_flags |= flags;
 		}
 		else
 		{
-			local::shader_options &= ~options;
+			local::shader_flags &= ~flags;
 		}
 	}
 
@@ -1935,7 +2019,7 @@ namespace d3d
 		sub_77EAD0_t                       = new Trampoline(0x0077EAD0, 0x0077EAD7, sub_77EAD0_r);
 		sub_77EBA0_t                       = new Trampoline(0x0077EBA0, 0x0077EBA5, sub_77EBA0_r);
 		njDrawModel_SADX_t                 = new Trampoline(0x0077EDA0, 0x0077EDAA, njDrawModel_SADX_r);
-		njDrawModel_SADX_B_t               = new Trampoline(0x00784AE0, 0x00784AE5, njDrawModel_SADX_B_r);
+		njDrawModel_SADX_Dynamic_t         = new Trampoline(0x00784AE0, 0x00784AE5, njDrawModel_SADX_Dynamic_r);
 		Direct3D_SetProjectionMatrix_t     = new Trampoline(0x00791170, 0x00791175, Direct3D_SetProjectionMatrix_r);
 		Direct3D_SetViewportAndTransform_t = new Trampoline(0x007912E0, 0x007912E8, Direct3D_SetViewportAndTransform_r);
 		Direct3D_SetWorldTransform_t       = new Trampoline(0x00791AB0, 0x00791AB5, Direct3D_SetWorldTransform_r);
@@ -1950,7 +2034,7 @@ namespace d3d
 		// This nops:
 		// mov ecx, [eax] (device)
 		// call dword ptr [ecx+94h] (device->SetTransform)
-		WriteData((void*)0x00403234, 0x90i8, 8);
+		WriteData<8>((void*)0x00403234, 0x90i8);
 		WriteCall((void*)0x00403236, SetTransformHijack);
 
 	#ifdef USE_OIT

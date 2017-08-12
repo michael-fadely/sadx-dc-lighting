@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 #include <atlbase.h>
 #include <d3d9.h>
 #include <d3dx9effect.h>
@@ -12,6 +13,8 @@ using Effect = CComPtr<ID3DXEffect>;
 class IEffectParameter
 {
 public:
+	static std::vector<IEffectParameter*> values_assigned;
+
 	virtual ~IEffectParameter() = default;
 	virtual void UpdateHandle(Effect effect) = 0;
 	virtual bool Modified() = 0;
@@ -41,6 +44,7 @@ public:
 	void Clear() override;
 	bool Commit(Effect effect) override;
 	void Release() override;
+	T Value() const;
 	void operator=(const T& value);
 	void operator=(const EffectParameter<T>& value);
 };
@@ -72,10 +76,20 @@ void EffectParameter<T>::Release()
 {
 	Clear();
 }
+template <typename T>
+T EffectParameter<T>::Value() const
+{
+	return current;
+}
 
 template <typename T>
 void EffectParameter<T>::operator=(const T& value)
 {
+	if (!assigned)
+	{
+		values_assigned.push_back(this);
+	}
+
 	assigned = true;
 	current = value;
 }

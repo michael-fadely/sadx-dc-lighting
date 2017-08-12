@@ -21,7 +21,7 @@
 
 #define WIN32_LEAN_AND_MEAN
 
-#if 1
+#ifdef _DEBUG
 
 // Windows API
 #include <Windows.h>
@@ -43,6 +43,7 @@
 #include <MinHook.h>
 
 // Standard library
+#include <algorithm>
 #include <deque>
 #include <exception>
 #include <fstream>
@@ -50,6 +51,9 @@
 #include <sstream>
 #include <string>
 #include <vector>
+
+// API
+#include "../include/lanternapi.h"
 
 // Local
 #include "d3d.h"
@@ -61,6 +65,7 @@
 #include "lantern.h"
 #include "Obj_Past.h"
 #include "Obj_SkyDeck.h"
+#include "Obj_Chaos7.h"
 #include "Trampoline.h"
 
 // Materials
