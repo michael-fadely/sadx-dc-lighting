@@ -14,11 +14,6 @@ static Trampoline* Obj_Chaos7_t = nullptr;
 
 static void __cdecl Obj_Chaos7_r(ObjectMaster* a1)
 {
-	if (!a1->Data1->Action)
-	{
-		use_secondary = false;
-	}
-
 	TARGET_DYNAMIC(Obj_Chaos7)(a1);
 
 	bool use = PerfectChaosPhase == 1 && !*(int*)0x3B2C578; // address is EV_MainThread_ptr
