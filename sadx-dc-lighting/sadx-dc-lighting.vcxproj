@@ -116,6 +116,7 @@ xcopy /C /Y /D "$(ProjectDir)lantern.fx" "$(OutDir)system\"</Command>
     <ClInclude Include="lantern.h" />
     <ClInclude Include="mrgarden.h" />
     <ClInclude Include="mrgarden_night.h" />
+    <ClInclude Include="Obj_Chaos7.h" />
     <ClInclude Include="Obj_Past.h" />
     <ClInclude Include="Obj_SkyDeck.h" />
     <ClInclude Include="ssgarden.h" />
@@ -132,6 +133,7 @@ xcopy /C /Y /D "$(ProjectDir)lantern.fx" "$(OutDir)system\"</Command>
     <ClCompile Include="lantern.cpp" />
     <ClCompile Include="lanternapi.cpp" />
     <ClCompile Include="mod.cpp" />
+    <ClCompile Include="Obj_Chaos7.cpp" />
     <ClCompile Include="Obj_Past.cpp" />
     <ClCompile Include="Obj_SkyDeck.cpp" />
     <ClCompile Include="stdafx.cpp">

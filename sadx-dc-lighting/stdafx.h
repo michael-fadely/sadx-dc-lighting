@@ -65,6 +65,7 @@
 #include "lantern.h"
 #include "Obj_Past.h"
 #include "Obj_SkyDeck.h"
+#include "Obj_Chaos7.h"
 #include "Trampoline.h"
 
 // Materials

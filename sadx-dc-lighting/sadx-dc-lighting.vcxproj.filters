@@ -84,6 +84,9 @@
     <ClInclude Include="..\sadx-mod-loader\libmodutils\Trampoline.h">
       <Filter>Header Files\external</Filter>
     </ClInclude>
+    <ClInclude Include="Obj_Chaos7.h">
+      <Filter>Header Files\Level Objects</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -124,6 +127,9 @@
     </ClCompile>
     <ClCompile Include="..\sadx-mod-loader\libmodutils\Trampoline.cpp">
       <Filter>Source Files\external</Filter>
+    </ClCompile>
+    <ClCompile Include="Obj_Chaos7.cpp">
+      <Filter>Source Files\Level Objects</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

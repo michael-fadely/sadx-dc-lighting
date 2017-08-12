@@ -16,6 +16,7 @@
 #include "../include/lanternapi.h"
 #include "Obj_Past.h"
 #include "Obj_SkyDeck.h"
+#include "Obj_Chaos7.h"
 #include "FixChaoGardenMaterials.h"
 #include "FixCharacterMaterials.h"
 
@@ -433,6 +434,7 @@ extern "C"
 		globals::system.append("\\system\\");
 
 		d3d::InitTrampolines();
+
 		CharSel_LoadA_t                 = new Trampoline(0x00512BC0, 0x00512BC6, CharSel_LoadA_r);
 		Direct3D_ParseMaterial_t        = new Trampoline(0x00784850, 0x00784858, Direct3D_ParseMaterial_r);
 		GoToNextLevel_t                 = new Trampoline(0x00414610, 0x00414616, GoToNextLevel_r);
@@ -453,6 +455,7 @@ extern "C"
 		FixChaoGardenMaterials();
 		Past_Init();
 		SkyDeck_Init();
+		Chaos7_Init();
 
 		// Vertex normal correction for certain objects in
 		// Red Mountain and Sky Deck.
