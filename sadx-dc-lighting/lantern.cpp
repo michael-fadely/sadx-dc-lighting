@@ -343,7 +343,7 @@ LanternInstance::LanternInstance(EffectParameter<Texture>* atlas) : atlas(atlas)
 
 LanternInstance::LanternInstance(LanternInstance&& inst) noexcept
 {
-	copy(inst);
+	*this = std::move(inst);
 }
 
 LanternInstance& LanternInstance::operator=(LanternInstance&& inst) noexcept
@@ -355,6 +355,10 @@ LanternInstance& LanternInstance::operator=(LanternInstance&& inst) noexcept
 
 LanternInstance::~LanternInstance()
 {
+	if (atlas != nullptr)
+	{
+		*atlas = nullptr;
+	}
 }
 
 void LanternInstance::SetLastLevel(Sint32 level, Sint32 act)
@@ -1027,7 +1031,7 @@ void LanternCollection::callback_del(std::deque<lantern_load_cb>& c, lantern_loa
 
 size_t LanternCollection::Add(LanternInstance& src)
 {
-	instances.push_back(std::move(src));
+	instances.emplace_back(std::move(src));
 	return instances.size() - 1;
 }
 
