@@ -1256,20 +1256,22 @@ namespace local
 	static constexpr auto NODE_LIMIT = 50;
 	std::deque<QueuedNodeEx> nodes;
 
-	// TODO: fix
 	bool node_sort_pred(QueuedNodeEx& _a, QueuedNodeEx& _b)
 	{
 		auto a = _a.node;
 		auto b = _b.node;
 
-		bool result = a->TexList != b->TexList;
+		if (a->TexList != b->TexList)
+		{
+			return false;
+		}
 
 		if (_a.meshset && _b.meshset)
 		{
-			return result && (_a.meshset->type_matId & 0x3FFF) < (_b.meshset->type_matId & 0x3FFF);
+			return (_a.meshset->type_matId & 0x3FFF) < (_b.meshset->type_matId & 0x3FFF);
 		}
 
-		return result;
+		return false;
 	}
 
 	__inline void sort_nodes()
