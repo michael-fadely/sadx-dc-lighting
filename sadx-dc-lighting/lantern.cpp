@@ -343,7 +343,7 @@ LanternInstance::LanternInstance(EffectParameter<Texture>* atlas) : atlas(atlas)
 
 LanternInstance::LanternInstance(LanternInstance&& inst) noexcept
 {
-	copy(inst);
+	*this = std::move(inst);
 }
 
 LanternInstance& LanternInstance::operator=(LanternInstance&& inst) noexcept
@@ -355,6 +355,10 @@ LanternInstance& LanternInstance::operator=(LanternInstance&& inst) noexcept
 
 LanternInstance::~LanternInstance()
 {
+	if (atlas != nullptr)
+	{
+		*atlas = nullptr;
+	}
 }
 
 void LanternInstance::SetLastLevel(Sint32 level, Sint32 act)
@@ -450,12 +454,15 @@ bool LanternInstance::LoadPalette(const std::string& path)
 
 	file.close();
 
+	bool is_32bit = d3d::SupportsXRGB();
 	Texture texture = atlas->Value();
 
 	if (texture == nullptr)
 	{
 		// Using a floating point texture to support the GeForce 6000 series cards.
-		if (FAILED(d3d::device->CreateTexture(256, 16, 1, 0, D3DFMT_A32B32G32R32F, D3DPOOL_MANAGED, &texture, nullptr)))
+		const auto format = is_32bit ? D3DFMT_X8R8G8B8 : D3DFMT_A32B32G32R32F;
+
+		if (FAILED(d3d::device->CreateTexture(256, 16, 1, 0, format, D3DPOOL_MANAGED, &texture, nullptr)))
 		{
 			throw std::exception("Failed to create palette texture!");
 		}
@@ -481,7 +488,6 @@ bool LanternInstance::LoadPalette(const std::string& path)
 	};
 
 	static_assert(sizeof(ABGR32F) == sizeof(float) * 4, "nope");
-	auto pixels = (ABGR32F*)rect.pBits;
 
 	for (size_t i = 0; i < 8; i++)
 	{
@@ -492,25 +498,47 @@ bool LanternInstance::LoadPalette(const std::string& path)
 		}
 
 		auto y = 512 * i;
-		for (size_t x = 0; x < 256; x++)
+
+		if (is_32bit)
 		{
-			auto& diffuse = pixels[y + x];
-			auto& specular = pixels[256 + y + x];
-			const auto& color = colorData[index + x];
+			auto pixels = (NJS_COLOR*)rect.pBits;
 
-			auto& _diffuse = color.diffuse.argb;
+			for (size_t x = 0; x < 256; x++)
+			{
+				const auto& color = colorData[index + x];
 
-			diffuse.r = _diffuse.r / 255.0f;
-			diffuse.g = _diffuse.g / 255.0f;
-			diffuse.b = _diffuse.b / 255.0f;
-			diffuse.a = _diffuse.a / 255.0f;
+				auto& diffuse = pixels[y + x];
+				auto& specular = pixels[256 + y + x];
 
-			auto& _specular = color.specular.argb;
+				diffuse = color.diffuse;
+				specular = color.specular;
+			}
+		}
+		else
+		{
+			auto pixels = (ABGR32F*)rect.pBits;
 
-			specular.r = _specular.r / 255.0f;
-			specular.g = _specular.g / 255.0f;
-			specular.b = _specular.b / 255.0f;
-			specular.a = _specular.a / 255.0f;
+			for (size_t x = 0; x < 256; x++)
+			{
+				const auto& color = colorData[index + x];
+
+				auto& diffuse = pixels[y + x];
+				auto& specular = pixels[256 + y + x];
+
+				const auto& _diffuse = color.diffuse.argb;
+
+				diffuse.r = _diffuse.r / 255.0f;
+				diffuse.g = _diffuse.g / 255.0f;
+				diffuse.b = _diffuse.b / 255.0f;
+				diffuse.a = _diffuse.a / 255.0f;
+
+				const auto& _specular = color.specular.argb;
+
+				specular.r = _specular.r / 255.0f;
+				specular.g = _specular.g / 255.0f;
+				specular.b = _specular.b / 255.0f;
+				specular.a = _specular.a / 255.0f;
+			}
 		}
 	}
 
@@ -1027,7 +1055,7 @@ void LanternCollection::callback_del(std::deque<lantern_load_cb>& c, lantern_loa
 
 size_t LanternCollection::Add(LanternInstance& src)
 {
-	instances.push_back(std::move(src));
+	instances.emplace_back(std::move(src));
 	return instances.size() - 1;
 }
 

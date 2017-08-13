@@ -73,6 +73,7 @@ static void __cdecl Obj_SkyDeck_r(ObjectMaster* _this)
 	globals::palettes.LoadPalette(LevelIDs_SkyDeck, 0);
 	globals::palettes.LoadSource(LevelIDs_SkyDeck, 0);
 
+	param::PaletteB = nullptr;
 	LanternInstance lantern(&param::PaletteB);
 
 	lantern.LoadPalette(LevelIDs_SkyDeck, 1);

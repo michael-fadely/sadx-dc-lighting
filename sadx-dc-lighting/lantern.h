@@ -88,7 +88,7 @@ class LanternInstance : ILantern
 	void copy(LanternInstance& inst);
 
 public:
-	LanternInstance(EffectParameter<Texture>* atlas);
+	explicit LanternInstance(EffectParameter<Texture>* atlas);
 	LanternInstance(LanternInstance&& instance) noexcept;
 
 	LanternInstance(const LanternInstance&) = default;
