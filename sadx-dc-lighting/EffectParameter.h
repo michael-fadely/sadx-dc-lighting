@@ -6,8 +6,10 @@
 #include <d3d9.h>
 #include <d3dx9effect.h>
 
-using Texture = CComPtr<IDirect3DTexture9>;
-using Effect = CComPtr<ID3DXEffect>;
+using Buffer         = CComPtr<ID3DXBuffer>;
+using Effect         = CComPtr<ID3DXEffect>;
+using EffectCompiler = CComPtr<ID3DXEffectCompiler>;
+using Texture        = CComPtr<IDirect3DTexture9>;
 
 class IEffectParameter
 {

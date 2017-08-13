@@ -19,6 +19,7 @@ namespace globals
 	bool object_vcolor      = true;
 	bool first_material     = false;
 
-	std::string system = "";
+	std::string system_path;
+	std::string cache_path;
 	LanternCollection palettes = {};
 }

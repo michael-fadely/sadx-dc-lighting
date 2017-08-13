@@ -20,6 +20,7 @@ namespace globals
 	extern bool object_vcolor;
 	extern bool first_material;
 
-	extern std::string system;
+	extern std::string system_path;
+	extern std::string cache_path;
 	extern LanternCollection palettes;
 }
