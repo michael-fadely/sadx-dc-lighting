@@ -434,8 +434,11 @@ extern "C"
 		LanternInstance base(&param::PaletteA);
 		globals::palettes.Add(base);
 
-		globals::system = path;
-		globals::system.append("\\system\\");
+		globals::system_path = path;
+		globals::system_path.append("\\system\\");
+
+		globals::cache_path = path;
+		globals::cache_path.append("\\cache\\");
 
 		d3d::InitTrampolines();
 
@@ -486,11 +489,11 @@ extern "C"
 		#if 0
 			if (pressed & Buttons_Left)
 			{
-				globals::palettes.LoadPalette(globals::system + "diffuse test.bin");
+				globals::palettes.LoadPalette(globals::system_path + "diffuse test.bin");
 			}
 			else if (pressed & Buttons_Right)
 			{
-				globals::palettes.LoadPalette(globals::system + "specular test.bin");
+				globals::palettes.LoadPalette(globals::system_path + "specular test.bin");
 			}
 			else if (pressed & Buttons_Down)
 			{

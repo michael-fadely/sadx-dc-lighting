@@ -421,7 +421,7 @@ bool LanternInstance::LoadSource(const std::string& path)
 bool LanternInstance::LoadSource(Sint32 level, Sint32 act)
 {
 	std::stringstream name;
-	name << globals::system << "SL" << PaletteId(level, act) << "B.BIN";
+	name << globals::system_path << "SL" << PaletteId(level, act) << "B.BIN";
 	return LoadSource(name.str());
 }
 
@@ -556,7 +556,7 @@ bool LanternInstance::LoadPalette(const std::string& path)
 bool LanternInstance::LoadPalette(Sint32 level, Sint32 act)
 {
 	std::stringstream name;
-	name << globals::system << "PL" << PaletteId(level, act) << "B.BIN";
+	name << globals::system_path << "PL" << PaletteId(level, act) << "B.BIN";
 	return LoadPalette(name.str());
 }
 

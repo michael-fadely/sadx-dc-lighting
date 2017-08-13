@@ -26,6 +26,7 @@
 // Windows API
 #include <Windows.h>
 #include <atlbase.h>
+#include <Wincrypt.h>
 
 // Direct3D
 #include <d3d9.h>
@@ -46,8 +47,9 @@
 #include <algorithm>
 #include <deque>
 #include <exception>
+#include <filesystem>
 #include <fstream>
-#include <ninja.h>
+#include <iomanip>
 #include <sstream>
 #include <string>
 #include <vector>

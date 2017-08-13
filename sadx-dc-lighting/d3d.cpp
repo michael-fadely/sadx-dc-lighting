@@ -1,5 +1,8 @@
 #include "stdafx.h"
 
+#include <Windows.h>
+#include <Wincrypt.h>
+
 // Direct3D
 #include <d3dx9.h>
 
@@ -14,6 +17,8 @@
 #include <MinHook.h>
 
 // Standard library
+#include <filesystem>
+#include <iomanip>
 #include <sstream>
 #include <vector>
 
@@ -21,10 +26,14 @@
 #include "d3d.h"
 #include "datapointers.h"
 #include "globals.h"
-#include "lantern.h"
 #include "../include/lanternapi.h"
 #include "EffectParameter.h"
 #include <algorithm>
+
+namespace std
+{
+	using namespace experimental;
+}
 
 namespace param
 {
@@ -173,12 +182,13 @@ namespace local
 	static decltype(DrawIndexedPrimitiveUP_r)* DrawIndexedPrimitiveUP_t = nullptr;
 
 	constexpr auto DEFAULT_FLAGS = ShaderFlags_Alpha | ShaderFlags_Fog | ShaderFlags_Light | ShaderFlags_Texture;
+	constexpr auto COMPILER_FLAGS = D3DXFX_NOT_CLONEABLE | D3DXFX_DONOTSAVESTATE | D3DXFX_DONOTSAVESAMPLERSTATE;
 
 	static Uint32 shader_flags = DEFAULT_FLAGS;
 	static Uint32 last_flags = DEFAULT_FLAGS;
 
-	static std::vector<Uint8> shaderFile;
-	static Uint32 shaderCount = 0;
+	static std::vector<uint8_t> shader_file;
+	static Uint32 shader_count = 0;
 	static Effect shaders[ShaderFlags_Count] = {};
 	static CComPtr<ID3DXEffectPool> pool = nullptr;
 
@@ -247,7 +257,7 @@ namespace local
 
 	static void releaseShaders()
 	{
-		shaderFile.clear();
+		shader_file.clear();
 		d3d::effect = nullptr;
 
 		for (auto& e : shaders)
@@ -255,7 +265,7 @@ namespace local
 			e = nullptr;
 		}
 
-		shaderCount = 0;
+		shader_count = 0;
 		pool = nullptr;
 
 	#ifdef USE_OIT
@@ -442,69 +452,187 @@ namespace local
 		return result.str();
 	}
 
-	static Effect compileShader(Uint32 flags)
+	static void create_cache()
 	{
-		PrintDebug("[lantern] Compiling shader #%02d: %08X (%s)\n", ++shaderCount, flags,
-			shaderFlagsString(flags).c_str());
-
-		if (pool == nullptr)
+		if (!std::filesystem::create_directory(globals::cache_path))
 		{
-			if (FAILED(D3DXCreateEffectPool(&pool)))
+			throw std::exception("Failed to create cache directory!");
+		}
+	}
+
+	static void invalidate_cache()
+	{
+		if (std::filesystem::exists(globals::cache_path))
+		{
+			if (!std::filesystem::remove_all(globals::cache_path))
 			{
-				throw std::runtime_error("Failed to create effect pool?!");
+				throw std::runtime_error("Failed to delete cache directory!");
 			}
 		}
 
-		macros.clear();
+		create_cache();
+	}
 
+	static auto shader_hash()
+	{
+		HCRYPTPROV hProv = 0;
+		if (!CryptAcquireContext(&hProv, nullptr, nullptr, PROV_RSA_AES, CRYPT_VERIFYCONTEXT))
+		{
+			throw std::runtime_error("CryptAcquireContext failed.");
+		}
+
+		HCRYPTHASH hHash = 0;
+		if (!CryptCreateHash(hProv, CALG_SHA_256, 0, 0, &hHash))
+		{
+			CryptReleaseContext(hProv, 0);
+			throw std::runtime_error("CryptCreateHash failed.");
+		}
+
+		try
+		{
+			if (!CryptHashData(hHash, shader_file.data(), shader_file.size(), 0))
+			{
+				throw std::runtime_error("CryptHashData failed.");
+			}
+
+			// temporary
+			DWORD buffer_size = sizeof(size_t);
+			// actual size
+			DWORD hash_size = 0;
+
+			if (!CryptGetHashParam(hHash, HP_HASHSIZE, reinterpret_cast<BYTE*>(&hash_size), &buffer_size, 0))
+			{
+				throw std::runtime_error("CryptGetHashParam failed while asking for hash buffer size.");
+			}
+
+			std::vector<uint8_t> result(hash_size);
+
+			if (!CryptGetHashParam(hHash, HP_HASHVAL, result.data(), &hash_size, 0))
+			{
+				throw std::runtime_error("CryptGetHashParam failed while asking for hash value.");
+			}
+
+			CryptDestroyHash(hHash);
+			CryptReleaseContext(hProv, 0);
+			return move(result);
+		}
+		catch (std::exception&)
+		{
+			CryptDestroyHash(hHash);
+			CryptReleaseContext(hProv, 0);
+			throw;
+		}
+	}
+
+	static void load_shader_file(const std::basic_string<char>& shader_path)
+	{
+		std::ifstream file(shader_path, std::ios::ate);
+		auto size = file.tellg();
+		file.seekg(0);
+
+		if (file.is_open() && size > 0)
+		{
+			shader_file.resize(static_cast<size_t>(size));
+			file.read((char*)shader_file.data(), size);
+		}
+
+		file.close();
+	}
+
+	static auto read_checksum(const std::basic_string<char>& checksum_path)
+	{
+		std::ifstream file(checksum_path, std::ios::ate | std::ios::binary);
+		auto size = file.tellg();
+		file.seekg(0);
+
+		if (size > 256 || size < 1)
+		{
+			throw std::runtime_error("checksum.bin file size out of range");
+		}
+
+		std::vector<uint8_t> data(static_cast<size_t>(size));
+		file.read(reinterpret_cast<char*>(data.data()), data.size());
+		file.close();
+
+		return move(data);
+	}
+
+	static void store_checksum(const std::vector<uint8_t>& current_hash, const std::basic_string<char>& checksum_path)
+	{
+		invalidate_cache();
+
+		std::ofstream file(checksum_path, std::ios::binary | std::ios::out);
+
+		if (!file.is_open())
+		{
+			std::string error = "Failed to open file for writing: " + checksum_path;
+			throw std::exception(error.c_str());
+		}
+
+		file.write((const char*)current_hash.data(), current_hash.size());
+		file.close();
+	}
+
+	static auto shader_id(Uint32 flags)
+	{
+		std::stringstream result;
+
+		result << std::hex
+			<< std::setw(2)
+			<< std::setfill('0')
+			<< flags;
+
+		return move(result.str());
+	}
+
+	static void populate_macros(Uint32 flags)
+	{
 #ifdef USE_SL
 		macros.push_back({ "USE_SL", "1" });
 #endif
 
-		auto o = sanitize(flags);
-
-		while (o != 0)
+		while (flags != 0)
 		{
 			using namespace d3d;
 
-			if (o & ShaderFlags_Texture)
+			if (flags & ShaderFlags_Texture)
 			{
-				o &= ~ShaderFlags_Texture;
+				flags &= ~ShaderFlags_Texture;
 				macros.push_back({ "USE_TEXTURE", "1" });
 				continue;
 			}
 
-			if (o & ShaderFlags_EnvMap)
+			if (flags & ShaderFlags_EnvMap)
 			{
-				o &= ~ShaderFlags_EnvMap;
+				flags &= ~ShaderFlags_EnvMap;
 				macros.push_back({ "USE_ENVMAP", "1" });
 				continue;
 			}
 
-			if (o & ShaderFlags_Light)
+			if (flags & ShaderFlags_Light)
 			{
-				o &= ~ShaderFlags_Light;
+				flags &= ~ShaderFlags_Light;
 				macros.push_back({ "USE_LIGHT", "1" });
 				continue;
 			}
 
-			if (o & ShaderFlags_Blend)
+			if (flags & ShaderFlags_Blend)
 			{
-				o &= ~ShaderFlags_Blend;
+				flags &= ~ShaderFlags_Blend;
 				macros.push_back({ "USE_BLEND", "1" });
 				continue;
 			}
 
-			if (o & ShaderFlags_Alpha)
+			if (flags & ShaderFlags_Alpha)
 			{
-				o &= ~ShaderFlags_Alpha;
+				flags &= ~ShaderFlags_Alpha;
 				macros.push_back({ "USE_ALPHA", "1" });
 				continue;
 			}
 
-			if (o & ShaderFlags_Fog)
+			if (flags & ShaderFlags_Fog)
 			{
-				o &= ~ShaderFlags_Fog;
+				flags &= ~ShaderFlags_Fog;
 				macros.push_back({ "USE_FOG", "1" });
 				continue;
 			}
@@ -520,49 +648,162 @@ namespace local
 		}
 
 		macros.push_back({});
+	}
 
-		ID3DXBuffer* errors = nullptr;
-		Effect effect;
+	static __declspec(noreturn) void d3d_exception(Buffer& buffer, HRESULT code)
+	{
+		using namespace std;
 
-		auto path = globals::system + "lantern.fx";
+		stringstream message;
 
-		if (shaderFile.empty())
+		message << '['
+			<< hex
+			<< setw(8)
+			<< setfill('0')
+			<< code;
+
+		message << "] ";
+
+		if (buffer != nullptr)
 		{
-			std::ifstream file(path, std::ios::ate);
+			message << reinterpret_cast<const char*>(buffer->GetBufferPointer());
+		}
+		else
+		{
+			message << "Unspecified error.";
+		}
+
+		throw runtime_error(message.str());
+	}
+
+	static Effect compileShader(Uint32 flags)
+	{
+		using namespace std;
+
+		filesystem::path shader_path = move(filesystem::path(globals::system_path).append("lantern.fx"));
+
+		if (shader_file.empty())
+		{
+			load_shader_file(shader_path.string());
+
+			vector<uint8_t> current_hash(shader_hash());
+
+			filesystem::path checksum_path = move(filesystem::path(globals::cache_path).append("checksum.bin"));
+
+			if (filesystem::exists(globals::cache_path))
+			{
+				if (!exists(checksum_path))
+				{
+					store_checksum(current_hash, checksum_path.string());
+				}
+				else
+				{
+					vector<uint8_t> last_hash(read_checksum(checksum_path.string()));
+
+					if (last_hash != current_hash)
+					{
+						store_checksum(current_hash, checksum_path.string());
+					}
+				}
+			}
+			else
+			{
+				store_checksum(current_hash, checksum_path.string());
+			}
+		}
+
+		if (pool == nullptr)
+		{
+			if (FAILED(D3DXCreateEffectPool(&pool)))
+			{
+				throw runtime_error("Failed to create effect pool?!");
+			}
+		}
+
+		macros.clear();
+
+		sanitize(flags);
+		filesystem::path sid_path = move(filesystem::path(globals::cache_path).append(shader_id(flags) + ".fx.bin"));
+		bool is_cached = exists(sid_path);
+
+		Buffer errors = nullptr;
+		vector<uint8_t> data;
+
+		if (is_cached)
+		{
+			PrintDebug("[lantern] Loading cached shader #%02d: %08X (%s)\n", ++shader_count, flags,
+				shaderFlagsString(flags).c_str());
+
+			ifstream file(sid_path, ios_base::ate | ios_base::binary);
 			auto size = file.tellg();
 			file.seekg(0);
 
-			if (file.is_open() && size > 0)
+			if (size < 1)
 			{
-				shaderFile.resize((size_t)size);
-				file.read((char*)shaderFile.data(), size);
+				throw runtime_error("corrupt shader cache");
 			}
 
-			file.close();
+			data.resize(static_cast<size_t>(size));
+			file.read(reinterpret_cast<char*>(data.data()), data.size());
+		}
+		else
+		{
+			PrintDebug("[lantern] Compiling shader #%02d: %08X (%s)\n", ++shader_count, flags,
+				shaderFlagsString(flags).c_str());
+
+
+			populate_macros(flags);
+
+			EffectCompiler compiler;
+
+			auto result = D3DXCreateEffectCompiler((char*)shader_file.data(), shader_file.size(), macros.data(), nullptr,
+				COMPILER_FLAGS, &compiler, &errors);
+
+			if (FAILED(result) || errors != nullptr)
+			{
+				d3d_exception(errors, result);
+			}
+
+			Buffer buffer;
+			result = compiler->CompileEffect(COMPILER_FLAGS, &buffer, &errors);
+
+			if (FAILED(result) || errors != nullptr)
+			{
+				d3d_exception(errors, result);
+			}
+
+			data.resize(static_cast<size_t>(buffer->GetBufferSize()));
+			memcpy(data.data(), buffer->GetBufferPointer(), data.size());
 		}
 
-		if (!shaderFile.empty())
+		Effect effect;
+
+		if (!data.empty())
 		{
-			auto result = D3DXCreateEffect(d3d::device, shaderFile.data(), shaderFile.size(), macros.data(), nullptr,
-				D3DXFX_NOT_CLONEABLE | D3DXFX_DONOTSAVESTATE | D3DXFX_DONOTSAVESAMPLERSTATE,
-				pool, &effect, &errors);
+			auto result = D3DXCreateEffect(d3d::device, data.data(), data.size(), macros.data(), nullptr,
+				COMPILER_FLAGS, pool, &effect, &errors);
 
-			if (FAILED(result) || errors)
+			if (FAILED(result) || errors != nullptr)
 			{
-				if (errors)
-				{
-					std::string compilationErrors(static_cast<const char*>(
-						errors->GetBufferPointer()));
-
-					errors->Release();
-					throw std::runtime_error(compilationErrors);
-				}
+				d3d_exception(errors, result);
 			}
 		}
 
 		if (effect == nullptr)
 		{
-			throw std::runtime_error("Shader creation failed with an unknown error. (Does " + path + " exist?)");
+			throw runtime_error("Shader creation failed with an unknown error. (Does " + shader_path.string() + " exist?)");
+		}
+
+		if (!is_cached)
+		{
+			ofstream file(sid_path, ios_base::binary);
+
+			if (!file.is_open())
+			{
+				throw runtime_error("Failed to open file for cache storage.");
+			}
+
+			file.write((char*)data.data(), data.size());
 		}
 
 		effect->SetTechnique("Main");
