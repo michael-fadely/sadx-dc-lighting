@@ -637,9 +637,9 @@ namespace local
 				continue;
 			}
 
-			if (o & ShaderFlags_OIT)
+			if (flags & ShaderFlags_OIT)
 			{
-				o &= ~ShaderFlags_OIT;
+				flags &= ~ShaderFlags_OIT;
 				macros.push_back({ "USE_OIT", "1" });
 				continue;
 			}
