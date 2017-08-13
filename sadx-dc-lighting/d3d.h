@@ -13,6 +13,7 @@ namespace d3d
 	extern IDirect3DDevice9* device;
 	extern Effect effect;
 	extern bool do_effect;
+	bool SupportsXRGB();
 	void ResetOverrides();
 	void LoadShader();
 	void SetShaderFlags(Uint32 flags, bool add = true);

@@ -165,6 +165,7 @@ namespace local
 	static std::vector<D3DXMACRO> macros;
 
 	DataPointer(Direct3DDevice8*, Direct3D_Device, 0x03D128B0);
+	DataPointer(Direct3D8*, Direct3D_Object, 0x03D11F60);
 	DataPointer(D3DXMATRIX, InverseViewMatrix, 0x0389D358);
 	DataPointer(D3DXMATRIX, TransformationMatrix, 0x03D0FD80);
 	DataPointer(D3DXMATRIX, ViewMatrix, 0x0389D398);
@@ -648,15 +649,67 @@ namespace local
 		end();
 	}
 
-	static void __fastcall CreateDirect3DDevice_r(int a1, int behavior, int type)
+	static bool supports_xrgb = false;
+	static void __cdecl CreateDirect3DDevice_c(int behavior, int type)
 	{
-		TARGET_DYNAMIC(CreateDirect3DDevice)(a1, behavior, type);
+		if (Direct3D_Device == nullptr && Direct3D_Object != nullptr)
+		{
+			auto fmt = *(D3DFORMAT*)((char*)0x03D0FDC0 + 0x08);
+
+			auto result = Direct3D_Object->CheckDeviceFormat(DisplayAdapter, D3DDEVTYPE_HAL, fmt,
+				D3DUSAGE_QUERY_VERTEXTEXTURE, D3DRTYPE_TEXTURE, D3DFMT_X8R8G8B8);
+
+			if (result == D3D_OK)
+			{
+				supports_xrgb = true;
+			}
+			else
+			{
+				result = Direct3D_Object->CheckDeviceFormat(DisplayAdapter, D3DDEVTYPE_HAL, fmt,
+					D3DUSAGE_QUERY_VERTEXTEXTURE, D3DRTYPE_TEXTURE, D3DFMT_A32B32G32R32F);
+
+				if (result != D3D_OK)
+				{
+					MessageBoxA(WindowHandle, "Your GPU does not support any (reasonable) vertex texture sample formats.",
+						"Insufficient GPU support", MB_OK | MB_ICONERROR);
+
+					Exit();
+				}
+			}
+		}
+
+		auto orig = CreateDirect3DDevice_t->Target();
+		auto _type = type;
+
+		__asm
+		{
+			push _type
+			mov edx, behavior
+			call orig
+		}
+
 		if (Direct3D_Device != nullptr && !initialized)
 		{
 			d3d::device = Direct3D_Device->GetProxyInterface();
+
 			initialized = true;
 			d3d::LoadShader();
 			hookVtbl();
+		}
+	}
+
+	static void __declspec(naked) CreateDirect3DDevice_r()
+	{
+		__asm
+		{
+			push [esp + 04h] // type
+			push edx // behavior
+
+			call CreateDirect3DDevice_c
+
+			pop edx // behavior
+			add esp, 4
+			retn 4
 		}
 	}
 
@@ -857,6 +910,11 @@ namespace d3d
 	IDirect3DDevice9* device = nullptr;
 	Effect effect = nullptr;
 	bool do_effect = false;
+
+	bool SupportsXRGB()
+	{
+		return local::supports_xrgb;
+	}
 
 	void ResetOverrides()
 	{
