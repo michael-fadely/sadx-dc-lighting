@@ -498,22 +498,30 @@ bool LanternInstance::LoadPalette(const std::string& path)
 		}
 
 		auto y = 512 * i;
-		for (size_t x = 0; x < 256; x++)
-		{
-			const auto& color = colorData[index + x];
 
-			if (is_32bit)
+		if (is_32bit)
+		{
+			auto pixels = (NJS_COLOR*)rect.pBits;
+
+			for (size_t x = 0; x < 256; x++)
 			{
-				auto pixels = (NJS_COLOR*)rect.pBits;
+				const auto& color = colorData[index + x];
+
 				auto& diffuse = pixels[y + x];
 				auto& specular = pixels[256 + y + x];
 
 				diffuse = color.diffuse;
 				specular = color.specular;
 			}
-			else
+		}
+		else
+		{
+			auto pixels = (ABGR32F*)rect.pBits;
+
+			for (size_t x = 0; x < 256; x++)
 			{
-				auto pixels = (ABGR32F*)rect.pBits;
+				const auto& color = colorData[index + x];
+
 				auto& diffuse = pixels[y + x];
 				auto& specular = pixels[256 + y + x];
 
