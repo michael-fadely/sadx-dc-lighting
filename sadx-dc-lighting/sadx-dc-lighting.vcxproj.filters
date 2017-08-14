@@ -51,9 +51,6 @@
     <ClInclude Include="lantern.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="EffectParameter.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Obj_Past.h">
       <Filter>Header Files\Level Objects</Filter>
     </ClInclude>
@@ -87,6 +84,9 @@
     <ClInclude Include="Obj_Chaos7.h">
       <Filter>Header Files\Level Objects</Filter>
     </ClInclude>
+    <ClInclude Include="ShaderParameter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -105,9 +105,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="lantern.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="EffectParameter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Obj_Past.cpp">
@@ -131,12 +128,15 @@
     <ClCompile Include="Obj_Chaos7.cpp">
       <Filter>Source Files\Level Objects</Filter>
     </ClCompile>
+    <ClCompile Include="ShaderParameter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="lantern.fx">
+    <None Include="mod.ini">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="mod.ini">
+    <None Include="lantern.hlsl">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

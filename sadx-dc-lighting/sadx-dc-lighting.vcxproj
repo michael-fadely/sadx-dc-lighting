@@ -92,7 +92,7 @@
     </Link>
     <PostBuildEvent>
       <Command>xcopy /C /Y /D "$(ProjectDir)mod.ini" "$(OutDir)"
-xcopy /C /Y /D "$(ProjectDir)lantern.fx" "$(OutDir)system\"</Command>
+xcopy /C /Y /D "$(ProjectDir)lantern.hlsl" "$(OutDir)system\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Hybrid|Win32'">
@@ -117,7 +117,7 @@ xcopy /C /Y /D "$(ProjectDir)lantern.fx" "$(OutDir)system\"</Command>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /C /Y /D "$(ProjectDir)mod.ini" "$(OutDir)"
-xcopy /C /Y /D "$(ProjectDir)lantern.fx" "$(OutDir)system\"</Command>
+xcopy /C /Y /D "$(ProjectDir)lantern.hlsl" "$(OutDir)system\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -144,7 +144,7 @@ xcopy /C /Y /D "$(ProjectDir)lantern.fx" "$(OutDir)system\"</Command>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /C /Y /D "$(ProjectDir)mod.ini" "$(OutDir)"
-xcopy /C /Y /D "$(ProjectDir)lantern.fx" "$(OutDir)system\"</Command>
+xcopy /C /Y /D "$(ProjectDir)lantern.hlsl" "$(OutDir)system\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -153,7 +153,7 @@ xcopy /C /Y /D "$(ProjectDir)lantern.fx" "$(OutDir)system\"</Command>
     <ClInclude Include="d3d.h" />
     <ClInclude Include="datapointers.h" />
     <ClInclude Include="ecgarden.h" />
-    <ClInclude Include="EffectParameter.h" />
+    <ClInclude Include="ShaderParameter.h" />
     <ClInclude Include="FixChaoGardenMaterials.h" />
     <ClInclude Include="FixCharacterMaterials.h" />
     <ClInclude Include="globals.h" />
@@ -169,7 +169,7 @@ xcopy /C /Y /D "$(ProjectDir)lantern.fx" "$(OutDir)system\"</Command>
   <ItemGroup>
     <ClCompile Include="..\sadx-mod-loader\libmodutils\Trampoline.cpp" />
     <ClCompile Include="d3d.cpp" />
-    <ClCompile Include="EffectParameter.cpp" />
+    <ClCompile Include="ShaderParameter.cpp" />
     <ClCompile Include="FixChaoGardenMaterials.cpp" />
     <ClCompile Include="FixCharacterMaterials.cpp" />
     <ClCompile Include="fog.cpp" />
@@ -187,13 +187,12 @@ xcopy /C /Y /D "$(ProjectDir)lantern.fx" "$(OutDir)system\"</Command>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="lantern.fx">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Hybrid|Win32'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
+    <None Include="mod.ini" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="lantern.hlsl">
       <FileType>Document</FileType>
     </None>
-    <None Include="mod.ini" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
