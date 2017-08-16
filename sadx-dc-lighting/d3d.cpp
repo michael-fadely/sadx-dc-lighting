@@ -36,13 +36,12 @@ namespace std
 
 namespace param
 {
-	ShaderParameter<Texture>     PaletteA(1, nullptr);
-	ShaderParameter<Texture>     PaletteB(2, nullptr);
+	ShaderParameter<Texture>     PaletteA(D3DVERTEXTEXTURESAMPLER1, nullptr);
+	ShaderParameter<Texture>     PaletteB(D3DVERTEXTEXTURESAMPLER2, nullptr);
 
 	ShaderParameter<float>       DiffuseIndexA(22, 0.0f);
-	ShaderParameter<float>       SpecularIndexA(23, 0.0f);
-
-	ShaderParameter<float>       DiffuseIndexB(24, 0.0f);
+	ShaderParameter<float>       DiffuseIndexB(23, 0.0f);
+	ShaderParameter<float>       SpecularIndexA(24, 0.0f);
 	ShaderParameter<float>       SpecularIndexB(25, 0.0f);
 
 	ShaderParameter<float>       DiffuseBlendFactor(33, 0.0f);
@@ -166,7 +165,7 @@ namespace local
 	static decltype(DrawIndexedPrimitiveUP_r)* DrawIndexedPrimitiveUP_t = nullptr;
 
 	constexpr auto DEFAULT_FLAGS = ShaderFlags_Alpha | ShaderFlags_Fog | ShaderFlags_Light | ShaderFlags_Texture;
-	constexpr auto COMPILER_FLAGS = 0;
+	constexpr auto COMPILER_FLAGS = D3DXSHADER_PACKMATRIX_ROWMAJOR | D3DXSHADER_OPTIMIZATION_LEVEL3;
 
 	constexpr auto VS_FLAGS = ShaderFlags_Texture | ShaderFlags_EnvMap | ShaderFlags_Light | ShaderFlags_Blend;
 	constexpr auto PS_FLAGS = ShaderFlags_Texture | ShaderFlags_Alpha | ShaderFlags_Fog;
@@ -255,6 +254,11 @@ namespace local
 				}
 			}
 #endif
+
+			for (auto& i : param::parameters)
+			{
+				i->CommitNow(d3d::device);
+			}
 		}
 		catch (std::exception& ex)
 		{
@@ -579,6 +583,7 @@ namespace local
 		}
 	}
 
+	// TODO: de-dupe get_pixel_shader
 	static VertexShader get_vertex_shader(Uint32 flags)
 	{
 		using namespace std;
@@ -834,6 +839,7 @@ namespace local
 			}
 		}
 
+		// TODO: no
 		d3d::device->SetVertexShader(d3d::vertex_shader);
 		d3d::device->SetPixelShader(d3d::pixel_shader);
 

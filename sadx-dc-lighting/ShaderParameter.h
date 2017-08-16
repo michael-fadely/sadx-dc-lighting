@@ -20,6 +20,7 @@ public:
 	virtual bool Modified() = 0;
 	virtual void Clear() = 0;
 	virtual bool Commit(IDirect3DDevice9* device) = 0;
+	virtual bool CommitNow(IDirect3DDevice9* device) = 0;
 	virtual void Release() = 0;
 };
 
@@ -54,6 +55,7 @@ public:
 	bool Modified() override;
 	void Clear() override;
 	bool Commit(IDirect3DDevice9* device) override;
+	bool CommitNow(IDirect3DDevice9* device) override;
 	void Release() override;
 	T Value() const;
 	void operator=(const T& value);
@@ -72,6 +74,13 @@ void ShaderParameter<T>::Clear()
 	reset = false;
 	assigned = false;
 	last = current;
+}
+
+template <typename T>
+bool ShaderParameter<T>::CommitNow(IDirect3DDevice9* device)
+{
+	reset = true;
+	return Commit(device);
 }
 
 template <typename T>

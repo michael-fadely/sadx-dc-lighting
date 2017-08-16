@@ -111,9 +111,8 @@ bool ShaderParameter<D3DXMATRIX>::Commit(IDirect3DDevice9* device)
 {
 	if (Modified())
 	{
-		auto result = device->SetVertexShaderConstantF(index, current, 4);
-		//device->SetPixelShaderConstantF(index, current, 4);
-
+		device->SetVertexShaderConstantF(index, current, 4);
+		device->SetPixelShaderConstantF(index, current, 4);
 		Clear();
 		return true;
 	}
