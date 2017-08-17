@@ -64,11 +64,15 @@ bool StageLights::operator!=(const StageLights& rhs) const
 }
 
 template<>
-bool EffectParameter<SourceLight_t>::Commit(Effect effect)
+bool ShaderParameter<SourceLight_t>::Commit(IDirect3DDevice9* device)
 {
 	if (Modified())
 	{
-		effect->SetValue(handle, &current, sizeof(SourceLight_t));
+		float buffer[24]{};
+		memcpy(buffer, &current, sizeof(SourceLight_t));
+
+		device->SetVertexShaderConstantF(index, buffer, 6);
+		device->SetPixelShaderConstantF(index, buffer, 6);
 		Clear();
 		return true;
 	}
@@ -77,11 +81,13 @@ bool EffectParameter<SourceLight_t>::Commit(Effect effect)
 }
 
 template<>
-bool EffectParameter<StageLights>::Commit(Effect effect)
+bool ShaderParameter<StageLights>::Commit(IDirect3DDevice9* device)
 {
 	if (Modified())
 	{
-		effect->SetValue(handle, &current, sizeof(StageLights));
+		device->SetVertexShaderConstantF(index, (float*)&current, 16);
+		device->SetPixelShaderConstantF(index, (float*)&current, 16);
+
 		Clear();
 		return true;
 	}
@@ -337,7 +343,7 @@ void LanternInstance::copy(LanternInstance& inst)
 	specular_index = inst.specular_index;
 }
 
-LanternInstance::LanternInstance(EffectParameter<Texture>* atlas) : atlas(atlas)
+LanternInstance::LanternInstance(ShaderParameter<Texture>* atlas) : atlas(atlas)
 {
 }
 
@@ -454,7 +460,7 @@ bool LanternInstance::LoadPalette(const std::string& path)
 
 	file.close();
 
-	bool is_32bit = d3d::SupportsXRGB();
+	bool is_32bit = d3d::supports_xrgb();
 	Texture texture = atlas->Value();
 
 	if (texture == nullptr)
@@ -586,18 +592,14 @@ void LanternInstance::SetPalettes(Sint32 type, Uint32 flags)
 {
 #ifdef _DEBUG
 	auto pad = ControllerPointers[0];
-#endif
 
-	if (d3d::effect == nullptr
-#ifdef _DEBUG
-		|| pad && pad->HeldButtons & Buttons_Z
-#endif
-	)
+	if (pad && pad->HeldButtons & Buttons_Z)
 	{
 		use_palette = false;
 		d3d::do_effect = false;
 		return;
 	}
+#endif
 
 	// [0] 1-2 level geometry
 	// [1] 3-4 objects (springs etc.)

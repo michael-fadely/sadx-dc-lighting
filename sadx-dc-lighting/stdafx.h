@@ -60,7 +60,7 @@
 // Local
 #include "d3d.h"
 #include "datapointers.h"
-#include "EffectParameter.h"
+#include "ShaderParameter.h"
 #include "FixChaoGardenMaterials.h"
 #include "FixCharacterMaterials.h"
 #include "globals.h"

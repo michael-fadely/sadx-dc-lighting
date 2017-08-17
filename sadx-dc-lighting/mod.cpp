@@ -93,7 +93,7 @@ static void SetMaterialParameters(const D3DMATERIAL9& material)
 {
 	using namespace d3d;
 
-	if (!LanternInstance::UsePalette() || effect == nullptr)
+	if (!LanternInstance::UsePalette() || !shaders_not_null())
 		return;
 
 	D3DMATERIALCOLORSOURCE colorsource;
@@ -143,7 +143,7 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 
 	TARGET_DYNAMIC(Direct3D_ParseMaterial)(material);
 
-	if (effect == nullptr)
+	if (!shaders_not_null())
 	{
 		return;
 	}
@@ -155,7 +155,7 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 		return;
 	}
 
-	ResetOverrides();
+	reset_overrides();
 
 #ifdef _DEBUG
 	auto pad = ControllerPointers[0];
@@ -166,7 +166,7 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 #endif
 
 	Uint32 flags = material->attrflags;
-	Uint32 texid = material->attr_texId & 0xFFFF;
+	//Uint32 texid = material->attr_texId & 0xFFFF;
 
 	if (material->specular.argb.a == 0)
 	{
@@ -201,10 +201,10 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 	globals::palettes.SetPalettes(globals::light_type, flags);
 
 	bool use_texture = (flags & NJD_FLAG_USE_TEXTURE) != 0;
-	SetShaderFlags(ShaderFlags_Texture, use_texture);
-	SetShaderFlags(ShaderFlags_Alpha, (flags & NJD_FLAG_USE_ALPHA) != 0);
-	SetShaderFlags(ShaderFlags_EnvMap, (flags & NJD_FLAG_USE_ENV) != 0);
-	SetShaderFlags(ShaderFlags_Light, (flags & NJD_FLAG_IGNORE_LIGHT) == 0);
+	shader_flags(ShaderFlags_Texture, use_texture);
+	shader_flags(ShaderFlags_Alpha, (flags & NJD_FLAG_USE_ALPHA) != 0);
+	shader_flags(ShaderFlags_EnvMap, (flags & NJD_FLAG_USE_ENV) != 0);
+	shader_flags(ShaderFlags_Light, (flags & NJD_FLAG_IGNORE_LIGHT) == 0);
 
 	param::SourceBlend = NJD_FLAG_D3DBLEND[flags >> 29];
 	param::DestinationBlend = NJD_FLAG_D3DBLEND[flags >> 26 & 7];
@@ -212,7 +212,7 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 	// Environment map matrix
 	param::TextureTransform = *(D3DXMATRIX*)0x038A5DD0;
 	
-	if (use_texture)
+	/*if (use_texture)
 	{
 		auto textures = Direct3D_CurrentTexList->textures;
 		NJS_TEXMEMLIST* texmem = textures ? (NJS_TEXMEMLIST*)textures[texid].texaddr : nullptr;
@@ -224,7 +224,7 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 				param::BaseTexture = texture->GetProxyInterface();
 			}
 		}
-	}
+	}*/
 
 	D3DMATERIAL9 mat;
 	device->GetMaterial(&mat);
@@ -434,11 +434,10 @@ extern "C"
 		LanternInstance base(&param::PaletteA);
 		globals::palettes.Add(base);
 
-		globals::system_path = path;
-		globals::system_path.append("\\system\\");
-
-		globals::cache_path = path;
-		globals::cache_path.append("\\cache\\");
+		globals::mod_path    = path;
+		globals::system_path = globals::mod_path + "\\system\\";
+		globals::cache_path  = globals::mod_path + "\\cache\\";
+		globals::shader_path = globals::system_path + "lantern.hlsl";
 
 		d3d::InitTrampolines();
 
@@ -483,7 +482,7 @@ extern "C"
 			auto pressed = pad->PressedButtons;
 			if (pressed & Buttons_D)
 			{
-				d3d::LoadShader();
+				d3d::load_shader();
 			}
 
 		#if 0
@@ -502,7 +501,7 @@ extern "C"
 		#endif
 		}
 
-		if (d3d::effect == nullptr)
+		if (!d3d::shaders_not_null())
 		{
 			return;
 		}

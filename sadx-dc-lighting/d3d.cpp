@@ -27,7 +27,7 @@
 #include "datapointers.h"
 #include "globals.h"
 #include "../include/lanternapi.h"
-#include "EffectParameter.h"
+#include "ShaderParameter.h"
 #include <algorithm>
 
 namespace std
@@ -37,43 +37,45 @@ namespace std
 
 namespace param
 {
-	EffectParameter<Texture>     BaseTexture("BaseTexture", nullptr);
-	EffectParameter<Texture>     PaletteA("PaletteA", nullptr);
-	EffectParameter<float>       DiffuseIndexA("DiffuseIndexA", 0.0f);
-	EffectParameter<float>       SpecularIndexA("SpecularIndexA", 0.0f);
-	EffectParameter<Texture>     PaletteB("PaletteB", nullptr);
-	EffectParameter<float>       DiffuseIndexB("DiffuseIndexB", 0.0f);
-	EffectParameter<float>       SpecularIndexB("SpecularIndexB", 0.0f);
-	EffectParameter<float>       DiffuseBlendFactor("DiffuseBlendFactor", 0.0f);
-	EffectParameter<float>       SpecularBlendFactor("SpecularBlendFactor", 0.0f);
-	EffectParameter<D3DXMATRIX>  WorldMatrix("WorldMatrix", {});
-	EffectParameter<D3DXMATRIX>  wvMatrix("wvMatrix", {});
-	EffectParameter<D3DXMATRIX>  ProjectionMatrix("ProjectionMatrix", {});
-	EffectParameter<D3DXMATRIX>  wvMatrixInvT("wvMatrixInvT", {});
-	EffectParameter<D3DXMATRIX>  TextureTransform("TextureTransform", {});
-	EffectParameter<int>         FogMode("FogMode", 0);
-	EffectParameter<float>       FogStart("FogStart", 0.0f);
-	EffectParameter<float>       FogEnd("FogEnd", 0.0f);
-	EffectParameter<float>       FogDensity("FogDensity", 0.0f);
-	EffectParameter<D3DXCOLOR>   FogColor("FogColor", {});
-	EffectParameter<D3DXVECTOR3> LightDirection("LightDirection", {});
-	EffectParameter<int>         DiffuseSource("DiffuseSource", 0);
-	EffectParameter<D3DXCOLOR>   MaterialDiffuse("MaterialDiffuse", {});
-	EffectParameter<float>       AlphaRef("AlphaRef", 0.0f);
-	EffectParameter<D3DXVECTOR3> NormalScale("NormalScale", { 1.0f, 1.0f, 1.0f });
-	EffectParameter<bool>        AllowVertexColor("AllowVertexColor", true);
-	EffectParameter<bool>        ForceDefaultDiffuse("ForceDefaultDiffuse", false);
-	EffectParameter<bool>        DiffuseOverride("DiffuseOverride", false);
-	EffectParameter<D3DXVECTOR3> DiffuseOverrideColor("DiffuseOverrideColor", { 1.0f, 1.0f, 1.0f });
+	ShaderParameter<Texture>     PaletteA(D3DVERTEXTEXTURESAMPLER1, nullptr);
+	ShaderParameter<Texture>     PaletteB(D3DVERTEXTEXTURESAMPLER2, nullptr);
+
+	ShaderParameter<float>       DiffuseIndexA(22, 0.0f);
+	ShaderParameter<float>       DiffuseIndexB(23, 0.0f);
+	ShaderParameter<float>       SpecularIndexA(24, 0.0f);
+	ShaderParameter<float>       SpecularIndexB(25, 0.0f);
+
+	ShaderParameter<float>       DiffuseBlendFactor(33, 0.0f);
+	ShaderParameter<float>       SpecularBlendFactor(34, 0.0f);
+
+	ShaderParameter<D3DXMATRIX>  WorldMatrix(0, {});
+	ShaderParameter<D3DXMATRIX>  wvMatrix(4, {});
+	ShaderParameter<D3DXMATRIX>  ProjectionMatrix(8, {});
+	ShaderParameter<D3DXMATRIX>  wvMatrixInvT(12, {});
+	ShaderParameter<D3DXMATRIX>  TextureTransform(16, {});
+	ShaderParameter<D3DXVECTOR3> LightDirection(26, {});
+	ShaderParameter<int>         DiffuseSource(20, 0);
+	ShaderParameter<D3DXCOLOR>   MaterialDiffuse(21, {});
+	ShaderParameter<D3DXVECTOR3> NormalScale(27, { 1.0f, 1.0f, 1.0f });
+	ShaderParameter<bool>        AllowVertexColor(35, true);
+	ShaderParameter<bool>        ForceDefaultDiffuse(36, false);
+	ShaderParameter<bool>        DiffuseOverride(37, false);
+	ShaderParameter<D3DXVECTOR3> DiffuseOverrideColor(38, { 1.0f, 1.0f, 1.0f });
+
+	ShaderParameter<int>         FogMode(28, 0);
+	ShaderParameter<float>       FogStart(29, 0.0f);
+	ShaderParameter<float>       FogEnd(30, 0.0f);
+	ShaderParameter<float>       FogDensity(31, 0.0f);
+	ShaderParameter<D3DXCOLOR>   FogColor(32, {});
 
 #ifdef USE_OIT
-	EffectParameter<Texture>     AlphaDepth("AlphaDepth", nullptr);
-	EffectParameter<Texture>     OpaqueDepth("OpaqueDepth", nullptr);
-	EffectParameter<int>         SourceBlend("SourceBlend", 0);
-	EffectParameter<int>         DestinationBlend("DestinationBlend", 0);
-	EffectParameter<D3DXVECTOR2> ViewPort("ViewPort", {});
-	EffectParameter<float>       DrawDistance("DrawDistance", 0.0f);
-	EffectParameter<float>       DepthOverride("DepthOverride", 0.0f);
+	ShaderParameter<Texture>     AlphaDepth("AlphaDepth", nullptr);
+	ShaderParameter<Texture>     OpaqueDepth("OpaqueDepth", nullptr);
+	ShaderParameter<int>         SourceBlend("SourceBlend", 0);
+	ShaderParameter<int>         DestinationBlend("DestinationBlend", 0);
+	ShaderParameter<D3DXVECTOR2> ViewPort("ViewPort", {});
+	ShaderParameter<float>       DrawDistance("DrawDistance", 0.0f);
+	ShaderParameter<float>       DepthOverride("DepthOverride", 0.0f);
 #endif
 
 #ifdef USE_SL
@@ -83,8 +85,7 @@ namespace param
 	EffectParameter<StageLights> Lights("Lights", {});
 #endif
 
-	IEffectParameter* const parameters[] = {
-		&BaseTexture,
+	IShaderParameter* const parameters[] = {
 		&PaletteA,
 		&DiffuseIndexA,
 		&SpecularIndexA,
@@ -106,7 +107,6 @@ namespace param
 		&LightDirection,
 		&DiffuseSource,
 		&MaterialDiffuse,
-		&AlphaRef,
 		&NormalScale,
 		&AllowVertexColor,
 		&ForceDefaultDiffuse,
@@ -130,6 +130,14 @@ namespace param
 		&Lights
 	#endif
 	};
+
+	static void release_parameters()
+	{
+		for (auto& i : parameters)
+		{
+			i->Release();
+		}
+	}
 }
 
 namespace local
@@ -147,7 +155,6 @@ namespace local
 	static Trampoline* PolyBuff_DrawTriangleList_t        = nullptr;
 
 	static HRESULT __stdcall SetRenderState_r(IDirect3DDevice9* _this, D3DRENDERSTATETYPE State, DWORD Value);
-	static HRESULT __stdcall SetTexture_r(IDirect3DDevice9* _this, DWORD Stage, IDirect3DBaseTexture9* pTexture);
 	static HRESULT __stdcall DrawPrimitive_r(IDirect3DDevice9* _this,
 		D3DPRIMITIVETYPE PrimitiveType,
 		UINT StartVertex,
@@ -175,26 +182,27 @@ namespace local
 		UINT VertexStreamZeroStride);
 
 	static decltype(SetRenderState_r)*         SetRenderState_t         = nullptr;
-	static decltype(SetTexture_r)*             SetTexture_t             = nullptr;
 	static decltype(DrawPrimitive_r)*          DrawPrimitive_t          = nullptr;
 	static decltype(DrawIndexedPrimitive_r)*   DrawIndexedPrimitive_t   = nullptr;
 	static decltype(DrawPrimitiveUP_r)*        DrawPrimitiveUP_t        = nullptr;
 	static decltype(DrawIndexedPrimitiveUP_r)* DrawIndexedPrimitiveUP_t = nullptr;
 
+	constexpr auto COMPILER_FLAGS = D3DXSHADER_PACKMATRIX_ROWMAJOR | D3DXSHADER_OPTIMIZATION_LEVEL3;
+
 	constexpr auto DEFAULT_FLAGS = ShaderFlags_Alpha | ShaderFlags_Fog | ShaderFlags_Light | ShaderFlags_Texture;
-	constexpr auto COMPILER_FLAGS = D3DXFX_NOT_CLONEABLE | D3DXFX_DONOTSAVESTATE | D3DXFX_DONOTSAVESAMPLERSTATE;
+	constexpr auto VS_FLAGS = ShaderFlags_Texture | ShaderFlags_EnvMap | ShaderFlags_Light | ShaderFlags_Blend;
+	constexpr auto PS_FLAGS = ShaderFlags_Texture | ShaderFlags_Alpha | ShaderFlags_Fog;
 
 	static Uint32 shader_flags = DEFAULT_FLAGS;
 	static Uint32 last_flags = DEFAULT_FLAGS;
 
 	static std::vector<uint8_t> shader_file;
-	static Uint32 shader_count = 0;
-	static Effect shaders[ShaderFlags_Count] = {};
-	static CComPtr<ID3DXEffectPool> pool = nullptr;
+	static std::unordered_map<ShaderFlags, VertexShader> vertex_shaders;
+	static std::unordered_map<ShaderFlags, PixelShader> pixel_shaders;
 
 	static bool initialized = false;
 	static Uint32 drawing = 0;
-	static bool beganEffect = false;
+	static bool using_shader = false;
 	static std::vector<D3DXMACRO> macros;
 
 #ifdef USE_OIT
@@ -239,39 +247,49 @@ namespace local
 		return flags;
 	}
 
-	static void updateHandles()
+	static void free_shaders()
 	{
-		for (auto i : param::parameters)
-		{
-			i->UpdateHandle(d3d::effect);
-		}
+		vertex_shaders.clear();
+		pixel_shaders.clear();
+		d3d::vertex_shader = nullptr;
+		d3d::pixel_shader = nullptr;
 	}
 
-	static void releaseParameters()
-	{
-		for (auto& i : param::parameters)
-		{
-			i->Release();
-		}
-	}
-
-	static void releaseShaders()
+	static void clear_shaders()
 	{
 		shader_file.clear();
-		d3d::effect = nullptr;
-
-		for (auto& e : shaders)
-		{
-			e = nullptr;
-		}
-
-		shader_count = 0;
-		pool = nullptr;
-
-	#ifdef USE_OIT
-		blender = nullptr;
-	#endif
+		free_shaders();
 	}
+
+	static VertexShader get_vertex_shader(Uint32 flags);
+	static PixelShader get_pixel_shader(Uint32 flags);
+
+	static void create_shaders()
+	{
+		try
+		{
+			d3d::vertex_shader = get_vertex_shader(DEFAULT_FLAGS);
+			d3d::pixel_shader = get_pixel_shader(DEFAULT_FLAGS);
+
+#ifdef PRECOMPILE_SHADERS
+			for (Uint32 i = 0; i < ShaderFlags_Count; i++)
+			{
+				auto flags = i;
+				local::sanitize(flags);
+
+				auto vs = (ShaderFlags)(flags & VS_FLAGS);
+				if (flags && vertex_shaders.find(vs) == vertex_shaders.end())
+				{
+					get_vertex_shader(flags);
+				}
+
+				auto ps = (ShaderFlags)(flags & PS_FLAGS);
+				if (ps && pixel_shaders.find(ps) == pixel_shaders.end())
+				{
+					get_pixel_shader(flags);
+				}
+			}
+#endif
 
 #ifdef USE_OIT
 	static void createDepthTextures()
@@ -376,12 +394,12 @@ namespace local
 
 #endif
 
-	static std::string shaderFlagsString(Uint32 o)
+	static std::string to_string(Uint32 flags)
 	{
+		bool thing = false;
 		std::stringstream result;
 
-		bool thing = false;
-		while (o != 0)
+		while (flags != 0)
 		{
 			using namespace d3d;
 
@@ -390,57 +408,57 @@ namespace local
 				result << " | ";
 			}
 
-			if (o & ShaderFlags_Fog)
+			if (flags & ShaderFlags_Fog)
 			{
-				o &= ~ShaderFlags_Fog;
+				flags &= ~ShaderFlags_Fog;
 				result << "USE_FOG";
 				thing = true;
 				continue;
 			}
 
-			if (o & ShaderFlags_Blend)
+			if (flags & ShaderFlags_Blend)
 			{
-				o &= ~ShaderFlags_Blend;
+				flags &= ~ShaderFlags_Blend;
 				result << "USE_BLEND";
 				thing = true;
 				continue;
 			}
 
-			if (o & ShaderFlags_Light)
+			if (flags & ShaderFlags_Light)
 			{
-				o &= ~ShaderFlags_Light;
+				flags &= ~ShaderFlags_Light;
 				result << "USE_LIGHT";
 				thing = true;
 				continue;
 			}
 
-			if (o & ShaderFlags_Alpha)
+			if (flags & ShaderFlags_Alpha)
 			{
-				o &= ~ShaderFlags_Alpha;
+				flags &= ~ShaderFlags_Alpha;
 				result << "USE_ALPHA";
 				thing = true;
 				continue;
 			}
 
-			if (o & ShaderFlags_EnvMap)
+			if (flags & ShaderFlags_EnvMap)
 			{
-				o &= ~ShaderFlags_EnvMap;
+				flags &= ~ShaderFlags_EnvMap;
 				result << "USE_ENVMAP";
 				thing = true;
 				continue;
 			}
 
-			if (o & ShaderFlags_Texture)
+			if (flags & ShaderFlags_Texture)
 			{
-				o &= ~ShaderFlags_Texture;
+				flags &= ~ShaderFlags_Texture;
 				result << "USE_TEXTURE";
 				thing = true;
 				continue;
 			}
 
-			if (o & ShaderFlags_OIT)
+			if (flags & ShaderFlags_OIT)
 			{
-				o &= ~ShaderFlags_OIT;
+				flags &= ~ShaderFlags_OIT;
 				result << "USE_OIT";
 				thing = true;
 				continue;
@@ -490,7 +508,8 @@ namespace local
 
 		try
 		{
-			if (!CryptHashData(hHash, shader_file.data(), shader_file.size(), 0))
+			if (!CryptHashData(hHash, shader_file.data(), shader_file.size(), 0)
+				|| !CryptHashData(hHash, (BYTE*)&COMPILER_FLAGS, sizeof(COMPILER_FLAGS), 0))
 			{
 				throw std::runtime_error("CryptHashData failed.");
 			}
@@ -650,7 +669,7 @@ namespace local
 		macros.push_back({});
 	}
 
-	static __declspec(noreturn) void d3d_exception(Buffer& buffer, HRESULT code)
+	static __declspec(noreturn) void d3d_exception(Buffer buffer, HRESULT code)
 	{
 		using namespace std;
 
@@ -676,96 +695,109 @@ namespace local
 		throw runtime_error(message.str());
 	}
 
-	static Effect compileShader(Uint32 flags)
+	static void check_shader_cache()
 	{
-		using namespace std;
+		load_shader_file(globals::shader_path);
 
-		filesystem::path shader_path = move(filesystem::path(globals::system_path).append("lantern.fx"));
+		std::vector<uint8_t> current_hash(shader_hash());
 
-		if (shader_file.empty())
+		std::filesystem::path checksum_path = std::move(std::filesystem::path(globals::cache_path).append("checksum.bin"));
+
+		if (std::filesystem::exists(globals::cache_path))
 		{
-			load_shader_file(shader_path.string());
-
-			vector<uint8_t> current_hash(shader_hash());
-
-			filesystem::path checksum_path = move(filesystem::path(globals::cache_path).append("checksum.bin"));
-
-			if (filesystem::exists(globals::cache_path))
-			{
-				if (!exists(checksum_path))
-				{
-					store_checksum(current_hash, checksum_path.string());
-				}
-				else
-				{
-					vector<uint8_t> last_hash(read_checksum(checksum_path.string()));
-
-					if (last_hash != current_hash)
-					{
-						store_checksum(current_hash, checksum_path.string());
-					}
-				}
-			}
-			else
+			if (!exists(checksum_path))
 			{
 				store_checksum(current_hash, checksum_path.string());
 			}
+			else
+			{
+				std::vector<uint8_t> last_hash(read_checksum(checksum_path.string()));
+
+				if (last_hash != current_hash)
+				{
+					store_checksum(current_hash, checksum_path.string());
+				}
+			}
+		}
+		else
+		{
+			store_checksum(current_hash, checksum_path.string());
+		}
+	}
+
+	static void load_cached_shader(std::filesystem::path sid_path, std::vector<uint8_t>& data)
+	{
+		std::ifstream file(sid_path, std::ios_base::ate | std::ios_base::binary);
+		auto size = file.tellg();
+		file.seekg(0);
+
+		if (size < 1)
+		{
+			throw std::runtime_error("corrupt vertex shader cache");
 		}
 
-		if (pool == nullptr)
+		data.resize(static_cast<size_t>(size));
+		file.read(reinterpret_cast<char*>(data.data()), data.size());
+	}
+
+	static void save_cached_shader(std::filesystem::path sid_path, std::vector<uint8_t>& data)
+	{
+		std::ofstream file(sid_path, std::ios_base::binary);
+
+		if (!file.is_open())
 		{
-			if (FAILED(D3DXCreateEffectPool(&pool)))
+			throw std::runtime_error("Failed to open file for cache storage.");
+		}
+
+		file.write((char*)data.data(), data.size());
+	}
+
+	static VertexShader get_vertex_shader(Uint32 flags)
+	{
+		using namespace std;
+
+		sanitize(flags);
+		flags &= VS_FLAGS;
+
+		if (shader_file.empty())
+		{
+			check_shader_cache();
+		}
+		else
+		{
+			auto it = vertex_shaders.find((ShaderFlags)flags);
+			if (it != vertex_shaders.end())
 			{
-				throw runtime_error("Failed to create effect pool?!");
+				return it->second;
 			}
 		}
 
 		macros.clear();
 
-		sanitize(flags);
-		filesystem::path sid_path = move(filesystem::path(globals::cache_path).append(shader_id(flags) + ".fx.bin"));
+		filesystem::path sid_path = move(filesystem::path(globals::cache_path).append(shader_id(flags) + ".vs"));
 		bool is_cached = exists(sid_path);
 
-		Buffer errors = nullptr;
 		vector<uint8_t> data;
 
 		if (is_cached)
 		{
-			PrintDebug("[lantern] Loading cached shader #%02d: %08X (%s)\n", ++shader_count, flags,
-				shaderFlagsString(flags).c_str());
+			PrintDebug("[lantern] Loading cached vertex shader #%02d: %08X (%s)\n",
+				vertex_shaders.size(), flags, to_string(flags).c_str());
 
-			ifstream file(sid_path, ios_base::ate | ios_base::binary);
-			auto size = file.tellg();
-			file.seekg(0);
-
-			if (size < 1)
-			{
-				throw runtime_error("corrupt shader cache");
-			}
-
-			data.resize(static_cast<size_t>(size));
-			file.read(reinterpret_cast<char*>(data.data()), data.size());
+			load_cached_shader(sid_path, data);
 		}
 		else
 		{
-			PrintDebug("[lantern] Compiling shader #%02d: %08X (%s)\n", ++shader_count, flags,
-				shaderFlagsString(flags).c_str());
-
+			PrintDebug("[lantern] Compiling vertex shader #%02d: %08X (%s)\n",
+				vertex_shaders.size(), flags, to_string(flags).c_str());
 
 			populate_macros(flags);
 
-			EffectCompiler compiler;
-
-			auto result = D3DXCreateEffectCompiler((char*)shader_file.data(), shader_file.size(), macros.data(), nullptr,
-				COMPILER_FLAGS, &compiler, &errors);
-
-			if (FAILED(result) || errors != nullptr)
-			{
-				d3d_exception(errors, result);
-			}
-
+			Buffer errors;
 			Buffer buffer;
-			result = compiler->CompileEffect(COMPILER_FLAGS, &buffer, &errors);
+
+			auto result = D3DXCompileShader((char*)shader_file.data(), shader_file.size(), macros.data(), nullptr,
+				"vs_main", "vs_3_0", COMPILER_FLAGS, &buffer, &errors, nullptr);
 
 			if (FAILED(result) || errors != nullptr)
 			{
@@ -776,39 +808,94 @@ namespace local
 			memcpy(data.data(), buffer->GetBufferPointer(), data.size());
 		}
 
-		Effect effect;
+		VertexShader shader;
+		auto result = d3d::device->CreateVertexShader((const DWORD*)data.data(), &shader);
 
-		if (!data.empty())
+		if (FAILED(result))
 		{
-			auto result = D3DXCreateEffect(d3d::device, data.data(), data.size(), macros.data(), nullptr,
-				COMPILER_FLAGS, pool, &effect, &errors);
+			d3d_exception(nullptr, result);
+		}
+
+		if (!is_cached)
+		{
+			save_cached_shader(sid_path, data);
+		}
+
+		vertex_shaders[(ShaderFlags)flags] = shader;
+		return shader;
+	}
+
+	static PixelShader get_pixel_shader(Uint32 flags)
+	{
+		using namespace std;
+
+		if (shader_file.empty())
+		{
+			check_shader_cache();
+		}
+		else
+		{
+			auto it = pixel_shaders.find((ShaderFlags)(flags & PS_FLAGS));
+			if (it != pixel_shaders.end())
+			{
+				return it->second;
+			}
+		}
+
+		macros.clear();
+
+		sanitize(flags);
+		flags &= PS_FLAGS;
+
+		filesystem::path sid_path = move(filesystem::path(globals::cache_path).append(shader_id(flags) + ".ps"));
+		bool is_cached = exists(sid_path);
+
+		vector<uint8_t> data;
+
+		if (is_cached)
+		{
+			PrintDebug("[lantern] Loading cached pixel shader #%02d: %08X (%s)\n",
+				pixel_shaders.size(), flags, to_string(flags).c_str());
+
+			load_cached_shader(sid_path, data);
+		}
+		else
+		{
+			PrintDebug("[lantern] Compiling pixel shader #%02d: %08X (%s)\n",
+				pixel_shaders.size(), flags, to_string(flags).c_str());
+
+			populate_macros(flags);
+
+			Buffer errors;
+			Buffer buffer;
+
+			auto result = D3DXCompileShader((char*)shader_file.data(), shader_file.size(), macros.data(), nullptr,
+				"ps_main", "ps_3_0", COMPILER_FLAGS, &buffer, &errors, nullptr);
 
 			if (FAILED(result) || errors != nullptr)
 			{
 				d3d_exception(errors, result);
 			}
+
+			data.resize(static_cast<size_t>(buffer->GetBufferSize()));
+			memcpy(data.data(), buffer->GetBufferPointer(), data.size());
 		}
 
-		if (effect == nullptr)
+		PixelShader shader;
+		auto result = d3d::device->CreatePixelShader((const DWORD*)data.data(), &shader);
+
+		if (FAILED(result))
 		{
-			throw runtime_error("Shader creation failed with an unknown error. (Does " + shader_path.string() + " exist?)");
+			d3d_exception(nullptr, result);
 		}
 
 		if (!is_cached)
 		{
-			ofstream file(sid_path, ios_base::binary);
-
-			if (!file.is_open())
-			{
-				throw runtime_error("Failed to open file for cache storage.");
-			}
-
-			file.write((char*)data.data(), data.size());
+			save_cached_shader(sid_path, data);
 		}
 
-		effect->SetTechnique("Main");
-		shaders[flags] = effect;
-		return effect;
+		pixel_shaders[(ShaderFlags)(flags & PS_FLAGS)] = shader;
+		return shader;
 	}
 
 	static void begin()
@@ -818,32 +905,30 @@ namespace local
 
 	static void end()
 	{
-		if (d3d::effect == nullptr || drawing > 0 && --drawing < 1)
+		if (drawing > 0 && --drawing < 1)
 		{
 			drawing = 0;
 			d3d::do_effect = false;
-			d3d::ResetOverrides();
+			d3d::reset_overrides();
 		}
 	}
 
-	static void endEffect()
+	static void shader_end()
 	{
-		if (d3d::effect != nullptr && beganEffect)
+		if (using_shader)
 		{
-			d3d::effect->EndPass();
-			d3d::effect->End();
+			d3d::device->SetPixelShader(nullptr);
+			d3d::device->SetVertexShader(nullptr);
+			using_shader = false;
 		}
-
-		beganEffect = false;
 	}
 
-	static int startEffect()
+	static void shader_start()
 	{
-		if (!d3d::do_effect && !peeling || d3d::effect == nullptr
-			|| d3d::do_effect && !drawing)
+		if (!d3d::do_effect || d3d::do_effect && !drawing)
 		{
-			endEffect();
-			return 1;
+			shader_end();
+			return;
 		}
 
 		globals::palettes.ApplyShaderParameters();
@@ -854,78 +939,62 @@ namespace local
 		// when possible without permanently removing it. It's required by
 		// Sky Deck, and it's only added to the flags once on stage load.
 		auto flags = shader_flags;
+		sanitize(flags);
 
-		if (d3d::effect != blender)
+		if (flags != last_flags)
 		{
-			if (sanitize(flags) && flags != last_flags)
+			VertexShader vs;
+			PixelShader ps;
+
+			changes = true;
+			last_flags = flags;
+
+			try
 			{
-				endEffect();
-				changes = true;
-
-				last_flags = flags;
-				auto e = shaders[flags];
-				if (e == nullptr)
-				{
-					try
-					{
-						e = compileShader(flags);
-					}
-					catch (std::exception& ex)
-					{
-						d3d::effect = nullptr;
-						endEffect();
-						MessageBoxA(WindowHandle, ex.what(), "Shader creation failed", MB_OK | MB_ICONERROR);
-						return 0;
-					}
-				}
-
-				d3d::effect = e;
+				vs = get_vertex_shader(flags);
+				ps = get_pixel_shader(flags);
+			}
+			catch (std::exception& ex)
+			{
+				shader_end();
+				MessageBoxA(WindowHandle, ex.what(), "Shader creation failed", MB_OK | MB_ICONERROR);
+				return;
 			}
 
-			if (!IEffectParameter::values_assigned.empty())
+			if (!using_shader || vs != d3d::vertex_shader)
 			{
-				for (auto& it : IEffectParameter::values_assigned)
-				{
-					if (it->Commit(d3d::effect))
-					{
-						changes = true;
-					}
-				}
+				d3d::vertex_shader = vs;
+				d3d::device->SetVertexShader(d3d::vertex_shader);
+			}
 
-				IEffectParameter::values_assigned.clear();
+			if (!using_shader || ps != d3d::pixel_shader)
+			{
+				d3d::pixel_shader = ps;
+				d3d::device->SetPixelShader(d3d::pixel_shader);
 			}
 		}
-
-		if (beganEffect)
+		else if (!using_shader)
 		{
-			if (changes)
-			{
-				d3d::effect->CommitChanges();
-			}
-		}
-		else
-		{
-			UINT passes = 0;
-			if (FAILED(d3d::effect->Begin(&passes, 0)))
-			{
-				throw std::runtime_error("Failed to begin shader!");
-			}
-
-			if (FAILED(d3d::effect->BeginPass(0)))
-			{
-				throw std::runtime_error("Failed to begin pass!");
-			}
-
-			beganEffect = true;
-			return passes;
+			d3d::device->SetVertexShader(d3d::vertex_shader);
+			d3d::device->SetPixelShader(d3d::pixel_shader);
 		}
 
-		return 1;
+		if (changes || !IShaderParameter::values_assigned.empty())
+		{
+			for (auto& it : IShaderParameter::values_assigned)
+			{
+				it->Commit(d3d::device);
+			}
+
+			IShaderParameter::values_assigned.clear();
+		}
+
+		using_shader = true;
 	}
 
 	static void setLightParameters()
 	{
-		if (!LanternInstance::UsePalette() || d3d::effect == nullptr)
+		if (!LanternInstance::UsePalette())
 		{
 			return;
 		}
@@ -955,7 +1024,6 @@ namespace local
 	MH_CreateHook(vtbl[IndexOf_ ## NAME], NAME ## _r, (LPVOID*)& ## NAME ## _t)
 
 		HOOK(SetRenderState);
-		HOOK(SetTexture);
 		HOOK(DrawPrimitive);
 		HOOK(DrawIndexedPrimitive);
 		HOOK(DrawPrimitiveUP);
@@ -1086,6 +1154,9 @@ namespace local
 		auto orig = CreateDirect3DDevice_t->Target();
 		auto _type = type;
 
+		(void)orig;
+		(void)_type;
+
 		__asm
 		{
 			push _type
@@ -1098,7 +1169,7 @@ namespace local
 			d3d::device = Direct3D_Device->GetProxyInterface();
 
 			initialized = true;
-			d3d::LoadShader();
+			d3d::load_shader();
 			hookVtbl();
 			createDepthTextures();
 		}
@@ -1123,7 +1194,7 @@ namespace local
 	{
 		TARGET_DYNAMIC(Direct3D_SetWorldTransform)();
 
-		if (!LanternInstance::UsePalette() || d3d::effect == nullptr)
+		if (!LanternInstance::UsePalette())
 		{
 			return;
 		}
@@ -1143,11 +1214,6 @@ namespace local
 	{
 		TARGET_DYNAMIC(Direct3D_SetProjectionMatrix)(hfov, nearPlane, farPlane);
 
-		if (d3d::effect == nullptr)
-		{
-			return;
-		}
-
 		param::DrawDistance = farPlane;
 
 		// The view matrix can also be set here if necessary.
@@ -1160,7 +1226,7 @@ namespace local
 		bool invalid = TransformAndViewportInvalid != 0;
 		original();
 
-		if (d3d::effect != nullptr && invalid)
+		if (invalid)
 		{
 			param::ProjectionMatrix = _ProjectionMatrix * TransformationMatrix;
 		}
@@ -1170,7 +1236,7 @@ namespace local
 	{
 		auto target = TARGET_DYNAMIC(Direct3D_PerformLighting);
 
-		if (d3d::effect == nullptr || !LanternInstance::UsePalette())
+		if (!LanternInstance::UsePalette())
 		{
 			target(type);
 			return;
@@ -1179,7 +1245,7 @@ namespace local
 		// This specifically force light type 0 to prevent
 		// the light direction from being overwritten.
 		target(0);
-		d3d::SetShaderFlags(ShaderFlags_Light, true);
+		d3d::shader_flags(ShaderFlags_Light, true);
 
 		if (type != globals::light_type)
 		{
@@ -1210,39 +1276,15 @@ namespace local
 		return D3DORIG(SetRenderState)(_this, State, Value);
 	}
 
-	static HRESULT __stdcall SetTexture_r(IDirect3DDevice9* _this, DWORD Stage, IDirect3DBaseTexture9* pTexture)
-	{
-		if (!Stage)
-		{
-			Texture t = (IDirect3DTexture9*)pTexture;
-			param::BaseTexture.Release();
-			param::BaseTexture = t;
-		}
-
-		return D3DORIG(SetTexture)(_this, Stage, pTexture);
-	}
-
-	template<typename T, typename... Args>
-	static HRESULT runEffect(const T& original, Args... args)
-	{
-		if (!d3d::do_effect)
-		{
-			return original(args...);
-		}
-
-		startEffect();
-		auto result = original(args...);
-		endEffect();
-		return result;
-	}
-
-
 	static HRESULT __stdcall DrawPrimitive_r(IDirect3DDevice9* _this,
 		D3DPRIMITIVETYPE PrimitiveType,
 		UINT StartVertex,
 		UINT PrimitiveCount)
 	{
-		return runEffect(D3DORIG(DrawPrimitive), _this, PrimitiveType, StartVertex, PrimitiveCount);
+		shader_start();
+		auto result = D3DORIG(DrawPrimitive)(_this, PrimitiveType, StartVertex, PrimitiveCount);
+		shader_end();
+		return result;
 	}
 	static HRESULT __stdcall DrawIndexedPrimitive_r(IDirect3DDevice9* _this,
 		D3DPRIMITIVETYPE PrimitiveType,
@@ -1252,7 +1294,10 @@ namespace local
 		UINT startIndex,
 		UINT primCount)
 	{
-		return runEffect(D3DORIG(DrawIndexedPrimitive), _this, PrimitiveType, BaseVertexIndex, MinVertexIndex, NumVertices, startIndex, primCount);
+		shader_start();
+		auto result = D3DORIG(DrawIndexedPrimitive)(_this, PrimitiveType, BaseVertexIndex, MinVertexIndex, NumVertices, startIndex, primCount);
+		shader_end();
+		return result;
 	}
 	static HRESULT __stdcall DrawPrimitiveUP_r(IDirect3DDevice9* _this,
 		D3DPRIMITIVETYPE PrimitiveType,
@@ -1260,7 +1305,10 @@ namespace local
 		CONST void* pVertexStreamZeroData,
 		UINT VertexStreamZeroStride)
 	{
-		return runEffect(D3DORIG(DrawPrimitiveUP), _this, PrimitiveType, PrimitiveCount, pVertexStreamZeroData, VertexStreamZeroStride);
+		shader_start();
+		auto result = D3DORIG(DrawPrimitiveUP)(_this, PrimitiveType, PrimitiveCount, pVertexStreamZeroData, VertexStreamZeroStride);
+		shader_end();
+		return result;
 	}
 	static HRESULT __stdcall DrawIndexedPrimitiveUP_r(IDirect3DDevice9* _this,
 		D3DPRIMITIVETYPE PrimitiveType,
@@ -1272,8 +1320,10 @@ namespace local
 		CONST void* pVertexStreamZeroData,
 		UINT VertexStreamZeroStride)
 	{
-		return runEffect(D3DORIG(DrawIndexedPrimitiveUP),
-			_this, PrimitiveType, MinVertexIndex, NumVertices, PrimitiveCount, pIndexData, IndexDataFormat, pVertexStreamZeroData, VertexStreamZeroStride);
+		shader_start();
+		auto result = D3DORIG(DrawIndexedPrimitiveUP)(_this, PrimitiveType, MinVertexIndex, NumVertices, PrimitiveCount, pIndexData, IndexDataFormat, pVertexStreamZeroData, VertexStreamZeroStride);
+		shader_end();
+		return result;
 	}
 
 	static void __stdcall DrawMeshSetBuffer_c(MeshSetBuffer* buffer)
@@ -1326,11 +1376,7 @@ namespace local
 
 	static auto __stdcall SetTransformHijack(Direct3DDevice8* _device, D3DTRANSFORMSTATETYPE type, D3DXMATRIX* matrix)
 	{
-		if (d3d::effect != nullptr)
-		{
-			param::ProjectionMatrix = *matrix;
-		}
-
+		param::ProjectionMatrix = *matrix;
 		return _device->SetTransform(type, matrix);
 	}
 #pragma endregion
@@ -2220,15 +2266,16 @@ namespace local
 namespace d3d
 {
 	IDirect3DDevice9* device = nullptr;
-	Effect effect = nullptr;
+	VertexShader vertex_shader;
+	PixelShader pixel_shader;
 	bool do_effect = false;
 
-	bool SupportsXRGB()
+	bool supports_xrgb()
 	{
 		return local::supports_xrgb;
 	}
 
-	void ResetOverrides()
+	void reset_overrides()
 	{
 		if (LanternInstance::diffuse_override_temp)
 		{
@@ -2244,63 +2291,18 @@ namespace d3d
 		param::ForceDefaultDiffuse = false;
 	}
 
-	void LoadShader()
+	void load_shader()
 	{
 		if (!local::initialized)
 		{
 			return;
 		}
 
-		local::releaseShaders();
-
-		try
-		{
-			ID3DXBuffer* errors = nullptr;
-			auto result = D3DXCreateEffectFromFileA(device, "blender.fx", nullptr, nullptr,
-				D3DXFX_NOT_CLONEABLE | D3DXFX_DONOTSAVESTATE | D3DXFX_DONOTSAVESAMPLERSTATE,
-				nullptr, &local::blender, &errors);
-
-			if (FAILED(result) || errors)
-			{
-				if (errors)
-				{
-					std::string compilationErrors(static_cast<const char*>(
-						errors->GetBufferPointer()));
-
-					errors->Release();
-					throw std::runtime_error(compilationErrors);
-				}
-			}
-
-			if (local::blender == nullptr)
-			{
-				throw std::runtime_error("Shader creation failed with an unknown error. (Does blender.fx exist?)");
-			}
-
-			effect = local::compileShader(local::DEFAULT_FLAGS);
-
-		#ifdef PRECOMPILE_SHADERS
-			for (Uint32 i = 1; i < ShaderFlags_Count; i++)
-			{
-				auto flags = i;
-				local::sanitize(flags);
-				if (flags && local::shaders[flags] == nullptr)
-				{
-					local::compileShader(flags);
-				}
-			}
-		#endif
-
-			local::updateHandles();
-		}
-		catch (std::exception& ex)
-		{
-			effect = nullptr;
-			MessageBoxA(WindowHandle, ex.what(), "Shader creation failed", MB_OK | MB_ICONERROR);
-		}
+		local::clear_shaders();
+		local::create_shaders();
 	}
 
-	void SetShaderFlags(Uint32 flags, bool add)
+	void shader_flags(Uint32 flags, bool add)
 	{
 		if (add)
 		{
@@ -2310,6 +2312,11 @@ namespace d3d
 		{
 			local::shader_flags &= ~flags;
 		}
+	}
+
+	bool shaders_not_null()
+	{
+		return vertex_shader != nullptr && pixel_shader != nullptr;
 	}
 
 	void InitTrampolines()
@@ -2356,39 +2363,17 @@ extern "C"
 	EXPORT void __cdecl OnRenderDeviceLost()
 	{
 		end();
-
-		for (auto& e : shaders)
-		{
-			if (e != nullptr)
-			{
-				e->OnLostDevice();
-			}
-		}
-
-		blender->OnLostDevice();
-		releaseDepthTextures();
+		free_shaders();
 	}
 
 	EXPORT void __cdecl OnRenderDeviceReset()
 	{
-		for (auto& e : shaders)
-		{
-			if (e != nullptr)
-			{
-				e->OnResetDevice();
-			}
-		}
-
-		blender->OnResetDevice();
-
-		createDepthTextures();
-		updateHandles();
+		create_shaders();
 	}
 
 	EXPORT void __cdecl OnExit()
 	{
-		releaseDepthTextures();
-		releaseParameters();
-		releaseShaders();
+		param::release_parameters();
+		free_shaders();
 	}
 }

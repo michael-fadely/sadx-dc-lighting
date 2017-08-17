@@ -6,66 +6,67 @@
 #include <ninja.h>
 
 #include "lantern.h"
-#include "EffectParameter.h"
+#include "ShaderParameter.h"
 
 #define USE_OIT
 
 namespace d3d
 {
 	extern IDirect3DDevice9* device;
-	extern Effect effect;
+	extern VertexShader vertex_shader;
+	extern PixelShader pixel_shader;
+
 	extern bool do_effect;
-	bool SupportsXRGB();
-	void ResetOverrides();
-	void LoadShader();
-	void SetShaderFlags(Uint32 flags, bool add = true);
+	bool supports_xrgb();
+	void reset_overrides();
+	void load_shader();
+	void shader_flags(Uint32 flags, bool add = true);
+	bool shaders_not_null();
 	void InitTrampolines();
 }
 
 namespace param
 {
-	extern EffectParameter<Texture> BaseTexture;
+	extern ShaderParameter<Texture> PaletteA;
+	extern ShaderParameter<float> DiffuseIndexA;
+	extern ShaderParameter<float> SpecularIndexA;
 
-	extern EffectParameter<Texture> PaletteA;
-	extern EffectParameter<float> DiffuseIndexA;
-	extern EffectParameter<float> SpecularIndexA;
 
-	extern EffectParameter<Texture> PaletteB;
-	extern EffectParameter<float> DiffuseIndexB;
-	extern EffectParameter<float> SpecularIndexB;
+	extern ShaderParameter<Texture> PaletteB;
+	extern ShaderParameter<float> DiffuseIndexB;
+	extern ShaderParameter<float> SpecularIndexB;
 
-	extern EffectParameter<float> DiffuseBlendFactor;
-	extern EffectParameter<float> SpecularBlendFactor;
-	extern EffectParameter<D3DXMATRIX> WorldMatrix;
-	extern EffectParameter<D3DXMATRIX> ViewMatrix;
-	extern EffectParameter<D3DXMATRIX> ProjectionMatrix;
-	extern EffectParameter<D3DXMATRIX> wvMatrixInvT;
-	extern EffectParameter<D3DXMATRIX> TextureTransform;
-	extern EffectParameter<int> FogMode;
-	extern EffectParameter<float> FogStart;
-	extern EffectParameter<float> FogEnd;
-	extern EffectParameter<float> FogDensity;
-	extern EffectParameter<D3DXCOLOR> FogColor;
-	extern EffectParameter<D3DXVECTOR3> LightDirection;
-	extern EffectParameter<int> DiffuseSource;
+	extern ShaderParameter<float> DiffuseBlendFactor;
+	extern ShaderParameter<float> SpecularBlendFactor;
+	extern ShaderParameter<D3DXMATRIX> WorldMatrix;
+	extern ShaderParameter<D3DXMATRIX> ViewMatrix;
+	extern ShaderParameter<D3DXMATRIX> ProjectionMatrix;
+	extern ShaderParameter<D3DXMATRIX> wvMatrixInvT;
+	extern ShaderParameter<D3DXMATRIX> TextureTransform;
+	extern ShaderParameter<int> FogMode;
+	extern ShaderParameter<float> FogStart;
+	extern ShaderParameter<float> FogEnd;
+	extern ShaderParameter<float> FogDensity;
+	extern ShaderParameter<D3DXCOLOR> FogColor;
+	extern ShaderParameter<D3DXVECTOR3> LightDirection;
+	extern ShaderParameter<int> DiffuseSource;
 
-	extern EffectParameter<D3DXCOLOR> MaterialDiffuse;
+	extern ShaderParameter<D3DXCOLOR> MaterialDiffuse;
 
-	extern EffectParameter<float> AlphaRef;
-	extern EffectParameter<D3DXVECTOR3> NormalScale;
-	extern EffectParameter<bool> AllowVertexColor;
-	extern EffectParameter<bool> ForceDefaultDiffuse;
-	extern EffectParameter<bool> DiffuseOverride;
-	extern EffectParameter<D3DXVECTOR3> DiffuseOverrideColor;
+	extern ShaderParameter<D3DXVECTOR3> NormalScale;
+	extern ShaderParameter<bool> AllowVertexColor;
+	extern ShaderParameter<bool> ForceDefaultDiffuse;
+	extern ShaderParameter<bool> DiffuseOverride;
+	extern ShaderParameter<D3DXVECTOR3> DiffuseOverrideColor;
 
 #ifdef USE_OIT
-	extern EffectParameter<Texture> AlphaDepth;
-	extern EffectParameter<Texture> OpaqueDepth;
-	extern EffectParameter<int> SourceBlend;
-	extern EffectParameter<int> DestinationBlend;
-	extern EffectParameter<D3DXVECTOR2> ViewPort;
-	extern EffectParameter<float> DrawDistance;
-	extern EffectParameter<float> DepthOverride;
+	extern ShaderParameter<Texture> AlphaDepth;
+	extern ShaderParameter<Texture> OpaqueDepth;
+	extern ShaderParameter<int> SourceBlend;
+	extern ShaderParameter<int> DestinationBlend;
+	extern ShaderParameter<D3DXVECTOR2> ViewPort;
+	extern ShaderParameter<float> DrawDistance;
+	extern ShaderParameter<float> DepthOverride;
 #endif
 
 #ifdef USE_SL

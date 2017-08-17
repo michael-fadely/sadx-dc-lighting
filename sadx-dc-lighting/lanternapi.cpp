@@ -88,7 +88,7 @@ void material_unregister(NJS_MATERIAL** materials, int length, lantern_material_
 
 void set_shader_flags(unsigned int flags, bool add)
 {
-	d3d::SetShaderFlags(flags, add);
+	d3d::shader_flags(flags, add);
 }
 
 void allow_landtable_specular(bool allow)
