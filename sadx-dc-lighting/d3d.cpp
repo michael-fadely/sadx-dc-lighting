@@ -232,9 +232,6 @@ namespace local
 			d3d::vertex_shader = get_vertex_shader(DEFAULT_FLAGS);
 			d3d::pixel_shader = get_pixel_shader(DEFAULT_FLAGS);
 
-			d3d::device->SetVertexShader(d3d::vertex_shader);
-			d3d::device->SetPixelShader(d3d::pixel_shader);
-
 #ifdef PRECOMPILE_SHADERS
 			for (Uint32 i = 1; i < ShaderFlags_Count; i++)
 			{
@@ -785,9 +782,8 @@ namespace local
 		{
 			d3d::device->SetPixelShader(nullptr);
 			d3d::device->SetVertexShader(nullptr);
+			using_shader = false;
 		}
-
-		using_shader = false;
 	}
 
 	static void shader_start()
@@ -828,20 +824,23 @@ namespace local
 				return;
 			}
 
-			if (vs != d3d::vertex_shader)
+			if (!using_shader || vs != d3d::vertex_shader)
 			{
 				d3d::vertex_shader = vs;
+				d3d::device->SetVertexShader(d3d::vertex_shader);
 			}
 
-			if (ps != d3d::pixel_shader)
+			if (!using_shader || ps != d3d::pixel_shader)
 			{
 				d3d::pixel_shader = ps;
+				d3d::device->SetPixelShader(d3d::pixel_shader);
 			}
 		}
-
-		// TODO: no
-		d3d::device->SetVertexShader(d3d::vertex_shader);
-		d3d::device->SetPixelShader(d3d::pixel_shader);
+		else if (!using_shader)
+		{
+			d3d::device->SetVertexShader(d3d::vertex_shader);
+			d3d::device->SetPixelShader(d3d::pixel_shader);
+		}
 
 		if (changes || !IShaderParameter::values_assigned.empty())
 		{
