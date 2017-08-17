@@ -164,9 +164,9 @@ namespace local
 	static decltype(DrawPrimitiveUP_r)*        DrawPrimitiveUP_t        = nullptr;
 	static decltype(DrawIndexedPrimitiveUP_r)* DrawIndexedPrimitiveUP_t = nullptr;
 
-	constexpr auto DEFAULT_FLAGS = ShaderFlags_Alpha | ShaderFlags_Fog | ShaderFlags_Light | ShaderFlags_Texture;
 	constexpr auto COMPILER_FLAGS = D3DXSHADER_PACKMATRIX_ROWMAJOR | D3DXSHADER_OPTIMIZATION_LEVEL3;
 
+	constexpr auto DEFAULT_FLAGS = ShaderFlags_Alpha | ShaderFlags_Fog | ShaderFlags_Light | ShaderFlags_Texture;
 	constexpr auto VS_FLAGS = ShaderFlags_Texture | ShaderFlags_EnvMap | ShaderFlags_Light | ShaderFlags_Blend;
 	constexpr auto PS_FLAGS = ShaderFlags_Texture | ShaderFlags_Alpha | ShaderFlags_Fog;
 
@@ -265,12 +265,12 @@ namespace local
 		}
 	}
 
-	static std::string to_string(Uint32 o)
+	static std::string to_string(Uint32 flags)
 	{
+		bool thing = false;
 		std::stringstream result;
 
-		bool thing = false;
-		while (o != 0)
+		while (flags != 0)
 		{
 			using namespace d3d;
 
@@ -279,49 +279,49 @@ namespace local
 				result << " | ";
 			}
 
-			if (o & ShaderFlags_Fog)
+			if (flags & ShaderFlags_Fog)
 			{
-				o &= ~ShaderFlags_Fog;
+				flags &= ~ShaderFlags_Fog;
 				result << "USE_FOG";
 				thing = true;
 				continue;
 			}
 
-			if (o & ShaderFlags_Blend)
+			if (flags & ShaderFlags_Blend)
 			{
-				o &= ~ShaderFlags_Blend;
+				flags &= ~ShaderFlags_Blend;
 				result << "USE_BLEND";
 				thing = true;
 				continue;
 			}
 
-			if (o & ShaderFlags_Light)
+			if (flags & ShaderFlags_Light)
 			{
-				o &= ~ShaderFlags_Light;
+				flags &= ~ShaderFlags_Light;
 				result << "USE_LIGHT";
 				thing = true;
 				continue;
 			}
 
-			if (o & ShaderFlags_Alpha)
+			if (flags & ShaderFlags_Alpha)
 			{
-				o &= ~ShaderFlags_Alpha;
+				flags &= ~ShaderFlags_Alpha;
 				result << "USE_ALPHA";
 				thing = true;
 				continue;
 			}
 
-			if (o & ShaderFlags_EnvMap)
+			if (flags & ShaderFlags_EnvMap)
 			{
-				o &= ~ShaderFlags_EnvMap;
+				flags &= ~ShaderFlags_EnvMap;
 				result << "USE_ENVMAP";
 				thing = true;
 				continue;
 			}
 
-			if (o & ShaderFlags_Texture)
+			if (flags & ShaderFlags_Texture)
 			{
-				o &= ~ShaderFlags_Texture;
+				flags &= ~ShaderFlags_Texture;
 				result << "USE_TEXTURE";
 				thing = true;
 				continue;
@@ -371,7 +371,8 @@ namespace local
 
 		try
 		{
-			if (!CryptHashData(hHash, shader_file.data(), shader_file.size(), 0))
+			if (!CryptHashData(hHash, shader_file.data(), shader_file.size(), 0)
+				|| !CryptHashData(hHash, (BYTE*)&COMPILER_FLAGS, sizeof(COMPILER_FLAGS), 0))
 			{
 				throw std::runtime_error("CryptHashData failed.");
 			}
