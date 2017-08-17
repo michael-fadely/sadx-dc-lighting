@@ -12,7 +12,7 @@ struct PS_IN
 	float4 diffuse  : COLOR0;
 	float4 specular : COLOR1;
 	float2 tex      : TEXCOORD0;
-	float  fogDist  : FOG;
+	float  fogDist : FOG;
 };
 
 #ifdef USE_SL
@@ -50,85 +50,92 @@ struct StageLight
 #define D3DMCS_COLOR2   2 // Specular vertex color is used
 
 // This never changes
-static float AlphaRef = 16.0f / 255.0f;
+static const float AlphaRef = 16.0f / 255.0f;
 
 // Diffuse texture
-shared Texture2D BaseTexture;
+Texture2D BaseTexture : register(t0);
 // Palette atlas A
-shared Texture2D PaletteA;
+Texture2D PaletteA : register(t1);
 // Palette atlas B
-shared Texture2D PaletteB;
+Texture2D PaletteB : register(t2);
 
-shared float4x4 WorldMatrix;
-shared float4x4 wvMatrix;
-shared float4x4 ProjectionMatrix;
+float4x4 WorldMatrix : register(c0);
+float4x4 wvMatrix : register(c4);
+float4x4 ProjectionMatrix : register(c8);
 // The inverse transpose of the world view matrix - used for environment mapping.
-shared float4x4 wvMatrixInvT;
+float4x4 wvMatrixInvT : register(c12);
 
 // Used primarily for environment mapping.
-shared float4x4 TextureTransform = {
+float4x4 TextureTransform : register(c16) = {
 	-0.5, 0.0, 0.0, 0.0,
-	 0.0, 0.5, 0.0, 0.0,
-	 0.0, 0.0, 1.0, 0.0,
-	 0.5, 0.5, 0.0, 1.0
+	0.0, 0.5, 0.0, 0.0,
+	0.0, 0.0, 1.0, 0.0,
+	0.5, 0.5, 0.0, 1.0
 };
 
-shared uint DiffuseSource = (uint)D3DMCS_COLOR1;
-shared float4 MaterialDiffuse = float4(1.0f, 1.0f, 1.0f, 1.0f);
+uint DiffuseSource : register(c20) = (uint)D3DMCS_COLOR1;
+float4 MaterialDiffuse : register(c21) = float4(1.0f, 1.0f, 1.0f, 1.0f);
 
 // Pre-adjusted on the CPU before being sent to the shader.
 // Used for sampling colors from the palette atlases.
-shared float DiffuseIndexA  = 0;
-shared float DiffuseIndexB  = 0;
-shared float SpecularIndexA = 0;
-shared float SpecularIndexB = 0;
+float DiffuseIndexA : register(c22) = 0;
+float DiffuseIndexB : register(c23) = 0;
+float SpecularIndexA : register(c24) = 0;
+float SpecularIndexB : register(c25) = 0;
 
-shared float3 LightDirection = float3(0.0f, -1.0f, 0.0f);
-shared float3 NormalScale = float3(1, 1, 1);
+float3 LightDirection : register(c26) = float3(0.0f, -1.0f, 0.0f);
+float3 NormalScale : register(c27) = float3(1, 1, 1);
 
-shared uint   FogMode = (uint)FOGMODE_NONE;
-shared float  FogStart;
-shared float  FogEnd;
-shared float  FogDensity;
-shared float4 FogColor;
+uint   FogMode : register(c28) = (uint)FOGMODE_NONE;
+float  FogStart : register(c29);
+float  FogEnd : register(c30);
+float  FogDensity : register(c31);
+float4 FogColor : register(c32);
 
-shared float DiffuseBlendFactor = 0.0f;
-shared float SpecularBlendFactor = 0.0f;
+float DiffuseBlendFactor : register(c33) = 0.0f;
+float SpecularBlendFactor : register(c34) = 0.0f;
 
-shared bool AllowVertexColor       = true;
-shared bool ForceDefaultDiffuse    = false;
-shared bool DiffuseOverride        = false;
-shared float3 DiffuseOverrideColor = float3(1, 1, 1);
+bool AllowVertexColor : register(c35) = true;
+bool ForceDefaultDiffuse : register(c36) = false;
+bool DiffuseOverride : register(c37) = false;
+float3 DiffuseOverrideColor : register(c38) = float3(1, 1, 1);
 
 #ifdef USE_SL
-shared float4 MaterialSpecular = float4(0.0f, 0.0f, 0.0f, 0.0f);
-shared float  MaterialPower = 1.0f;
-shared SourceLight_t SourceLight;
-shared StageLight Lights[4];
+float4 MaterialSpecular : register(c39) = float4(0.0f, 0.0f, 0.0f, 0.0f);
+float  MaterialPower : register(c40) = 1.0f;
+SourceLight_t SourceLight : register(c41);
+StageLight Lights[4] : register(c42);
 #endif
 
 // Samplers
-sampler2D baseSampler = sampler_state
+SamplerState baseSampler : register(s0)= sampler_state
 {
-	Texture = <BaseTexture>;
+	Texture = BaseTexture;
 };
 
-sampler2D atlasSamplerA = sampler_state
+#define ATLAS_SAMPLER \
+MinFilter = Point;\
+MagFilter = Point;\
+AddressU  = Clamp;\
+AddressV  = Clamp;\
+ColorOp   = Modulate;\
+ColorArg1 = Texture;\
+ColorArg2 = Current;\
+AlphaOp = SelectArg1;\
+AlphaArg1 = Texture;\
+AlphaArg2 = Current
+
+
+SamplerState atlasSamplerA : register(s1) = sampler_state
 {
-	Texture = <PaletteA>;
-	MinFilter = Point;
-	MagFilter = Point;
-	AddressU = Clamp;
-	AddressV = Clamp;
+	Texture = PaletteA;
+	ATLAS_SAMPLER;
 };
 
-sampler2D atlasSamplerB = sampler_state
+SamplerState atlasSamplerB : register(s2) = sampler_state
 {
-	Texture = <PaletteB>;
-	MinFilter = Point;
-	MagFilter = Point;
-	AddressU = Clamp;
-	AddressV = Clamp;
+	Texture = PaletteB;
+	ATLAS_SAMPLER;
 };
 
 // Helpers
@@ -185,6 +192,7 @@ float4 GetDiffuse(in float4 vcolor)
 
 	return color;
 }
+
 
 // Vertex shaders
 
@@ -275,13 +283,4 @@ float4 ps_main(PS_IN input) : COLOR
 #endif
 
 	return result;
-}
-
-technique Main
-{
-	pass p0
-	{
-		VertexShader = compile vs_3_0 vs_main();
-		PixelShader  = compile ps_3_0 ps_main();
-	}
 }

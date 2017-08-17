@@ -3265,7 +3265,7 @@ static void models(NJS_MODEL_SADX* model, const T(&ids)[N])
 		return;
 	}
 
-	auto it = std::find(materials.begin(), materials.end(), mats);
+	auto it = find(materials.begin(), materials.end(), mats);
 
 	if (it != materials.end())
 	{

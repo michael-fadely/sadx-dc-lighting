@@ -4,7 +4,7 @@
 #include <deque>
 #include <SADXStructs.h>
 
-#include "EffectParameter.h"
+#include "ShaderParameter.h"
 #include "../include/lanternapi.h"
 
 #pragma pack(push, 1)
@@ -54,8 +54,8 @@ struct StageLights
 #pragma pack(pop)
 
 static_assert(sizeof(SourceLight) == 0x60, "SourceLight size mismatch");
-template<> bool EffectParameter<SourceLight_t>::Commit(Effect effect);
-template<> bool EffectParameter<StageLights>::Commit(Effect effect);
+template<> bool ShaderParameter<SourceLight_t>::Commit(IDirect3DDevice9* device);
+template<> bool ShaderParameter<StageLights>::Commit(IDirect3DDevice9* device);
 
 class LanternInstance;
 
@@ -81,14 +81,14 @@ public:
 class LanternInstance : ILantern
 {
 	// TODO: handle externally
-	EffectParameter<Texture>* atlas;
+	ShaderParameter<Texture>* atlas;
 	SourceLight source_lights[16] = {};
 	NJS_VECTOR sl_direction = {};
 
 	void copy(LanternInstance& inst);
 
 public:
-	explicit LanternInstance(EffectParameter<Texture>* atlas);
+	explicit LanternInstance(ShaderParameter<Texture>* atlas);
 	LanternInstance(LanternInstance&& instance) noexcept;
 
 	LanternInstance(const LanternInstance&) = default;
