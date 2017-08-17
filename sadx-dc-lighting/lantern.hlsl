@@ -178,7 +178,7 @@ float4 GetDiffuse(in float4 vcolor)
 		return float4(1, 1, 1, vcolor.a);
 	}
 
-	if (d == D3DMCS_MATERIAL && floor(bForceDefaultDiffuse) == 0)
+	if (d == D3DMCS_MATERIAL && floor(bForceDefaultDiffuse) != 0)
 	{
 		return float4(178.0 / 255.0, 178.0 / 255.0, 178.0 / 255.0, MaterialDiffuse.a);
 	}
