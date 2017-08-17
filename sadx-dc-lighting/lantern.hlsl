@@ -73,7 +73,7 @@ float4x4 TextureTransform : register(c16) = {
 	0.5, 0.5, 0.0, 1.0
 };
 
-uint DiffuseSource : register(c20) = (uint)D3DMCS_COLOR1;
+float iDiffuseSource : register(c20) = D3DMCS_COLOR1;
 float4 MaterialDiffuse : register(c21) = float4(1.0f, 1.0f, 1.0f, 1.0f);
 
 // Pre-adjusted on the CPU before being sent to the shader.
@@ -86,7 +86,7 @@ float SpecularIndexB : register(c25) = 0;
 float3 LightDirection : register(c26) = float3(0.0f, -1.0f, 0.0f);
 float3 NormalScale : register(c27) = float3(1, 1, 1);
 
-uint   FogMode : register(c28) = (uint)FOGMODE_NONE;
+float   iFogMode : register(c28) = FOGMODE_NONE;
 float  FogStart : register(c29);
 float  FogEnd : register(c30);
 float  FogDensity : register(c31);
@@ -95,9 +95,9 @@ float4 FogColor : register(c32);
 float DiffuseBlendFactor : register(c33) = 0.0f;
 float SpecularBlendFactor : register(c34) = 0.0f;
 
-bool AllowVertexColor : register(c35) = true;
-bool ForceDefaultDiffuse : register(c36) = false;
-bool DiffuseOverride : register(c37) = false;
+float bAllowVertexColor : register(c35) = true;
+float bForceDefaultDiffuse : register(c36) = false;
+float bDiffuseOverride : register(c37) = false;
 float3 DiffuseOverrideColor : register(c38) = float3(1, 1, 1);
 
 #ifdef USE_SL
@@ -148,7 +148,7 @@ float CalcFogFactor(float d)
 {
 	float fogCoeff;
 
-	switch (FogMode)
+	switch (max(0, floor(iFogMode)))
 	{
 		default:
 			break;
@@ -172,17 +172,18 @@ float CalcFogFactor(float d)
 
 float4 GetDiffuse(in float4 vcolor)
 {
-	if (DiffuseSource == D3DMCS_COLOR1 && !AllowVertexColor)
+	int d = (int)iDiffuseSource;
+	if (d == D3DMCS_COLOR1 && floor(bAllowVertexColor) == 0)
 	{
 		return float4(1, 1, 1, vcolor.a);
 	}
 
-	if (DiffuseSource == D3DMCS_MATERIAL && ForceDefaultDiffuse)
+	if (d == D3DMCS_MATERIAL && floor(bForceDefaultDiffuse) == 0)
 	{
 		return float4(178.0 / 255.0, 178.0 / 255.0, 178.0 / 255.0, MaterialDiffuse.a);
 	}
 
-	float4 color = (DiffuseSource == D3DMCS_COLOR1 && any(vcolor)) ? vcolor : MaterialDiffuse;
+	float4 color = (d == D3DMCS_COLOR1 && any(vcolor)) ? vcolor : MaterialDiffuse;
 
 	int3 icolor = color.rgb * 255.0;
 	if (icolor.r == 178 && icolor.g == 178 && icolor.b == 178)
@@ -229,7 +230,7 @@ PS_IN vs_main(VS_IN input)
 
 		float4 pdiffuse;
 
-		if (DiffuseOverride)
+		if (floor(bDiffuseOverride) == 1.0)
 		{
 			pdiffuse = float4(DiffuseOverrideColor, 1);
 		}

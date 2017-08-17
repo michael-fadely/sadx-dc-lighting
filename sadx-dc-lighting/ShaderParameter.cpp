@@ -8,9 +8,11 @@ bool ShaderParameter<bool>::Commit(IDirect3DDevice9* device)
 {
 	if (Modified())
 	{
-		BOOL value = current;
-		device->SetVertexShaderConstantB(index, &value, 1);
-		device->SetPixelShaderConstantB(index, &value, 1);
+		float f = current ? 1.0f : 0.0f;
+		float buffer[4] = { f, f, f, f };
+
+		device->SetVertexShaderConstantF(index, buffer, 1);
+		device->SetPixelShaderConstantF(index, buffer, 1);
 
 		Clear();
 		return true;
@@ -25,9 +27,11 @@ bool ShaderParameter<int>::Commit(IDirect3DDevice9* device)
 {
 	if (Modified())
 	{
-		int buffer[4] = { current, current, current, current };
-		device->SetVertexShaderConstantI(index, buffer, 1);
-		device->SetPixelShaderConstantI(index, buffer, 1);
+		auto f = (float)current;
+		float buffer[4] = { f, f, f, f };
+
+		device->SetVertexShaderConstantF(index, buffer, 1);
+		device->SetPixelShaderConstantF(index, buffer, 1);
 
 		Clear();
 		return true;
