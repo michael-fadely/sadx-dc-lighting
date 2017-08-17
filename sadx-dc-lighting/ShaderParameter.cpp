@@ -90,6 +90,24 @@ bool ShaderParameter<D3DXVECTOR3>::Commit(IDirect3DDevice9* device)
 }
 
 template<>
+bool ShaderParameter<D3DXVECTOR2>::Commit(IDirect3DDevice9* device)
+{
+	if (Modified())
+	{
+		D3DXVECTOR4 value = { current.x, current.y, 0.0f, 1.0f };
+
+		device->SetVertexShaderConstantF(index, value, 1);
+		device->SetPixelShaderConstantF(index, value, 1);
+
+		Clear();
+		return true;
+	}
+
+	assigned = false;
+	return false;
+}
+
+template<>
 bool ShaderParameter<D3DXCOLOR>::Commit(IDirect3DDevice9* device)
 {
 	if (Modified())

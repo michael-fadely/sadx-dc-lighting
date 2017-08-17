@@ -30,7 +30,7 @@ static void __cdecl njDisableFog_r()
 
 	if (shaders_not_null())
 	{
-		shader_flags(ShaderFlags_Fog, false);
+		set_shader_flags(ShaderFlags_Fog, false);
 	}
 }
 
@@ -41,7 +41,7 @@ static void __cdecl njEnableFog_r()
 	if (shaders_not_null())
 	{
 		param::FogMode = fog_mode;
-		shader_flags(ShaderFlags_Fog, true);
+		set_shader_flags(ShaderFlags_Fog, true);
 	}
 }
 
@@ -66,7 +66,7 @@ static void __cdecl njSetFogTable_r(NJS_FOG_TABLE fogtable)
 
 	device->GetRenderState(D3DRS_FOGTABLEMODE, (DWORD*)&fog_mode);
 	param::FogMode = fog_mode;
-	shader_flags(ShaderFlags_Fog, true);
+	set_shader_flags(ShaderFlags_Fog, true);
 
 	float start, end, density;
 	device->GetRenderState(D3DRS_FOGSTART, (DWORD*)&start);

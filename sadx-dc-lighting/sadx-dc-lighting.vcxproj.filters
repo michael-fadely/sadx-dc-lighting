@@ -139,7 +139,7 @@
     <None Include="lantern.hlsl">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="blender.fx">
+    <None Include="blender.hlsl">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

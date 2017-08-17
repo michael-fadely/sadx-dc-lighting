@@ -11,38 +11,39 @@
 #define D3DBLEND_SRCALPHASAT     11
 #define EPSILON 1e-5
 
-float2 ViewPort;
-Texture2D BackBuffer;
-Texture2D AlphaLayer;
-Texture2D BlendLayer;
+float2 ViewPort : register(c46);
+Texture2D BackBuffer : register(t0);
+Texture2D AlphaLayer : register(t1);
+Texture2D BlendLayer : register(t2);
 
-sampler backBufferSampler = sampler_state
+SamplerState backBufferSampler : register(s0) = sampler_state
 {
-	Texture   = <BackBuffer>;
-	MinFilter = Point;
-	MagFilter = Point;
-	AddressU  = Clamp;
-	AddressV  = Clamp;
-};
-sampler alphaLayerSampler = sampler_state
-{
-	Texture   = <AlphaLayer>;
-	MinFilter = Point;
-	MagFilter = Point;
-	AddressU  = Clamp;
-	AddressV  = Clamp;
-};
-sampler blendLayerSampler = sampler_state
-{
-	Texture   = <BlendLayer>;
+	Texture   = BackBuffer;
 	MinFilter = Point;
 	MagFilter = Point;
 	AddressU  = Clamp;
 	AddressV  = Clamp;
 };
 
+SamplerState alphaLayerSampler : register(s1) = sampler_state
+{
+	Texture   = AlphaLayer;
+	MinFilter = Point;
+	MagFilter = Point;
+	AddressU  = Clamp;
+	AddressV  = Clamp;
+};
 
-float4 GetBlend(uint mode, float4 source, float4 destination)
+SamplerState blendLayerSampler : register(s2) = sampler_state
+{
+	Texture   = BlendLayer;
+	MinFilter = Point;
+	MagFilter = Point;
+	AddressU  = Clamp;
+	AddressV  = Clamp;
+};
+
+float4 get_blend_factor(uint mode, float4 source, float4 destination)
 {
 	switch (mode)
 	{
@@ -73,20 +74,19 @@ float4 GetBlend(uint mode, float4 source, float4 destination)
 	}
 }
 
-float4 Blend(uint srcBlend, uint dstBlend, float4 texel, float4 pixel)
+float4 blend_colors(uint srcBlend, uint dstBlend, float4 texel, float4 pixel)
 {
 	float4 result;
-	float4 src = GetBlend(srcBlend, texel, pixel);
-	float4 dst = GetBlend(dstBlend, texel, pixel);
+	float4 src = get_blend_factor(srcBlend, texel, pixel);
+	float4 dst = get_blend_factor(dstBlend, texel, pixel);
 	return (texel * src) + (pixel * dst);
 }
-
 
 #define THING(v) \
 if (n - (float)v <= EPSILON) \
 	return v
 
-uint garbage(float n, uint _default)
+uint ftoi_blend(float n, uint _default)
 {
 	THING(D3DBLEND_ZERO);
 	THING(D3DBLEND_ONE);
@@ -103,15 +103,13 @@ uint garbage(float n, uint _default)
 	return _default;
 }
 
-float4 vs_blender(in float3 pos : POSITION) : POSITION
+float4 vs_main(in float3 pos : POSITION) : POSITION
 {
 	return float4(pos, 1);
 }
 
-float4 ps_blender(float2 vpos : VPOS) : COLOR
+float4 ps_main(float2 vpos : VPOS) : COLOR
 {
-	float4 result;
-
 	float2 coord     = vpos / ViewPort;
 	float4 backcolor = tex2D(backBufferSampler, coord);
 	float4 layer     = tex2D(alphaLayerSampler, coord);
@@ -125,18 +123,8 @@ float4 ps_blender(float2 vpos : VPOS) : COLOR
 	float src = round(blend.r * 15.0f);
 	float dst = round(blend.g * 15.0f);
 
-	uint source = garbage(src, D3DBLEND_SRCALPHA);
-	uint destination = garbage(dst, D3DBLEND_INVSRCALPHA);
+	uint source = ftoi_blend(src, D3DBLEND_SRCALPHA);
+	uint destination = ftoi_blend(dst, D3DBLEND_INVSRCALPHA);
 
-	result = Blend(source, destination, layer, backcolor);
-	return result;
-}
-
-technique Main
-{
-	pass p0
-	{
-		VertexShader = compile vs_3_0 vs_blender();
-		PixelShader = compile ps_3_0 ps_blender();
-	}
+	return blend_colors(source, destination, layer, backcolor);
 }

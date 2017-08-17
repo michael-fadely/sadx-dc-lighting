@@ -108,6 +108,33 @@ SourceLight_t SourceLight : register(c41);
 StageLight Lights[4] : register(c42);
 #endif
 
+Texture2D OpaqueDepth : register(t3);
+Texture2D AlphaDepth : register(t4);
+
+SamplerState opaqueDepthSampler : register(s3) = sampler_state
+{
+	Texture = OpaqueDepth;
+	MinFilter = Point;
+	MagFilter = Point;
+	AddressU = Clamp;
+	AddressV = Clamp;
+};
+SamplerState alphaDepthSampler : register(s4) = sampler_state
+{
+	Texture = AlphaDepth;
+	MinFilter = Point;
+	MagFilter = Point;
+	AddressU = Clamp;
+	AddressV = Clamp;
+};
+
+// Used for correcting screen-space coordinates to sample the depth buffer.
+float2 ViewPort : register(c46) = float2(0,0);
+uint SourceBlend : register(c47) = 0;
+uint DestinationBlend : register(c48) = 0;
+float DrawDistance : register(c49) = 0.0f;
+float DepthOverride : register(c50) = 0.0f;
+
 // Samplers
 SamplerState baseSampler : register(s0)= sampler_state
 {
@@ -138,32 +165,6 @@ SamplerState atlasSamplerB : register(s2) = sampler_state
 	Texture = PaletteB;
 	ATLAS_SAMPLER;
 };
-
-shared Texture2D OpaqueDepth;
-shared Texture2D AlphaDepth;
-
-sampler opaqueDepthSampler = sampler_state
-{
-	Texture = <OpaqueDepth>;
-	MinFilter = Point;
-	MagFilter = Point;
-	AddressU = Clamp;
-	AddressV = Clamp;
-};
-sampler alphaDepthSampler = sampler_state
-{
-	Texture = <AlphaDepth>;
-	MinFilter = Point;
-	MagFilter = Point;
-	AddressU = Clamp;
-	AddressV = Clamp;
-};
-
-// Used for correcting screen-space coordinates to sample the depth buffer.
-shared float2 ViewPort;
-shared uint SourceBlend, DestinationBlend;
-shared float DrawDistance;
-shared float DepthOverride;
 
 // Helpers
 
@@ -334,11 +335,24 @@ float4 ps_main(PS_IN input, out float oDepth : DEPTH0, float2 vpos : VPOS) : COL
 	blend = float4((float)SourceBlend / 15.0f, (float)DestinationBlend / 15.0f, 0, 1);
 #endif
 
-#ifdef USE_TEXTURE
-	result = tex2D(baseSampler, input.tex);
-	result = result * input.diffuse + input.specular;
+#if 0
+	#ifdef USE_TEXTURE
+		result = tex2D(baseSampler, input.tex);
+		result = result * input.diffuse + input.specular;
+	#else
+		result = input.diffuse;
+	#endif
 #else
-	result = input.diffuse;
+	result = float4(0, 0, 0, 1);
+	if (SourceBlend == 0)
+	{
+		result.r = 1.0f;
+	}
+
+	if (DestinationBlend == 0)
+	{
+		result.g = 1.0f;
+	}
 #endif
 
 #ifdef USE_ALPHA

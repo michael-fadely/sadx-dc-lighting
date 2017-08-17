@@ -195,7 +195,7 @@ xcopy /C /Y /D "$(ProjectDir)lantern.hlsl" "$(OutDir)system\"</Command>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <None Include="blender.fx">
+    <None Include="blender.hlsl">
       <FileType>Document</FileType>
     </None>
   </ItemGroup>

@@ -10,6 +10,7 @@ using VertexShader = CComPtr<IDirect3DVertexShader9>;
 using PixelShader  = CComPtr<IDirect3DPixelShader9>;
 using Buffer       = CComPtr<ID3DXBuffer>;
 using Texture      = CComPtr<IDirect3DTexture9>;
+using Surface      = CComPtr<IDirect3DSurface9>;
 
 class IShaderParameter
 {
@@ -117,6 +118,7 @@ template<> bool ShaderParameter<int>::Commit(IDirect3DDevice9* device);
 template<> bool ShaderParameter<float>::Commit(IDirect3DDevice9* device);
 template<> bool ShaderParameter<D3DXVECTOR4>::Commit(IDirect3DDevice9* device);
 template<> bool ShaderParameter<D3DXVECTOR3>::Commit(IDirect3DDevice9* device);
+template<> bool ShaderParameter<D3DXVECTOR2>::Commit(IDirect3DDevice9* device);
 template<> bool ShaderParameter<D3DXCOLOR>::Commit(IDirect3DDevice9* device);
 template<> bool ShaderParameter<D3DXMATRIX>::Commit(IDirect3DDevice9* device);
 template<> bool ShaderParameter<Texture>::Commit(IDirect3DDevice9* device);

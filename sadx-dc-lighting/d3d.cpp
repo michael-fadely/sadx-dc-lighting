@@ -69,13 +69,13 @@ namespace param
 	ShaderParameter<D3DXCOLOR>   FogColor(32, {});
 
 #ifdef USE_OIT
-	ShaderParameter<Texture>     AlphaDepth("AlphaDepth", nullptr);
-	ShaderParameter<Texture>     OpaqueDepth("OpaqueDepth", nullptr);
-	ShaderParameter<int>         SourceBlend("SourceBlend", 0);
-	ShaderParameter<int>         DestinationBlend("DestinationBlend", 0);
-	ShaderParameter<D3DXVECTOR2> ViewPort("ViewPort", {});
-	ShaderParameter<float>       DrawDistance("DrawDistance", 0.0f);
-	ShaderParameter<float>       DepthOverride("DepthOverride", 0.0f);
+	ShaderParameter<Texture>     OpaqueDepth(3, nullptr);
+	ShaderParameter<Texture>     AlphaDepth(4, nullptr);
+	ShaderParameter<int>         SourceBlend(47, 0);
+	ShaderParameter<int>         DestinationBlend(48, 0);
+	ShaderParameter<D3DXVECTOR2> ViewPort(46, {});
+	ShaderParameter<float>       DrawDistance(49, 0.0f);
+	ShaderParameter<float>       DepthOverride(50, 0.0f);
 #endif
 
 #ifdef USE_SL
@@ -191,7 +191,7 @@ namespace local
 
 	constexpr auto DEFAULT_FLAGS = ShaderFlags_Alpha | ShaderFlags_Fog | ShaderFlags_Light | ShaderFlags_Texture;
 	constexpr auto VS_FLAGS = ShaderFlags_Texture | ShaderFlags_EnvMap | ShaderFlags_Light | ShaderFlags_Blend;
-	constexpr auto PS_FLAGS = ShaderFlags_Texture | ShaderFlags_Alpha | ShaderFlags_Fog;
+	constexpr auto PS_FLAGS = ShaderFlags_Texture | ShaderFlags_Alpha | ShaderFlags_Fog | ShaderFlags_OIT;
 
 	static Uint32 shader_flags = DEFAULT_FLAGS;
 	static Uint32 last_flags = DEFAULT_FLAGS;
@@ -207,7 +207,6 @@ namespace local
 
 #ifdef USE_OIT
 	static const int numPasses                = 8;
-	static Effect blender                     = nullptr;
 	static Texture depthUnits[2]              = {};
 	static Texture renderLayers[numPasses]    = {};
 	static Texture blendModeLayers[numPasses] = {};
@@ -217,6 +216,9 @@ namespace local
 	static Surface backBufferSurface          = nullptr;
 	static Surface origRenderTarget           = nullptr;
 	static bool peeling                       = false;
+
+	static VertexShader blender_vs;
+	static PixelShader blender_ps;
 
 	DataPointer(D3DPRESENT_PARAMETERS, PresentParameters, 0x03D0FDC0);
 #endif
@@ -253,6 +255,12 @@ namespace local
 		pixel_shaders.clear();
 		d3d::vertex_shader = nullptr;
 		d3d::pixel_shader = nullptr;
+		blender_vs = nullptr;
+		blender_ps = nullptr;
+
+		d3d::device->SetPixelShader(nullptr);
+		d3d::device->SetVertexShader(nullptr);
+		using_shader = false;
 	}
 
 	static void clear_shaders()
@@ -290,6 +298,19 @@ namespace local
 				}
 			}
 #endif
+
+			for (auto& i : param::parameters)
+			{
+				i->CommitNow(d3d::device);
+			}
+		}
+		catch (std::exception& ex)
+		{
+			d3d::vertex_shader = nullptr;
+			d3d::pixel_shader = nullptr;
+			MessageBoxA(WindowHandle, ex.what(), "Shader creation failed", MB_OK | MB_ICONERROR);
+		}
+	}
 
 #ifdef USE_OIT
 	static void createDepthTextures()
@@ -1266,9 +1287,25 @@ namespace local
 			case D3DRS_SRCBLEND:
 				param::SourceBlend = Value;
 				break;
+
 			case D3DRS_DESTBLEND:
 				param::DestinationBlend = Value;
 				break;
+
+			case D3DRS_ZWRITEENABLE:
+				if (peeling)
+				{
+					Value = TRUE;
+				}
+				break;
+
+			case D3DRS_ZFUNC:
+				if (peeling)
+				{
+					Value = D3DCMP_LESS;
+				}
+				break;
+
 			default:
 				break;
 		}
@@ -1404,7 +1441,7 @@ namespace local
 
 		D3DXVECTOR2 v(fWidth5, fHeight5);
 		param::ViewPort = v;
-		blender->SetFloatArray("ViewPort", (float*)&v, 2);
+		param::ViewPort.CommitNow(d3d::device);
 
 		quad[0].Position = D3DXVECTOR4(-0.5f, -0.5f, 0.5f, 1.0f);
 		quad[0].TexCoord = D3DXVECTOR2(left, top);
@@ -1944,7 +1981,7 @@ namespace local
 
 		int passes = guard.passes;
 
-		SetShaderFlags(ShaderFlags_OIT, true);
+		d3d::shader_flags(ShaderFlags_OIT, true);
 		param::OpaqueDepth = depthBuffer;
 		peeling = true;
 		do_effect = true;
@@ -2016,7 +2053,7 @@ namespace local
 		peeling = false;
 		param::OpaqueDepth = nullptr;
 		param::AlphaDepth = nullptr;
-		SetShaderFlags(ShaderFlags_OIT, false);
+		d3d::shader_flags(ShaderFlags_OIT, false);
 		device->SetRenderTarget(1, nullptr);
 	}
 
@@ -2049,14 +2086,23 @@ namespace local
 
 		auto pad = ControllerPointers[0];
 
-		unsigned int passes;
-		blender->Begin(&passes, 0);
-		auto _effect = effect;
-		effect = blender;
+		VertexShader vs;
+		PixelShader ps;
+
+		CComPtr<IDirect3DBaseTexture9> textures[3];
+
+		device->GetVertexShader(&vs);
+		device->GetPixelShader(&ps);
+
+		for (int i = 0; i < 3; i++)
+		{
+			device->GetTexture(i, &textures[i]);
+		}
 
 		do_effect = true;
 
-		begin();
+		device->SetVertexShader(blender_vs);
+		device->SetPixelShader(blender_ps);
 
 		int lastId = 0;
 		for (int i = numPasses; i > 0; i--)
@@ -2064,9 +2110,9 @@ namespace local
 			int currId = i % 2;
 			lastId = (i + 1) % 2;
 
-			blender->SetTexture("BackBuffer", backBuffers[currId]);
-			blender->SetTexture("AlphaLayer", renderLayers[i - 1]);
-			blender->SetTexture("BlendLayer", blendModeLayers[i - 1]);
+			device->SetTexture(0, backBuffers[currId]);
+			device->SetTexture(1, renderLayers[i - 1]);
+			device->SetTexture(2, blendModeLayers[i - 1]);
 
 			Surface surface = nullptr;
 			backBuffers[lastId]->GetSurfaceLevel(0, &surface);
@@ -2087,15 +2133,14 @@ namespace local
 			}
 		}
 
-		end();
+		for (int i = 0; i < 3; i++)
+		{
+			device->SetTexture(i, textures[i]);
+			textures[i] = nullptr;
+		}
 
-		effect = _effect;
-
-		blender->SetTexture("BackBuffer", nullptr);
-		blender->SetTexture("AlphaLayer", nullptr);
-		blender->SetTexture("BlendLayer", nullptr);
-		blender->EndPass();
-		blender->End();
+		device->SetVertexShader(vs);
+		device->SetPixelShader(ps);
 
 		device->SetRenderTarget(0, origRenderTarget);
 		device->SetDepthStencilSurface(depthSurface);
@@ -2300,6 +2345,32 @@ namespace d3d
 
 		local::clear_shaders();
 		local::create_shaders();
+
+		HRESULT result;
+		Buffer buffer, errors;
+
+		result = D3DXCompileShaderFromFileA("blender.hlsl", nullptr, nullptr, "vs_main", "vs_3_0",
+			D3DXSHADER_OPTIMIZATION_LEVEL3, &buffer, &errors, nullptr);
+
+		if (FAILED(result) || errors)
+		{
+			local::d3d_exception(buffer, result);
+		}
+
+		device->CreateVertexShader((const DWORD*)buffer->GetBufferPointer(), &local::blender_vs);
+
+		buffer = nullptr;
+		errors = nullptr;
+
+		result = D3DXCompileShaderFromFileA("blender.hlsl", nullptr, nullptr, "ps_main", "ps_3_0",
+			D3DXSHADER_OPTIMIZATION_LEVEL3, &buffer, &errors, nullptr);
+
+		if (FAILED(result) || errors)
+		{
+			local::d3d_exception(buffer, result);
+		}
+
+		device->CreatePixelShader((const DWORD*)buffer->GetBufferPointer(), &local::blender_ps);
 	}
 
 	void shader_flags(Uint32 flags, bool add)
