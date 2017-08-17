@@ -233,7 +233,7 @@ namespace local
 			d3d::pixel_shader = get_pixel_shader(DEFAULT_FLAGS);
 
 #ifdef PRECOMPILE_SHADERS
-			for (Uint32 i = 1; i < ShaderFlags_Count; i++)
+			for (Uint32 i = 0; i < ShaderFlags_Count; i++)
 			{
 				auto flags = i;
 				local::sanitize(flags);
@@ -581,7 +581,33 @@ namespace local
 		}
 	}
 
-	// TODO: de-dupe get_pixel_shader
+	static void load_cached_shader(std::filesystem::path sid_path, std::vector<uint8_t>& data)
+	{
+		std::ifstream file(sid_path, std::ios_base::ate | std::ios_base::binary);
+		auto size = file.tellg();
+		file.seekg(0);
+
+		if (size < 1)
+		{
+			throw std::runtime_error("corrupt vertex shader cache");
+		}
+
+		data.resize(static_cast<size_t>(size));
+		file.read(reinterpret_cast<char*>(data.data()), data.size());
+	}
+
+	static void save_cached_shader(std::filesystem::path sid_path, std::vector<uint8_t>& data)
+	{
+		std::ofstream file(sid_path, std::ios_base::binary);
+
+		if (!file.is_open())
+		{
+			throw std::runtime_error("Failed to open file for cache storage.");
+		}
+
+		file.write((char*)data.data(), data.size());
+	}
+
 	static VertexShader get_vertex_shader(Uint32 flags)
 	{
 		using namespace std;
@@ -614,17 +640,7 @@ namespace local
 			PrintDebug("[lantern] Loading cached vertex shader #%02d: %08X (%s)\n",
 				vertex_shaders.size(), flags, to_string(flags).c_str());
 
-			ifstream file(sid_path, ios_base::ate | ios_base::binary);
-			auto size = file.tellg();
-			file.seekg(0);
-
-			if (size < 1)
-			{
-				throw runtime_error("corrupt vertex shader cache");
-			}
-
-			data.resize(static_cast<size_t>(size));
-			file.read(reinterpret_cast<char*>(data.data()), data.size());
+			load_cached_shader(sid_path, data);
 		}
 		else
 		{
@@ -658,14 +674,7 @@ namespace local
 
 		if (!is_cached)
 		{
-			ofstream file(sid_path, ios_base::binary);
-
-			if (!file.is_open())
-			{
-				throw runtime_error("Failed to open file for cache storage.");
-			}
-
-			file.write((char*)data.data(), data.size());
+			save_cached_shader(sid_path, data);
 		}
 
 		vertex_shaders[(ShaderFlags)flags] = shader;
@@ -704,17 +713,7 @@ namespace local
 			PrintDebug("[lantern] Loading cached pixel shader #%02d: %08X (%s)\n",
 				pixel_shaders.size(), flags, to_string(flags).c_str());
 
-			ifstream file(sid_path, ios_base::ate | ios_base::binary);
-			auto size = file.tellg();
-			file.seekg(0);
-
-			if (size < 1)
-			{
-				throw runtime_error("corrupt pixel shader cache");
-			}
-
-			data.resize(static_cast<size_t>(size));
-			file.read(reinterpret_cast<char*>(data.data()), data.size());
+			load_cached_shader(sid_path, data);
 		}
 		else
 		{
@@ -748,14 +747,7 @@ namespace local
 
 		if (!is_cached)
 		{
-			ofstream file(sid_path, ios_base::binary);
-
-			if (!file.is_open())
-			{
-				throw runtime_error("Failed to open file for cache storage.");
-			}
-
-			file.write((char*)data.data(), data.size());
+			save_cached_shader(sid_path, data);
 		}
 
 		pixel_shaders[(ShaderFlags)(flags & PS_FLAGS)] = shader;
