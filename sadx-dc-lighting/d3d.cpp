@@ -1579,7 +1579,7 @@ namespace local
 
 
 	static constexpr auto NODE_LIMIT = 50;
-	std::deque<QueuedNodeEx> nodes;
+	std::vector<QueuedNodeEx> nodes;
 
 	bool node_sort_pred(QueuedNodeEx& _a, QueuedNodeEx& _b)
 	{
@@ -1601,6 +1601,7 @@ namespace local
 
 	__inline void sort_nodes()
 	{
+		return;
 		auto t = GetTickCount64();
 		sort(nodes.begin(), nodes.end(), &node_sort_pred);
 		auto e = GetTickCount64() - t;
