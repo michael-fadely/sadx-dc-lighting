@@ -108,8 +108,8 @@ float4 ps_main(float2 vpos : VPOS) : COLOR
 		return backcolor;
 	}
 
-	float source = round(blend.r * 11.0f);
-	float destination = round(blend.g * 11.0f);
+	float source = blend.r * 255;
+	float destination = blend.g * 255;
 
-	return blend_colors(source, destination, layer, backcolor);
+	return float4(blend_colors(source, destination, layer, backcolor).rgb, 1);
 }

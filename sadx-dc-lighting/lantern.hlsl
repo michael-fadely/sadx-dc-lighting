@@ -332,7 +332,7 @@ float4 ps_main(PS_IN input, out float oDepth : DEPTH0, float2 vpos : VPOS) : COL
 		discard;
 	}
 
-	blend = float4((float)SourceBlend / 11.0f, (float)DestinationBlend / 11.0f, 0, 1);
+	blend = float4((float)SourceBlend / 255, (float)DestinationBlend / 255, 0, 1);
 #endif
 
 

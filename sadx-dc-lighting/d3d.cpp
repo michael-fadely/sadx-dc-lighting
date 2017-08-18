@@ -1286,10 +1286,18 @@ namespace local
 		{
 			case D3DRS_SRCBLEND:
 				param::SourceBlend = Value;
+				if (peeling)
+				{
+					Value = D3DBLEND_ONE;
+				}
 				break;
 
 			case D3DRS_DESTBLEND:
 				param::DestinationBlend = Value;
+				if (peeling)
+				{
+					Value = D3DBLEND_ZERO;
+				}
 				break;
 
 			case D3DRS_ZWRITEENABLE:
@@ -2125,13 +2133,14 @@ namespace local
 
 			if (pad && pad->PressedButtons & Buttons_Right)
 			{
-				std::string path = "layer" + std::to_string(i) + ".png";
+				auto i_str = std::to_string(i);
+				std::string path = "layer" + i_str + ".png";
 				D3DXSaveTextureToFileA(path.c_str(), D3DXIFF_PNG, renderLayers[i - 1], nullptr);
 
-				path = "blend" + std::to_string(i) + ".png";
+				path = "blend" + i_str + ".png";
 				D3DXSaveTextureToFileA(path.c_str(), D3DXIFF_PNG, blendModeLayers[i - 1], nullptr);
 
-				path = "backbuffer" + std::to_string(i) + ".png";
+				path = "backbuffer" + i_str + ".png";
 				D3DXSaveTextureToFileA(path.c_str(), D3DXIFF_PNG, backBuffers[lastId], nullptr);
 			}
 		}
@@ -2148,11 +2157,6 @@ namespace local
 		device->SetRenderTarget(0, origRenderTarget);
 		device->SetDepthStencilSurface(depthSurface);
 		device->Clear(0, nullptr, D3DCLEAR_TARGET, 0, 0.0f, 0);
-
-		if (pad && pad->PressedButtons & Buttons_Right)
-		{
-			D3DXSaveTextureToFileA("backbuffer.png", D3DXIFF_PNG, backBuffers[lastId], nullptr);
-		}
 
 		do_effect = false;
 
