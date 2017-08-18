@@ -11,47 +11,51 @@
 #define D3DBLEND_SRCALPHASAT     11
 #define EPSILON 1e-5
 
+#define SAMPLER_DEFAULT \
+	MinFilter = Point;\
+	MagFilter = Point;\
+	AddressU  = Clamp;\
+	AddressV  = Clamp;\
+	ColorOp   = Modulate;\
+	ColorArg1 = Texture;\
+	ColorArg2 = Current;\
+	AlphaOp   = SelectArg1;\
+	AlphaArg1 = Texture;\
+	AlphaArg2 = Current
+
 float2 ViewPort : register(c46);
-Texture2D BackBuffer : register(t0);
-Texture2D AlphaLayer : register(t1);
-Texture2D BlendLayer : register(t2);
+Texture2D BackBuffer : register(t1);
+Texture2D AlphaLayer : register(t2);
+Texture2D BlendLayer : register(t3);
 
-SamplerState backBufferSampler : register(s0) = sampler_state
+SamplerState backBufferSampler : register(s1) = sampler_state
 {
-	Texture   = BackBuffer;
-	MinFilter = Point;
-	MagFilter = Point;
-	AddressU  = Clamp;
-	AddressV  = Clamp;
+	Texture = BackBuffer;
+	SAMPLER_DEFAULT;
 };
 
-SamplerState alphaLayerSampler : register(s1) = sampler_state
+SamplerState alphaLayerSampler : register(s2) = sampler_state
 {
-	Texture   = AlphaLayer;
-	MinFilter = Point;
-	MagFilter = Point;
-	AddressU  = Clamp;
-	AddressV  = Clamp;
+	Texture = AlphaLayer;
+	SAMPLER_DEFAULT;
 };
 
-SamplerState blendLayerSampler : register(s2) = sampler_state
+SamplerState blendLayerSampler : register(s3) = sampler_state
 {
-	Texture   = BlendLayer;
-	MinFilter = Point;
-	MagFilter = Point;
-	AddressU  = Clamp;
-	AddressV  = Clamp;
+	Texture = BlendLayer;
+	SAMPLER_DEFAULT;
 };
 
-float4 get_blend_factor(uint mode, float4 source, float4 destination)
+float4 get_blend_factor(in float mode, in float4 source, in float4 destination)
 {
-	switch (mode)
+	switch (max(0, floor(mode)))
 	{
-		default:
+		default: // error state
+			return float4(1, 0, 0, 1);
 		case D3DBLEND_ZERO:
-			return 0.0f;
+			return float4(0, 0, 0, 0);
 		case D3DBLEND_ONE:
-			return 1.0f;
+			return float4(1, 1, 1, 1);
 		case D3DBLEND_SRCCOLOR:
 			return source;
 		case D3DBLEND_INVSRCCOLOR:
@@ -74,9 +78,10 @@ float4 get_blend_factor(uint mode, float4 source, float4 destination)
 	}
 }
 
-float4 blend_colors(uint srcBlend, uint dstBlend, float4 texel, float4 pixel)
+float4 blend_colors(in float srcBlend, in float dstBlend, float4 texel, float4 pixel)
 {
 	float4 result;
+
 	float4 src = get_blend_factor(srcBlend, texel, pixel);
 	float4 dst = get_blend_factor(dstBlend, texel, pixel);
 	return (texel * src) + (pixel * dst);
@@ -85,23 +90,6 @@ float4 blend_colors(uint srcBlend, uint dstBlend, float4 texel, float4 pixel)
 #define THING(v) \
 if (n - (float)v <= EPSILON) \
 	return v
-
-uint ftoi_blend(float n, uint _default)
-{
-	THING(D3DBLEND_ZERO);
-	THING(D3DBLEND_ONE);
-	THING(D3DBLEND_SRCCOLOR);
-	THING(D3DBLEND_INVSRCCOLOR);
-	THING(D3DBLEND_SRCALPHA);
-	THING(D3DBLEND_INVSRCALPHA);
-	THING(D3DBLEND_DESTALPHA);
-	THING(D3DBLEND_INVDESTALPHA);
-	THING(D3DBLEND_DESTCOLOR);
-	THING(D3DBLEND_INVDESTCOLOR);
-	THING(D3DBLEND_SRCALPHASAT);
-
-	return _default;
-}
 
 float4 vs_main(in float3 pos : POSITION) : POSITION
 {
@@ -120,11 +108,8 @@ float4 ps_main(float2 vpos : VPOS) : COLOR
 		return backcolor;
 	}
 
-	float src = round(blend.r * 15.0f);
-	float dst = round(blend.g * 15.0f);
-
-	uint source = ftoi_blend(src, D3DBLEND_SRCALPHA);
-	uint destination = ftoi_blend(dst, D3DBLEND_INVSRCALPHA);
+	float source = round(blend.r * 11.0f);
+	float destination = round(blend.g * 11.0f);
 
 	return blend_colors(source, destination, layer, backcolor);
 }

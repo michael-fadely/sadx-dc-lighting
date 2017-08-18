@@ -332,28 +332,17 @@ float4 ps_main(PS_IN input, out float oDepth : DEPTH0, float2 vpos : VPOS) : COL
 		discard;
 	}
 
-	blend = float4((float)SourceBlend / 15.0f, (float)DestinationBlend / 15.0f, 0, 1);
+	blend = float4((float)SourceBlend / 11.0f, (float)DestinationBlend / 11.0f, 0, 1);
 #endif
 
-#if 0
-	#ifdef USE_TEXTURE
-		result = tex2D(baseSampler, input.tex);
-		result = result * input.diffuse + input.specular;
-	#else
-		result = input.diffuse;
-	#endif
+
+#ifdef USE_TEXTURE
+	result = tex2D(baseSampler, input.tex);
+	result = result * input.diffuse + input.specular;
 #else
-	result = float4(0, 0, 0, 1);
-	if (SourceBlend == 0)
-	{
-		result.r = 1.0f;
-	}
-
-	if (DestinationBlend == 0)
-	{
-		result.g = 1.0f;
-	}
+	result = input.diffuse;
 #endif
+
 
 #ifdef USE_ALPHA
 	clip(result.a < AlphaRef ? -1 : 1);

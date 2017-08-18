@@ -1293,18 +1293,19 @@ namespace local
 				break;
 
 			case D3DRS_ZWRITEENABLE:
+			case D3DRS_ZENABLE:
 				if (peeling)
 				{
 					Value = TRUE;
 				}
 				break;
 
-			case D3DRS_ZFUNC:
+			/*case D3DRS_ZFUNC:
 				if (peeling)
 				{
 					Value = D3DCMP_LESS;
 				}
-				break;
+				break;*/
 
 			default:
 				break;
@@ -1988,6 +1989,10 @@ namespace local
 
 		begin();
 
+		device->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
+		device->SetRenderState(D3DRS_ZENABLE, TRUE);
+		device->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESS);
+
 		for (int p = 0; p < passes; p++)
 		{
 			// TODO: loop per draw type & use [numPasses] depth buffers
@@ -2051,8 +2056,8 @@ namespace local
 		end();
 
 		peeling = false;
-		param::OpaqueDepth = nullptr;
-		param::AlphaDepth = nullptr;
+		param::OpaqueDepth.Release();
+		param::AlphaDepth.Release();
 		d3d::shader_flags(ShaderFlags_OIT, false);
 		device->SetRenderTarget(1, nullptr);
 	}
@@ -2086,23 +2091,17 @@ namespace local
 
 		auto pad = ControllerPointers[0];
 
-		VertexShader vs;
-		PixelShader ps;
-
 		CComPtr<IDirect3DBaseTexture9> textures[3];
-
-		device->GetVertexShader(&vs);
-		device->GetPixelShader(&ps);
-
 		for (int i = 0; i < 3; i++)
 		{
-			device->GetTexture(i, &textures[i]);
+			device->GetTexture(i + 1, &textures[i]);
 		}
-
-		do_effect = true;
 
 		device->SetVertexShader(blender_vs);
 		device->SetPixelShader(blender_ps);
+
+		do_effect = false;
+		using_shader = false;
 
 		int lastId = 0;
 		for (int i = numPasses; i > 0; i--)
@@ -2110,9 +2109,9 @@ namespace local
 			int currId = i % 2;
 			lastId = (i + 1) % 2;
 
-			device->SetTexture(0, backBuffers[currId]);
-			device->SetTexture(1, renderLayers[i - 1]);
-			device->SetTexture(2, blendModeLayers[i - 1]);
+			device->SetTexture(1, backBuffers[currId]);
+			device->SetTexture(2, renderLayers[i - 1]);
+			device->SetTexture(3, blendModeLayers[i - 1]);
 
 			Surface surface = nullptr;
 			backBuffers[lastId]->GetSurfaceLevel(0, &surface);
@@ -2130,17 +2129,20 @@ namespace local
 
 				path = "blend" + std::to_string(i) + ".png";
 				D3DXSaveTextureToFileA(path.c_str(), D3DXIFF_PNG, blendModeLayers[i - 1], nullptr);
+
+				path = "backbuffer" + std::to_string(i) + ".png";
+				D3DXSaveTextureToFileA(path.c_str(), D3DXIFF_PNG, backBuffers[lastId], nullptr);
 			}
 		}
 
 		for (int i = 0; i < 3; i++)
 		{
-			device->SetTexture(i, textures[i]);
+			device->SetTexture(i + 1, textures[i]);
 			textures[i] = nullptr;
 		}
 
-		device->SetVertexShader(vs);
-		device->SetPixelShader(ps);
+		device->SetVertexShader(nullptr);
+		device->SetPixelShader(nullptr);
 
 		device->SetRenderTarget(0, origRenderTarget);
 		device->SetDepthStencilSurface(depthSurface);
@@ -2190,6 +2192,7 @@ namespace local
 #endif
 
 		// draw hud and stuff
+		using_shader = false;
 		auto draw = TARGET_STATIC(DrawQueuedModels);
 		draw();
 
@@ -2354,7 +2357,7 @@ namespace d3d
 
 		if (FAILED(result) || errors)
 		{
-			local::d3d_exception(buffer, result);
+			local::d3d_exception(errors, result);
 		}
 
 		device->CreateVertexShader((const DWORD*)buffer->GetBufferPointer(), &local::blender_vs);
@@ -2367,7 +2370,7 @@ namespace d3d
 
 		if (FAILED(result) || errors)
 		{
-			local::d3d_exception(buffer, result);
+			local::d3d_exception(errors, result);
 		}
 
 		device->CreatePixelShader((const DWORD*)buffer->GetBufferPointer(), &local::blender_ps);
