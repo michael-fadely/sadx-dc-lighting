@@ -113,29 +113,29 @@ SamplerState baseSampler : register(s0)= sampler_state
 	Texture = BaseTexture;
 };
 
-#define ATLAS_SAMPLER \
-MinFilter = Point;\
-MagFilter = Point;\
-AddressU  = Clamp;\
-AddressV  = Clamp;\
-ColorOp   = Modulate;\
-ColorArg1 = Texture;\
-ColorArg2 = Current;\
-AlphaOp = SelectArg1;\
-AlphaArg1 = Texture;\
-AlphaArg2 = Current
+#define DEFAULT_SAMPLER \
+	MinFilter = Point;\
+	MagFilter = Point;\
+	AddressU  = Clamp;\
+	AddressV  = Clamp;\
+	ColorOp   = Modulate;\
+	ColorArg1 = Texture;\
+	ColorArg2 = Current;\
+	AlphaOp   = SelectArg1;\
+	AlphaArg1 = Texture;\
+	AlphaArg2 = Current
 
 
 SamplerState atlasSamplerA : register(s1) = sampler_state
 {
 	Texture = PaletteA;
-	ATLAS_SAMPLER;
+	DEFAULT_SAMPLER;
 };
 
 SamplerState atlasSamplerB : register(s2) = sampler_state
 {
 	Texture = PaletteB;
-	ATLAS_SAMPLER;
+	DEFAULT_SAMPLER;
 };
 
 // Helpers

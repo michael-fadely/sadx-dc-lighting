@@ -52,7 +52,7 @@ namespace param
 	ShaderParameter<D3DXMATRIX>  ProjectionMatrix(8, {});
 	ShaderParameter<D3DXMATRIX>  wvMatrixInvT(12, {});
 	ShaderParameter<D3DXMATRIX>  TextureTransform(16, {});
-	ShaderParameter<D3DXVECTOR3> LightDirection(26, {});
+	ShaderParameter<D3DXVECTOR3> LightDirection(26, { 0.0f, -1.0f, 0.0f });
 	ShaderParameter<int>         DiffuseSource(20, 0);
 	ShaderParameter<D3DXCOLOR>   MaterialDiffuse(21, {});
 	ShaderParameter<D3DXVECTOR3> NormalScale(27, { 1.0f, 1.0f, 1.0f });
