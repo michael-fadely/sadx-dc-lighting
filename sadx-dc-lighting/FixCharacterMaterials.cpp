@@ -1027,6 +1027,10 @@ static NJS_MATERIAL* LevelSpecular[] = {
 	((NJS_MATERIAL*)0x0098ACE4),
 	((NJS_MATERIAL*)0x0098ACF8),
 	((NJS_MATERIAL*)0x0098AAE0),
+
+	// Policemen in Chaos 0
+	((NJS_MATERIAL*)0x03379080),
+	((NJS_MATERIAL*)0x03379094),
 };
 
 static NJS_MATERIAL* SecondCharacterSpecular[] = {
@@ -1036,8 +1040,6 @@ static NJS_MATERIAL* SecondCharacterSpecular[] = {
 	((NJS_MATERIAL*)0x03379320),
 	((NJS_MATERIAL*)0x03379334),
 	((NJS_MATERIAL*)0x03379348),
-	((NJS_MATERIAL*)0x03379080),
-	((NJS_MATERIAL*)0x03379094),
 	((NJS_MATERIAL*)0x03379E14),
 	((NJS_MATERIAL*)0x0337AE6C),
 	((NJS_MATERIAL*)0x03376180),
@@ -3202,16 +3204,16 @@ static bool NPCModelsFunction(NJS_MATERIAL* material, Uint32 flags)
 
 	switch (get_specular())
 	{
-	case 0:
-		set_specular(2, false);
-		break;
+		case 0:
+			set_specular(2, false);
+			break;
 
-	case 1:
-		set_specular(3, false);
-		break;
+		case 1:
+			set_specular(3, false);
+			break;
 
-	default:
-		break;
+		default:
+			break;
 	}
 
 	return true;
