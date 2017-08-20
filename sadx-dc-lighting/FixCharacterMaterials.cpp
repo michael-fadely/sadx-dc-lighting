@@ -1027,10 +1027,6 @@ static NJS_MATERIAL* LevelSpecular[] = {
 	((NJS_MATERIAL*)0x0098ACE4),
 	((NJS_MATERIAL*)0x0098ACF8),
 	((NJS_MATERIAL*)0x0098AAE0),
-
-	// Policemen in Chaos 0
-	((NJS_MATERIAL*)0x03379080),
-	((NJS_MATERIAL*)0x03379094),
 };
 
 static NJS_MATERIAL* SecondCharacterSpecular[] = {
@@ -1670,6 +1666,8 @@ static NJS_MATERIAL* FirstCharacterSpecular[] = {
 	((NJS_MATERIAL*)0x033766A8),
 	((NJS_MATERIAL*)0x033766BC),
 	((NJS_MATERIAL*)0x033762C0),
+	((NJS_MATERIAL*)0x03379080),
+	((NJS_MATERIAL*)0x03379094),
 	//Emeralds brought to Sonic before final boss
 	((NJS_MATERIAL*)0x02E2D5AC),
 	((NJS_MATERIAL*)0x02E2D2B8),
