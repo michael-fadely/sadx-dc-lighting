@@ -401,7 +401,7 @@ bool LanternInstance::LoadSource(const std::string& path)
 		file.close();
 
 #ifdef USE_SL
-		param::SourceLight = SourceLights[15].stage;
+		param::SourceLight = source_lights[15].stage;
 #endif
 
 		NJS_MATRIX m;

@@ -68,10 +68,10 @@ namespace param
 	ShaderParameter<D3DXCOLOR>   FogColor(32, {});
 
 #ifdef USE_SL
-	EffectParameter<D3DXCOLOR> MaterialSpecular("MaterialSpecular", {});
-	EffectParameter<float> MaterialPower("MaterialPower", 1.0f);
-	EffectParameter<SourceLight_t> SourceLight("SourceLight", {});
-	EffectParameter<StageLights> Lights("Lights", {});
+	ShaderParameter<D3DXCOLOR> MaterialSpecular(39, {});
+	ShaderParameter<float> MaterialPower(40, 1.0f);
+	ShaderParameter<SourceLight_t> SourceLight(41, {});
+	ShaderParameter<StageLights> Lights(42, {});
 #endif
 
 	IShaderParameter* const parameters[] = {
@@ -100,7 +100,7 @@ namespace param
 		&AllowVertexColor,
 		&ForceDefaultDiffuse,
 		&DiffuseOverride,
-		&DiffuseOverrideColor
+		&DiffuseOverrideColor,
 
 	#ifdef USE_SL
 		&SourceLight,

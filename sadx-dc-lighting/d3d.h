@@ -58,10 +58,10 @@ namespace param
 	extern ShaderParameter<D3DXVECTOR3> DiffuseOverrideColor;
 
 #ifdef USE_SL
-	extern EffectParameter<D3DXCOLOR> MaterialSpecular;
-	extern EffectParameter<float> MaterialPower;
-	extern EffectParameter<SourceLight_t> SourceLight;
-	extern EffectParameter<StageLights> Lights;
+	extern ShaderParameter<D3DXCOLOR> MaterialSpecular;
+	extern ShaderParameter<float> MaterialPower;
+	extern ShaderParameter<SourceLight_t> SourceLight;
+	extern ShaderParameter<StageLights> Lights;
 #endif
 }
 
