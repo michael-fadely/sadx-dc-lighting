@@ -114,7 +114,7 @@ namespace param
 	{
 		for (auto& i : parameters)
 		{
-			i->Release();
+			i->release();
 		}
 	}
 }
@@ -254,7 +254,7 @@ namespace local
 
 			for (auto& i : param::parameters)
 			{
-				i->CommitNow(d3d::device);
+				i->commit_now(d3d::device);
 			}
 		}
 		catch (std::exception& ex)
@@ -787,7 +787,7 @@ namespace local
 			return;
 		}
 
-		globals::palettes.ApplyShaderParameters();
+		globals::palettes.apply_parameters();
 
 		bool changes = false;
 
@@ -839,7 +839,7 @@ namespace local
 		{
 			for (auto& it : IShaderParameter::values_assigned)
 			{
-				it->Commit(d3d::device);
+				it->commit(d3d::device);
 			}
 
 			IShaderParameter::values_assigned.clear();
@@ -848,9 +848,9 @@ namespace local
 		using_shader = true;
 	}
 
-	static void setLightParameters()
+	static void set_light_parameters()
 	{
-		if (!LanternInstance::UsePalette())
+		if (!LanternInstance::use_palette())
 		{
 			return;
 		}
@@ -862,7 +862,7 @@ namespace local
 #endif
 	}
 
-	static void hookVtbl()
+	static void hook_vtable()
 	{
 		enum
 		{
@@ -889,7 +889,7 @@ namespace local
 #pragma region Trampolines
 
 	template<typename T, typename... Args>
-	static void runTrampoline(const T& original, Args... args)
+	static void run_trampoline(const T& original, Args... args)
 	{
 		begin();
 		original(args...);
@@ -899,14 +899,14 @@ namespace local
 	static void __cdecl sub_77EAD0_r(void* a1, int a2, int a3)
 	{
 		begin();
-		runTrampoline(TARGET_DYNAMIC(sub_77EAD0), a1, a2, a3);
+		run_trampoline(TARGET_DYNAMIC(sub_77EAD0), a1, a2, a3);
 		end();
 	}
 
 	static void __cdecl sub_77EBA0_r(void* a1, int a2, int a3)
 	{
 		begin();
-		runTrampoline(TARGET_DYNAMIC(sub_77EBA0), a1, a2, a3);
+		run_trampoline(TARGET_DYNAMIC(sub_77EBA0), a1, a2, a3);
 		end();
 	}
 
@@ -922,7 +922,7 @@ namespace local
 			auto _attr_or = _nj_constant_attr_or_;
 			auto _attr_and = _nj_constant_attr_and_;
 
-			runTrampoline(TARGET_DYNAMIC(njDrawModel_SADX), a1);
+			run_trampoline(TARGET_DYNAMIC(njDrawModel_SADX), a1);
 
 			_nj_control_3d_flag_ = _control_3d;
 			_nj_constant_attr_and_ = _attr_and;
@@ -930,7 +930,7 @@ namespace local
 		}
 		else
 		{
-			runTrampoline(TARGET_DYNAMIC(njDrawModel_SADX), a1);
+			run_trampoline(TARGET_DYNAMIC(njDrawModel_SADX), a1);
 		}
 
 		end();
@@ -948,7 +948,7 @@ namespace local
 			auto _attr_or = _nj_constant_attr_or_;
 			auto _attr_and = _nj_constant_attr_and_;
 
-			runTrampoline(TARGET_DYNAMIC(njDrawModel_SADX_Dynamic), a1);
+			run_trampoline(TARGET_DYNAMIC(njDrawModel_SADX_Dynamic), a1);
 
 			_nj_control_3d_flag_ = _control_3d;
 			_nj_constant_attr_and_ = _attr_and;
@@ -956,7 +956,7 @@ namespace local
 		}
 		else
 		{
-			runTrampoline(TARGET_DYNAMIC(njDrawModel_SADX_Dynamic), a1);
+			run_trampoline(TARGET_DYNAMIC(njDrawModel_SADX_Dynamic), a1);
 		}
 
 		end();
@@ -965,14 +965,14 @@ namespace local
 	static void __fastcall PolyBuff_DrawTriangleStrip_r(PolyBuff* _this)
 	{
 		begin();
-		runTrampoline(TARGET_DYNAMIC(PolyBuff_DrawTriangleStrip), _this);
+		run_trampoline(TARGET_DYNAMIC(PolyBuff_DrawTriangleStrip), _this);
 		end();
 	}
 
 	static void __fastcall PolyBuff_DrawTriangleList_r(PolyBuff* _this)
 	{
 		begin();
-		runTrampoline(TARGET_DYNAMIC(PolyBuff_DrawTriangleList), _this);
+		run_trampoline(TARGET_DYNAMIC(PolyBuff_DrawTriangleList), _this);
 		end();
 	}
 
@@ -1024,7 +1024,7 @@ namespace local
 
 			initialized = true;
 			d3d::load_shader();
-			hookVtbl();
+			hook_vtable();
 		}
 	}
 
@@ -1047,7 +1047,7 @@ namespace local
 	{
 		TARGET_DYNAMIC(Direct3D_SetWorldTransform)();
 
-		if (!LanternInstance::UsePalette())
+		if (!LanternInstance::use_palette())
 		{
 			return;
 		}
@@ -1087,7 +1087,7 @@ namespace local
 	{
 		auto target = TARGET_DYNAMIC(Direct3D_PerformLighting);
 
-		if (!LanternInstance::UsePalette())
+		if (!LanternInstance::use_palette())
 		{
 			target(type);
 			return;
@@ -1096,18 +1096,18 @@ namespace local
 		// This specifically force light type 0 to prevent
 		// the light direction from being overwritten.
 		target(0);
-		d3d::shader_flags(ShaderFlags_Light, true);
+		d3d::set_flags(ShaderFlags_Light, true);
 
 		if (type != globals::light_type)
 		{
-			setLightParameters();
+			set_light_parameters();
 		}
 
-		globals::palettes.SetPalettes(type, 0);
+		globals::palettes.set_palettes(type, 0);
 	}
 
 
-#define D3DORIG(NAME) \
+#define D3D_ORIG(NAME) \
 	NAME ## _t
 
 	static HRESULT __stdcall DrawPrimitive_r(IDirect3DDevice9* _this,
@@ -1116,7 +1116,7 @@ namespace local
 		UINT PrimitiveCount)
 	{
 		shader_start();
-		auto result = D3DORIG(DrawPrimitive)(_this, PrimitiveType, StartVertex, PrimitiveCount);
+		auto result = D3D_ORIG(DrawPrimitive)(_this, PrimitiveType, StartVertex, PrimitiveCount);
 		shader_end();
 		return result;
 	}
@@ -1129,7 +1129,7 @@ namespace local
 		UINT primCount)
 	{
 		shader_start();
-		auto result = D3DORIG(DrawIndexedPrimitive)(_this, PrimitiveType, BaseVertexIndex, MinVertexIndex, NumVertices, startIndex, primCount);
+		auto result = D3D_ORIG(DrawIndexedPrimitive)(_this, PrimitiveType, BaseVertexIndex, MinVertexIndex, NumVertices, startIndex, primCount);
 		shader_end();
 		return result;
 	}
@@ -1140,7 +1140,7 @@ namespace local
 		UINT VertexStreamZeroStride)
 	{
 		shader_start();
-		auto result = D3DORIG(DrawPrimitiveUP)(_this, PrimitiveType, PrimitiveCount, pVertexStreamZeroData, VertexStreamZeroStride);
+		auto result = D3D_ORIG(DrawPrimitiveUP)(_this, PrimitiveType, PrimitiveCount, pVertexStreamZeroData, VertexStreamZeroStride);
 		shader_end();
 		return result;
 	}
@@ -1155,7 +1155,7 @@ namespace local
 		UINT VertexStreamZeroStride)
 	{
 		shader_start();
-		auto result = D3DORIG(DrawIndexedPrimitiveUP)(_this, PrimitiveType, MinVertexIndex, NumVertices, PrimitiveCount, pIndexData, IndexDataFormat, pVertexStreamZeroData, VertexStreamZeroStride);
+		auto result = D3D_ORIG(DrawIndexedPrimitiveUP)(_this, PrimitiveType, MinVertexIndex, NumVertices, PrimitiveCount, pIndexData, IndexDataFormat, pVertexStreamZeroData, VertexStreamZeroStride);
 		shader_end();
 		return result;
 	}
@@ -1255,7 +1255,7 @@ namespace d3d
 		local::create_shaders();
 	}
 
-	void shader_flags(Uint32 flags, bool add)
+	void set_flags(Uint32 flags, bool add)
 	{
 		if (add)
 		{
@@ -1272,7 +1272,7 @@ namespace d3d
 		return vertex_shader != nullptr && pixel_shader != nullptr;
 	}
 
-	void InitTrampolines()
+	void init_trampolines()
 	{
 		using namespace local;
 

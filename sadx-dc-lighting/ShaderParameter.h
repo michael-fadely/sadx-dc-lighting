@@ -17,11 +17,11 @@ public:
 	static std::vector<IShaderParameter*> values_assigned;
 
 	virtual ~IShaderParameter() = default;
-	virtual bool Modified() = 0;
-	virtual void Clear() = 0;
-	virtual bool Commit(IDirect3DDevice9* device) = 0;
-	virtual bool CommitNow(IDirect3DDevice9* device) = 0;
-	virtual void Release() = 0;
+	virtual bool is_modified() = 0;
+	virtual void clear() = 0;
+	virtual bool commit(IDirect3DDevice9* device) = 0;
+	virtual bool commit_now(IDirect3DDevice9* device) = 0;
+	virtual void release() = 0;
 };
 
 template<typename T>
@@ -52,24 +52,24 @@ public:
 	{
 	}
 
-	bool Modified() override;
-	void Clear() override;
-	bool Commit(IDirect3DDevice9* device) override;
-	bool CommitNow(IDirect3DDevice9* device) override;
-	void Release() override;
-	T Value() const;
+	bool is_modified() override;
+	void clear() override;
+	bool commit(IDirect3DDevice9* device) override;
+	bool commit_now(IDirect3DDevice9* device) override;
+	void release() override;
+	T value() const;
 	void operator=(const T& value);
 	void operator=(const ShaderParameter<T>& value);
 };
 
 template <typename T>
-bool ShaderParameter<T>::Modified()
+bool ShaderParameter<T>::is_modified()
 {
 	return reset || assigned && last != current;
 }
 
 template <typename T>
-void ShaderParameter<T>::Clear()
+void ShaderParameter<T>::clear()
 {
 	reset = false;
 	assigned = false;
@@ -77,19 +77,19 @@ void ShaderParameter<T>::Clear()
 }
 
 template <typename T>
-bool ShaderParameter<T>::CommitNow(IDirect3DDevice9* device)
+bool ShaderParameter<T>::commit_now(IDirect3DDevice9* device)
 {
 	reset = true;
-	return Commit(device);
+	return commit(device);
 }
 
 template <typename T>
-void ShaderParameter<T>::Release()
+void ShaderParameter<T>::release()
 {
-	Clear();
+	clear();
 }
 template <typename T>
-T ShaderParameter<T>::Value() const
+T ShaderParameter<T>::value() const
 {
 	return current;
 }
@@ -112,12 +112,12 @@ void ShaderParameter<T>::operator=(const ShaderParameter<T>& value)
 	*this = value.current;
 }
 
-template<> bool ShaderParameter<bool>::Commit(IDirect3DDevice9* device);
-template<> bool ShaderParameter<int>::Commit(IDirect3DDevice9* device);
-template<> bool ShaderParameter<float>::Commit(IDirect3DDevice9* device);
-template<> bool ShaderParameter<D3DXVECTOR4>::Commit(IDirect3DDevice9* device);
-template<> bool ShaderParameter<D3DXVECTOR3>::Commit(IDirect3DDevice9* device);
-template<> bool ShaderParameter<D3DXCOLOR>::Commit(IDirect3DDevice9* device);
-template<> bool ShaderParameter<D3DXMATRIX>::Commit(IDirect3DDevice9* device);
-template<> bool ShaderParameter<Texture>::Commit(IDirect3DDevice9* device);
-template<> void ShaderParameter<Texture>::Release();
+template<> bool ShaderParameter<bool>::commit(IDirect3DDevice9* device);
+template<> bool ShaderParameter<int>::commit(IDirect3DDevice9* device);
+template<> bool ShaderParameter<float>::commit(IDirect3DDevice9* device);
+template<> bool ShaderParameter<D3DXVECTOR4>::commit(IDirect3DDevice9* device);
+template<> bool ShaderParameter<D3DXVECTOR3>::commit(IDirect3DDevice9* device);
+template<> bool ShaderParameter<D3DXCOLOR>::commit(IDirect3DDevice9* device);
+template<> bool ShaderParameter<D3DXMATRIX>::commit(IDirect3DDevice9* device);
+template<> bool ShaderParameter<Texture>::commit(IDirect3DDevice9* device);
+template<> void ShaderParameter<Texture>::release();

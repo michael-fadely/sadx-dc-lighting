@@ -4,9 +4,9 @@
 std::vector<IShaderParameter*> IShaderParameter::values_assigned {};
 
 template<>
-bool ShaderParameter<bool>::Commit(IDirect3DDevice9* device)
+bool ShaderParameter<bool>::commit(IDirect3DDevice9* device)
 {
-	if (Modified())
+	if (is_modified())
 	{
 		float f = current ? 1.0f : 0.0f;
 		float buffer[4] = { f, f, f, f };
@@ -14,7 +14,7 @@ bool ShaderParameter<bool>::Commit(IDirect3DDevice9* device)
 		device->SetVertexShaderConstantF(index, buffer, 1);
 		device->SetPixelShaderConstantF(index, buffer, 1);
 
-		Clear();
+		clear();
 		return true;
 	}
 
@@ -23,9 +23,9 @@ bool ShaderParameter<bool>::Commit(IDirect3DDevice9* device)
 }
 
 template<>
-bool ShaderParameter<int>::Commit(IDirect3DDevice9* device)
+bool ShaderParameter<int>::commit(IDirect3DDevice9* device)
 {
-	if (Modified())
+	if (is_modified())
 	{
 		auto f = (float)current;
 		float buffer[4] = { f, f, f, f };
@@ -33,7 +33,7 @@ bool ShaderParameter<int>::Commit(IDirect3DDevice9* device)
 		device->SetVertexShaderConstantF(index, buffer, 1);
 		device->SetPixelShaderConstantF(index, buffer, 1);
 
-		Clear();
+		clear();
 		return true;
 	}
 
@@ -42,16 +42,16 @@ bool ShaderParameter<int>::Commit(IDirect3DDevice9* device)
 }
 
 template<>
-bool ShaderParameter<float>::Commit(IDirect3DDevice9* device)
+bool ShaderParameter<float>::commit(IDirect3DDevice9* device)
 {
-	if (Modified())
+	if (is_modified())
 	{
 		D3DXVECTOR4 value = { current, current, current, current };
 
 		device->SetVertexShaderConstantF(index, value, 1);
 		device->SetPixelShaderConstantF(index, value, 1);
 
-		Clear();
+		clear();
 		return true;
 	}
 
@@ -60,14 +60,14 @@ bool ShaderParameter<float>::Commit(IDirect3DDevice9* device)
 }
 
 template<>
-bool ShaderParameter<D3DXVECTOR4>::Commit(IDirect3DDevice9* device)
+bool ShaderParameter<D3DXVECTOR4>::commit(IDirect3DDevice9* device)
 {
-	if (Modified())
+	if (is_modified())
 	{
 		device->SetVertexShaderConstantF(index, current, 1);
 		device->SetPixelShaderConstantF(index, current, 1);
 
-		Clear();
+		clear();
 		return true;
 	}
 
@@ -76,16 +76,16 @@ bool ShaderParameter<D3DXVECTOR4>::Commit(IDirect3DDevice9* device)
 }
 
 template<>
-bool ShaderParameter<D3DXVECTOR3>::Commit(IDirect3DDevice9* device)
+bool ShaderParameter<D3DXVECTOR3>::commit(IDirect3DDevice9* device)
 {
-	if (Modified())
+	if (is_modified())
 	{
 		D3DXVECTOR4 value = { current.x, current.y, current.z, 1.0f };
 
 		device->SetVertexShaderConstantF(index, value, 1);
 		device->SetPixelShaderConstantF(index, value, 1);
 
-		Clear();
+		clear();
 		return true;
 	}
 
@@ -94,15 +94,15 @@ bool ShaderParameter<D3DXVECTOR3>::Commit(IDirect3DDevice9* device)
 }
 
 template<>
-bool ShaderParameter<D3DXCOLOR>::Commit(IDirect3DDevice9* device)
+bool ShaderParameter<D3DXCOLOR>::commit(IDirect3DDevice9* device)
 {
-	if (Modified())
+	if (is_modified())
 	{
 		static_assert(sizeof(D3DXCOLOR) == sizeof(D3DXVECTOR4), "D3DXCOLOR size does not match D3DXVECTOR4.");
 		device->SetVertexShaderConstantF(index, current, 1);
 		device->SetPixelShaderConstantF(index, current, 1);
 
-		Clear();
+		clear();
 		return true;
 	}
 
@@ -111,13 +111,13 @@ bool ShaderParameter<D3DXCOLOR>::Commit(IDirect3DDevice9* device)
 }
 
 template<>
-bool ShaderParameter<D3DXMATRIX>::Commit(IDirect3DDevice9* device)
+bool ShaderParameter<D3DXMATRIX>::commit(IDirect3DDevice9* device)
 {
-	if (Modified())
+	if (is_modified())
 	{
 		device->SetVertexShaderConstantF(index, current, 4);
 		device->SetPixelShaderConstantF(index, current, 4);
-		Clear();
+		clear();
 		return true;
 	}
 
@@ -126,13 +126,13 @@ bool ShaderParameter<D3DXMATRIX>::Commit(IDirect3DDevice9* device)
 }
 
 template<>
-bool ShaderParameter<Texture>::Commit(IDirect3DDevice9* device)
+bool ShaderParameter<Texture>::commit(IDirect3DDevice9* device)
 {
-	if (Modified())
+	if (is_modified())
 	{
 		device->SetTexture(index, current);
 
-		Clear();
+		clear();
 		return true;
 	}
 
@@ -141,9 +141,9 @@ bool ShaderParameter<Texture>::Commit(IDirect3DDevice9* device)
 }
 
 template<>
-void ShaderParameter<Texture>::Release()
+void ShaderParameter<Texture>::release()
 {
-	Clear();
+	clear();
 	current = nullptr;
 	last = nullptr;
 }

@@ -64,16 +64,16 @@ bool StageLights::operator!=(const StageLights& rhs) const
 }
 
 template<>
-bool ShaderParameter<SourceLight_t>::Commit(IDirect3DDevice9* device)
+bool ShaderParameter<SourceLight_t>::commit(IDirect3DDevice9* device)
 {
-	if (Modified())
+	if (is_modified())
 	{
 		float buffer[24]{};
 		memcpy(buffer, &current, sizeof(SourceLight_t));
 
 		device->SetVertexShaderConstantF(index, buffer, 6);
 		device->SetPixelShaderConstantF(index, buffer, 6);
-		Clear();
+		clear();
 		return true;
 	}
 
@@ -81,27 +81,21 @@ bool ShaderParameter<SourceLight_t>::Commit(IDirect3DDevice9* device)
 }
 
 template<>
-bool ShaderParameter<StageLights>::Commit(IDirect3DDevice9* device)
+bool ShaderParameter<StageLights>::commit(IDirect3DDevice9* device)
 {
-	if (Modified())
+	if (is_modified())
 	{
 		device->SetVertexShaderConstantF(index, (float*)&current, 16);
 		device->SetPixelShaderConstantF(index, (float*)&current, 16);
 
-		Clear();
+		clear();
 		return true;
 	}
 
 	return false;
 }
 
-/*
- * I'm explicitly using brackets in these switch statements
- * to make the code formatter happy. Otherwise it indents
- * comments and it looks really weird.
- */
-
-static bool UseTimeOfDay(Uint32 level, Uint32 act)
+static bool use_time(Uint32 level, Uint32 act)
 {
 	if (level < LevelIDs_StationSquare || level >= LevelIDs_Past && level <= LevelIDs_SandHill)
 	{
@@ -151,26 +145,26 @@ bool LanternInstance::diffuse_override       = false;
 bool LanternInstance::diffuse_override_temp  = false;
 bool LanternInstance::specular_override      = false;
 bool LanternInstance::specular_override_temp = false;
-bool LanternInstance::use_palette            = false;
-float LanternInstance::diffuse_blend_factor  = 0.0f;
-float LanternInstance::specular_blend_factor = 0.0f;
+bool LanternInstance::use_palette_            = false;
+float LanternInstance::diffuse_blend_factor_  = 0.0f;
+float LanternInstance::specular_blend_factor_ = 0.0f;
 
-bool LanternInstance::UsePalette()
+bool LanternInstance::use_palette()
 {
-	return use_palette;
+	return use_palette_;
 }
 
-float LanternInstance::DiffuseBlendFactor()
+float LanternInstance::diffuse_blend_factor()
 {
-	return diffuse_blend_factor;
+	return diffuse_blend_factor_;
 }
 
-float LanternInstance::SpecularBlendFactor()
+float LanternInstance::specular_blend_factor()
 {
-	return specular_blend_factor;
+	return specular_blend_factor_;
 }
 
-inline bool GameModeIngame()
+inline bool is_ingame()
 {
 	switch ((GameModes)GameMode)
 	{
@@ -195,9 +189,9 @@ inline bool GameModeIngame()
 /// <param name="level">Current level.</param>
 /// <param name="act">Current act.</param>
 /// <returns>A string containing the properly formatted PL level ID.</returns>
-std::string LanternInstance::PaletteId(Sint32 level, Sint32 act)
+std::string LanternInstance::palette_id(Sint32 level, Sint32 act)
 {
-	if (UseTimeOfDay(level, act))
+	if (use_time(level, act))
 	{
 		// Station Square (unlike other sane adventure
 		// fields) uses arbitrary numbers for time of day.
@@ -232,7 +226,7 @@ std::string LanternInstance::PaletteId(Sint32 level, Sint32 act)
 
 			case LevelIDs_HedgehogHammer:
 			{
-				if (GameModeIngame())
+				if (is_ingame())
 				{
 					level = LevelIDs_EggCarrierInside;
 					act = 2;
@@ -335,12 +329,12 @@ std::string LanternInstance::PaletteId(Sint32 level, Sint32 act)
 
 void LanternInstance::copy(LanternInstance& inst)
 {
-	atlas          = inst.atlas;
-	last_time      = inst.last_time;
-	last_act       = inst.last_act;
-	last_level     = inst.last_level;
-	diffuse_index  = inst.diffuse_index;
-	specular_index = inst.specular_index;
+	atlas      = inst.atlas;
+	last_time  = inst.last_time;
+	last_act   = inst.last_act;
+	last_level = inst.last_level;
+	diffuse_    = inst.diffuse_;
+	specular_   = inst.specular_;
 }
 
 LanternInstance::LanternInstance(ShaderParameter<Texture>* atlas) : atlas(atlas)
@@ -367,7 +361,7 @@ LanternInstance::~LanternInstance()
 	}
 }
 
-void LanternInstance::SetLastLevel(Sint32 level, Sint32 act)
+void LanternInstance::set_last_level(Sint32 level, Sint32 act)
 {
 	last_level = level;
 	last_act = act;
@@ -378,7 +372,7 @@ void LanternInstance::SetLastLevel(Sint32 level, Sint32 act)
 /// </summary>
 /// <param name="path">Path to the file.</param>
 /// <returns><c>true</c> on success.</returns>
-bool LanternInstance::LoadSource(const std::string& path)
+bool LanternInstance::load_source(const std::string& path)
 {
 	bool result = true;
 	auto file = std::ifstream(path, std::ios::binary);
@@ -424,11 +418,11 @@ bool LanternInstance::LoadSource(const std::string& path)
 /// <param name="level">Current level/stage.</param>
 /// <param name="act">Current act.</param>
 /// <returns><c>true</c> on success.</returns>
-bool LanternInstance::LoadSource(Sint32 level, Sint32 act)
+bool LanternInstance::load_source(Sint32 level, Sint32 act)
 {
 	std::stringstream name;
-	name << globals::system_path << "SL" << PaletteId(level, act) << "B.BIN";
-	return LoadSource(name.str());
+	name << globals::system_path << "SL" << palette_id(level, act) << "B.BIN";
+	return load_source(name.str());
 }
 
 /// <summary>
@@ -436,7 +430,7 @@ bool LanternInstance::LoadSource(Sint32 level, Sint32 act)
 /// </summary>
 /// <param name="level">Path to the file.</param>
 /// <returns><c>true</c> on success.</returns>
-bool LanternInstance::LoadPalette(const std::string& path)
+bool LanternInstance::load_palette(const std::string& path)
 {
 	std::ifstream file(path, std::ios::binary);
 
@@ -461,7 +455,7 @@ bool LanternInstance::LoadPalette(const std::string& path)
 	file.close();
 
 	bool is_32bit = d3d::supports_xrgb();
-	Texture texture = atlas->Value();
+	Texture texture = atlas->value();
 
 	if (texture == nullptr)
 	{
@@ -478,7 +472,7 @@ bool LanternInstance::LoadPalette(const std::string& path)
 	else
 	{
 		// Release all of its references in case there are lingering textures.
-		atlas->Release();
+		atlas->release();
 		*atlas = texture;
 	}
 
@@ -559,23 +553,23 @@ bool LanternInstance::LoadPalette(const std::string& path)
 /// <param name="level">Current level/stage.</param>
 /// <param name="act">Current act.</param>
 /// <returns><c>true</c> on success.</returns>
-bool LanternInstance::LoadPalette(Sint32 level, Sint32 act)
+bool LanternInstance::load_palette(Sint32 level, Sint32 act)
 {
 	std::stringstream name;
-	name << globals::system_path << "PL" << PaletteId(level, act) << "B.BIN";
-	return LoadPalette(name.str());
+	name << globals::system_path << "PL" << palette_id(level, act) << "B.BIN";
+	return load_palette(name.str());
 }
 
-void LanternInstance::DiffuseBlendFactor(float f)
+void LanternInstance::diffuse_blend_factor(float f)
 {
 	param::DiffuseBlendFactor = f;
-	diffuse_blend_factor = f;
+	diffuse_blend_factor_ = f;
 }
 
-void LanternInstance::SpecularBlendFactor(float f)
+void LanternInstance::specular_blend_factor(float f)
 {
 	param::SpecularBlendFactor = f;
-	specular_blend_factor = f;
+	specular_blend_factor_ = f;
 }
 
 inline float _index_float(Sint32 i, Sint32 offset)
@@ -588,7 +582,7 @@ inline float _index_float(Sint32 i, Sint32 offset)
 /// </summary>
 /// <param name="type">SADX light type.</param>
 /// <param name="flags">Material flags.</param>
-void LanternInstance::SetPalettes(Sint32 type, Uint32 flags)
+void LanternInstance::set_palettes(Sint32 type, Uint32 flags)
 {
 #ifdef _DEBUG
 	auto pad = ControllerPointers[0];
@@ -642,64 +636,64 @@ void LanternInstance::SetPalettes(Sint32 type, Uint32 flags)
 
 	if (!diffuse_override)
 	{
-		DiffuseIndex(diffuse);
+		diffuse_index(diffuse);
 	}
 
 	if (!specular_override)
 	{
-		SpecularIndex(specular);
+		specular_index(specular);
 	}
 
-	d3d::do_effect = use_palette = diffuse > -1 && specular > -1;
+	d3d::do_effect = use_palette_ = diffuse > -1 && specular > -1;
 }
 
-void LanternInstance::DiffuseIndex(Sint32 value)
+void LanternInstance::diffuse_index(Sint32 value)
 {
-	diffuse_index = value;
+	diffuse_ = value;
 }
 
-void LanternInstance::SpecularIndex(Sint32 value)
+void LanternInstance::specular_index(Sint32 value)
 {
-	specular_index = value;
+	specular_ = value;
 }
 
-Sint32 LanternInstance::DiffuseIndex()
+Sint32 LanternInstance::diffuse_index()
 {
-	return diffuse_index;
+	return diffuse_;
 }
 
-Sint32 LanternInstance::SpecularIndex()
+Sint32 LanternInstance::specular_index()
 {
-	return specular_index;
+	return specular_;
 }
 
-void LanternInstance::LightDirection(const NJS_VECTOR& d)
+void LanternInstance::light_direction(const NJS_VECTOR& d)
 {
 	sl_direction = d;
 }
 
-const NJS_VECTOR& LanternInstance::LightDirection()
+const NJS_VECTOR& LanternInstance::light_direction()
 {
 	return sl_direction;
 }
 
 // Collection
 
-void LanternCollection::SetLastLevel(Sint32 level, Sint32 act)
+void LanternCollection::set_last_level(Sint32 level, Sint32 act)
 {
 	for (auto& i : instances)
 	{
-		i.SetLastLevel(level, act);
+		i.set_last_level(level, act);
 	}
 }
 
-bool LanternCollection::LoadPalette(Sint32 level, Sint32 act)
+bool LanternCollection::load_palette(Sint32 level, Sint32 act)
 {
 	size_t count = 0;
 
 	for (auto& i : instances)
 	{
-		if (i.LoadPalette(level, act))
+		if (i.load_palette(level, act))
 		{
 			++count;
 		}
@@ -708,13 +702,13 @@ bool LanternCollection::LoadPalette(Sint32 level, Sint32 act)
 	return count == instances.size();
 }
 
-bool LanternCollection::LoadPalette(const std::string& path)
+bool LanternCollection::load_palette(const std::string& path)
 {
 	size_t count = 0;
 
 	for (auto& i : instances)
 	{
-		if (i.LoadPalette(path))
+		if (i.load_palette(path))
 		{
 			++count;
 		}
@@ -723,13 +717,13 @@ bool LanternCollection::LoadPalette(const std::string& path)
 	return count == instances.size();
 }
 
-bool LanternCollection::LoadSource(Sint32 level, Sint32 act)
+bool LanternCollection::load_source(Sint32 level, Sint32 act)
 {
 	size_t count = 0;
 
 	for (auto& i : instances)
 	{
-		if (i.LoadSource(level, act))
+		if (i.load_source(level, act))
 		{
 			++count;
 		}
@@ -738,13 +732,13 @@ bool LanternCollection::LoadSource(Sint32 level, Sint32 act)
 	return count == instances.size();
 }
 
-bool LanternCollection::LoadSource(const std::string& path)
+bool LanternCollection::load_source(const std::string& path)
 {
 	size_t count = 0;
 
 	for (auto& i : instances)
 	{
-		if (i.LoadSource(path))
+		if (i.load_source(path))
 		{
 			++count;
 		}
@@ -754,7 +748,7 @@ bool LanternCollection::LoadSource(const std::string& path)
 }
 
 // TODO: solve duplicate code by having PL and SL classes which inherit a common interface
-bool LanternCollection::RunPlCallbacks(Sint32 level, Sint32 act, Sint8 time)
+bool LanternCollection::run_pl_callbacks(Sint32 level, Sint32 act, Sint8 time)
 {
 	bool result = false;
 
@@ -777,7 +771,7 @@ bool LanternCollection::RunPlCallbacks(Sint32 level, Sint32 act, Sint8 time)
 				break;
 			}
 
-			if (!instance.LoadPalette(path_str))
+			if (!instance.load_palette(path_str))
 			{
 				return false;
 			}
@@ -797,7 +791,7 @@ bool LanternCollection::RunPlCallbacks(Sint32 level, Sint32 act, Sint8 time)
 	return result;
 }
 
-bool LanternCollection::RunSlCallbacks(Sint32 level, Sint32 act, Sint8 time)
+bool LanternCollection::run_sl_callbacks(Sint32 level, Sint32 act, Sint8 time)
 {
 	bool result = false;
 
@@ -820,7 +814,7 @@ bool LanternCollection::RunSlCallbacks(Sint32 level, Sint32 act, Sint8 time)
 				break;
 			}
 
-			if (!instance.LoadSource(path_str))
+			if (!instance.load_source(path_str))
 			{
 				return false;
 			}
@@ -840,7 +834,7 @@ bool LanternCollection::RunSlCallbacks(Sint32 level, Sint32 act, Sint8 time)
 	return result;
 }
 
-bool LanternCollection::LoadFiles()
+bool LanternCollection::load_files()
 {
 	auto time = GetTimeOfDay();
 	size_t count = 0;
@@ -850,8 +844,8 @@ bool LanternCollection::LoadFiles()
 		instances.emplace_back(&param::PaletteA);
 	}
 
-	bool pl_handled = RunPlCallbacks(CurrentLevel, CurrentAct, time);
-	bool sl_handled = RunSlCallbacks(CurrentLevel, CurrentAct, time);
+	bool pl_handled = run_pl_callbacks(CurrentLevel, CurrentAct, time);
+	bool sl_handled = run_sl_callbacks(CurrentLevel, CurrentAct, time);
 
 	// No need to do automatic detection if a callback has
 	// already provided valid paths to both PL and SL files.
@@ -876,7 +870,7 @@ bool LanternCollection::LoadFiles()
 			int level = CurrentLevel;
 			int act = i;
 
-			if (UseTimeOfDay(level, act))
+			if (use_time(level, act))
 			{
 				GetTimeOfDayLevelAndAct(&level, &act);
 			}
@@ -887,7 +881,7 @@ bool LanternCollection::LoadFiles()
 				break;
 			}
 
-			if (!pl_handled && !instance.LoadPalette(CurrentLevel, i))
+			if (!pl_handled && !instance.load_palette(CurrentLevel, i))
 			{
 				// Palette loading is critical for lighting, so
 				// continue immediately on failure.
@@ -898,14 +892,14 @@ bool LanternCollection::LoadFiles()
 			{
 				// Source light loading on the other hand is not a
 				// requirement, so failure is fine.
-				instance.LoadSource(CurrentLevel, i);
+				instance.load_source(CurrentLevel, i);
 			}
 
 			instance.last_time  = time;
 			instance.last_level = level;
 			instance.last_act   = act;
 
-			LanternInstance::use_palette = false;
+			LanternInstance::use_palette_ = false;
 			d3d::do_effect = false;
 			++count;
 			break;
@@ -915,50 +909,50 @@ bool LanternCollection::LoadFiles()
 	return count == instances.size();
 }
 
-void LanternCollection::SetPalettes(Sint32 type, Uint32 flags)
+void LanternCollection::set_palettes(Sint32 type, Uint32 flags)
 {
 	for (auto& i : instances)
 	{
-		i.SetPalettes(type, flags);
+		i.set_palettes(type, flags);
 	}
 }
 
-void LanternCollection::DiffuseIndex(Sint32 value)
+void LanternCollection::diffuse_index(Sint32 value)
 {
 	for (auto& i : instances)
 	{
-		i.DiffuseIndex(value);
+		i.diffuse_index(value);
 	}
 }
 
-void LanternCollection::SpecularIndex(Sint32 value)
+void LanternCollection::specular_index(Sint32 value)
 {
 	for (auto& i : instances)
 	{
-		i.SpecularIndex(value);
+		i.specular_index(value);
 	}
 }
 
-void LanternCollection::LightDirection(const NJS_VECTOR& d)
+void LanternCollection::light_direction(const NJS_VECTOR& d)
 {
 	for (auto& i : instances)
 	{
-		i.LightDirection(d);
+		i.light_direction(d);
 	}
 }
 
-const NJS_VECTOR& LanternCollection::LightDirection()
+const NJS_VECTOR& LanternCollection::light_direction()
 {
-	return instances[0].LightDirection();
+	return instances[0].light_direction();
 }
 
-void LanternCollection::ForwardBlendAll(bool enable)
+void LanternCollection::forward_blend_all(bool enable)
 {
 	for (int i = 0; i < 8; i++)
 	{
 		auto n = enable ? i : -1;
-		diffuse_blend[i] = n;
-		specular_blend[i] = n;
+		diffuse_blend_[i] = n;
+		specular_blend_[i] = n;
 	}
 }
 
@@ -971,37 +965,37 @@ void _blend_all(Sint32(&srcArray)[8], int value)
 	}
 }
 
-void LanternCollection::DiffuseBlendAll(int value)
+void LanternCollection::diffuse_blend_all(int value)
 {
-	_blend_all(diffuse_blend, value);
+	_blend_all(diffuse_blend_, value);
 }
 
-void LanternCollection::SpecularBlendAll(int value)
+void LanternCollection::specular_blend_all(int value)
 {
-	_blend_all(specular_blend, value);
+	_blend_all(specular_blend_, value);
 }
 
-void LanternCollection::DiffuseBlend(int index, int value)
+void LanternCollection::diffuse_blend(int index, int value)
 {
-	diffuse_blend[index] = value;
+	diffuse_blend_[index] = value;
 }
 
-void LanternCollection::SpecularBlend(int index, int value)
+void LanternCollection::specular_blend(int index, int value)
 {
-	specular_blend[index] = value;
+	specular_blend_[index] = value;
 }
 
-int LanternCollection::DiffuseBlend(int index) const
+int LanternCollection::diffuse_blend(int index) const
 {
-	return diffuse_blend[index];
+	return diffuse_blend_[index];
 }
 
-int LanternCollection::SpecularBlend(int index) const
+int LanternCollection::specular_blend(int index) const
 {
-	return specular_blend[index];
+	return specular_blend_[index];
 }
 
-void LanternCollection::ApplyShaderParameters()
+void LanternCollection::apply_parameters()
 {
 	if (instances.empty())
 	{
@@ -1010,31 +1004,31 @@ void LanternCollection::ApplyShaderParameters()
 
 	auto& i = instances[0];
 
-	auto d = i.DiffuseIndex();
+	auto d = i.diffuse_index();
 	param::DiffuseBlendFactor = 0.0f;
 
 	if (d >= 0)
 	{
 		param::DiffuseIndexA = _index_float(d, 0);
 
-		if (diffuse_blend[d] >= 0)
+		if (diffuse_blend_[d] >= 0)
 		{
-			param::DiffuseIndexB = _index_float(diffuse_blend[d], 0);
-			param::DiffuseBlendFactor = LanternInstance::diffuse_blend_factor;
+			param::DiffuseIndexB = _index_float(diffuse_blend_[d], 0);
+			param::DiffuseBlendFactor = LanternInstance::diffuse_blend_factor_;
 		}
 	}
 
-	auto s = i.SpecularIndex();
+	auto s = i.specular_index();
 	param::SpecularBlendFactor = 0.0f;
 
 	if (s >= 0)
 	{
 		param::SpecularIndexA = _index_float(s, 1);
 
-		if (specular_blend[s] >= 0)
+		if (specular_blend_[s] >= 0)
 		{
-			param::SpecularIndexB = _index_float(specular_blend[s], 1);
-			param::SpecularBlendFactor = LanternInstance::specular_blend_factor;
+			param::SpecularIndexB = _index_float(specular_blend_[s], 1);
+			param::SpecularBlendFactor = LanternInstance::specular_blend_factor_;
 		}
 	}
 }
@@ -1052,36 +1046,36 @@ void LanternCollection::callback_add(std::deque<lantern_load_cb>& c, lantern_loa
 
 void LanternCollection::callback_del(std::deque<lantern_load_cb>& c, lantern_load_cb callback)
 {
-	remove(c.begin(), c.end(), callback);
+	std::remove(c.begin(), c.end(), callback);
 }
 
-size_t LanternCollection::Add(LanternInstance& src)
+size_t LanternCollection::add(LanternInstance& src)
 {
 	instances.emplace_back(std::move(src));
 	return instances.size() - 1;
 }
 
-void LanternCollection::Remove(size_t index)
+void LanternCollection::remove(size_t index)
 {
 	instances.erase(instances.begin() + index);
 }
 
-void LanternCollection::AddPlCallback(lantern_load_cb callback)
+void LanternCollection::add_pl_callback(lantern_load_cb callback)
 {
 	callback_add(pl_callbacks, callback);
 }
 
-void LanternCollection::RemovePlCallback(lantern_load_cb callback)
+void LanternCollection::remove_pl_callback(lantern_load_cb callback)
 {
 	callback_del(pl_callbacks, callback);
 }
 
-void LanternCollection::AddSlCallback(lantern_load_cb callback)
+void LanternCollection::add_sl_callback(lantern_load_cb callback)
 {
 	callback_add(sl_callbacks, callback);
 }
 
-void LanternCollection::RemoveSlCallback(lantern_load_cb callback)
+void LanternCollection::remove_sl_callback(lantern_load_cb callback)
 {
 	callback_del(sl_callbacks, callback);
 }

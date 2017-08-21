@@ -18,9 +18,9 @@ namespace d3d
 	bool supports_xrgb();
 	void reset_overrides();
 	void load_shader();
-	void shader_flags(Uint32 flags, bool add = true);
+	void set_flags(Uint32 flags, bool add = true);
 	bool shaders_not_null();
-	void InitTrampolines();
+	void init_trampolines();
 }
 
 namespace param
@@ -28,7 +28,6 @@ namespace param
 	extern ShaderParameter<Texture> PaletteA;
 	extern ShaderParameter<float> DiffuseIndexA;
 	extern ShaderParameter<float> SpecularIndexA;
-
 
 	extern ShaderParameter<Texture> PaletteB;
 	extern ShaderParameter<float> DiffuseIndexB;
