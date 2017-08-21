@@ -589,7 +589,7 @@ void LanternInstance::set_palettes(Sint32 type, Uint32 flags)
 
 	if (pad && pad->HeldButtons & Buttons_Z)
 	{
-		use_palette = false;
+		use_palette_ = false;
 		d3d::do_effect = false;
 		return;
 	}
