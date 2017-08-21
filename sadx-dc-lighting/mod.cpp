@@ -483,15 +483,15 @@ extern "C"
 
 			if (pressed & Buttons_Left)
 			{
-				globals::palettes.LoadPalette(globals::system_path + "diffuse test.bin");
+				globals::palettes.load_palette(globals::system_path + "diffuse test.bin");
 			}
 			else if (pressed & Buttons_Right)
 			{
-				globals::palettes.LoadPalette(globals::system_path + "specular test.bin");
+				globals::palettes.load_palette(globals::system_path + "specular test.bin");
 			}
 			else if (pressed & Buttons_Down)
 			{
-				globals::palettes.LoadPalette(CurrentLevel, CurrentAct);
+				globals::palettes.load_palette(CurrentLevel, CurrentAct);
 			}
 		}
 
