@@ -53,9 +53,9 @@ static void __cdecl SkyBox_SkyDeck_r(ObjectMaster* _this)
 
 static void __cdecl Obj_SkyDeck_Delete(ObjectMaster* _this)
 {
-	globals::palettes.Remove(handle);
+	globals::palettes.remove(handle);
 	set_shader_flags(ShaderFlags_Blend, false);
-	globals::palettes.ForwardBlendAll(false);
+	globals::palettes.forward_blend_all(false);
 	handle = 0;
 }
 
@@ -70,16 +70,16 @@ static void __cdecl Obj_SkyDeck_r(ObjectMaster* _this)
 
 	_this->DeleteSub = Obj_SkyDeck_Delete;
 
-	globals::palettes.LoadPalette(LevelIDs_SkyDeck, 0);
-	globals::palettes.LoadSource(LevelIDs_SkyDeck, 0);
+	globals::palettes.load_palette(LevelIDs_SkyDeck, 0);
+	globals::palettes.load_source(LevelIDs_SkyDeck, 0);
 
 	param::PaletteB = nullptr;
 	LanternInstance lantern(&param::PaletteB);
 
-	lantern.LoadPalette(LevelIDs_SkyDeck, 1);
-	handle = globals::palettes.Add(lantern);
-	globals::palettes.SetLastLevel(-1, -1);
-	globals::palettes.ForwardBlendAll(true);
+	lantern.load_palette(LevelIDs_SkyDeck, 1);
+	handle = globals::palettes.add(lantern);
+	globals::palettes.set_last_level(-1, -1);
+	globals::palettes.forward_blend_all(true);
 	set_shader_flags(ShaderFlags_Blend, true);
 }
 

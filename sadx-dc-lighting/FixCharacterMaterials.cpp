@@ -1036,8 +1036,6 @@ static NJS_MATERIAL* SecondCharacterSpecular[] = {
 	((NJS_MATERIAL*)0x03379320),
 	((NJS_MATERIAL*)0x03379334),
 	((NJS_MATERIAL*)0x03379348),
-	((NJS_MATERIAL*)0x03379080),
-	((NJS_MATERIAL*)0x03379094),
 	((NJS_MATERIAL*)0x03379E14),
 	((NJS_MATERIAL*)0x0337AE6C),
 	((NJS_MATERIAL*)0x03376180),
@@ -1668,6 +1666,8 @@ static NJS_MATERIAL* FirstCharacterSpecular[] = {
 	((NJS_MATERIAL*)0x033766A8),
 	((NJS_MATERIAL*)0x033766BC),
 	((NJS_MATERIAL*)0x033762C0),
+	((NJS_MATERIAL*)0x03379080),
+	((NJS_MATERIAL*)0x03379094),
 	//Emeralds brought to Sonic before final boss
 	((NJS_MATERIAL*)0x02E2D5AC),
 	((NJS_MATERIAL*)0x02E2D2B8),
@@ -3202,16 +3202,16 @@ static bool NPCModelsFunction(NJS_MATERIAL* material, Uint32 flags)
 
 	switch (get_specular())
 	{
-	case 0:
-		set_specular(2, false);
-		break;
+		case 0:
+			set_specular(2, false);
+			break;
 
-	case 1:
-		set_specular(3, false);
-		break;
+		case 1:
+			set_specular(3, false);
+			break;
 
-	default:
-		break;
+		default:
+			break;
 	}
 
 	return true;

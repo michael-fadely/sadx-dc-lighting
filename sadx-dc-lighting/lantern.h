@@ -54,8 +54,8 @@ struct StageLights
 #pragma pack(pop)
 
 static_assert(sizeof(SourceLight) == 0x60, "SourceLight size mismatch");
-template<> bool ShaderParameter<SourceLight_t>::Commit(IDirect3DDevice9* device);
-template<> bool ShaderParameter<StageLights>::Commit(IDirect3DDevice9* device);
+template<> bool ShaderParameter<SourceLight_t>::commit(IDirect3DDevice9* device);
+template<> bool ShaderParameter<StageLights>::commit(IDirect3DDevice9* device);
 
 class LanternInstance;
 
@@ -64,18 +64,18 @@ class ILantern
 public:
 	virtual ~ILantern() = default;
 
-	virtual bool LoadPalette(Sint32 level, Sint32 act) = 0;
-	virtual bool LoadPalette(const std::string& path) = 0;
-	virtual bool LoadSource(Sint32 level, Sint32 act) = 0;
-	virtual bool LoadSource(const std::string& path) = 0;
-	virtual void SetLastLevel(Sint32 level, Sint32 act) = 0;
-	virtual void SetPalettes(Sint32 type, Uint32 flags) = 0;
-	virtual void DiffuseIndex(Sint32 value) = 0;
-	virtual void SpecularIndex(Sint32 value) = 0;
-	virtual Sint32 DiffuseIndex() = 0;
-	virtual Sint32 SpecularIndex() = 0;
-	virtual void LightDirection(const NJS_VECTOR& d) = 0;
-	virtual const NJS_VECTOR& LightDirection() = 0;
+	virtual bool load_palette(Sint32 level, Sint32 act) = 0;
+	virtual bool load_palette(const std::string& path) = 0;
+	virtual bool load_source(Sint32 level, Sint32 act) = 0;
+	virtual bool load_source(const std::string& path) = 0;
+	virtual void set_last_level(Sint32 level, Sint32 act) = 0;
+	virtual void set_palettes(Sint32 type, Uint32 flags) = 0;
+	virtual void diffuse_index(Sint32 value) = 0;
+	virtual void specular_index(Sint32 value) = 0;
+	virtual Sint32 diffuse_index() = 0;
+	virtual Sint32 specular_index() = 0;
+	virtual void light_direction(const NJS_VECTOR& d) = 0;
+	virtual const NJS_VECTOR& light_direction() = 0;
 };
 
 class LanternInstance : ILantern
@@ -100,36 +100,36 @@ public:
 	static bool diffuse_override_temp;
 	static bool specular_override;
 	static bool specular_override_temp;
-	static float diffuse_blend_factor;
-	static float specular_blend_factor;
-	static bool use_palette;
+	static float diffuse_blend_factor_;
+	static float specular_blend_factor_;
+	static bool use_palette_;
 
 	Sint8 last_time       = -1;
 	Sint32 last_act       = -1;
 	Sint32 last_level     = -1;
-	Sint32 diffuse_index  = -1;
-	Sint32 specular_index = -1;
+	Sint32 diffuse_       = -1;
+	Sint32 specular_      = -1;
 
-	static bool UsePalette();
-	static float DiffuseBlendFactor();
-	static float SpecularBlendFactor();
-	static void DiffuseBlendFactor(float f);
-	static void SpecularBlendFactor(float f);
+	static bool use_palette();
+	static float diffuse_blend_factor();
+	static float specular_blend_factor();
+	static void diffuse_blend_factor(float f);
+	static void specular_blend_factor(float f);
 
-	static std::string PaletteId(Sint32 level, Sint32 act);
+	static std::string palette_id(Sint32 level, Sint32 act);
 
-	bool LoadPalette(Sint32 level, Sint32 act) override;
-	bool LoadPalette(const std::string& path) override;
-	bool LoadSource(Sint32 level, Sint32 act) override;
-	bool LoadSource(const std::string& path) override;
-	void SetLastLevel(Sint32 level, Sint32 act) override;
-	void SetPalettes(Sint32 type, Uint32 flags) override;
-	void DiffuseIndex(Sint32 value) override;
-	void SpecularIndex(Sint32 value) override;
-	Sint32 DiffuseIndex() override;
-	Sint32 SpecularIndex() override;
-	void LightDirection(const NJS_VECTOR& d) override;
-	const NJS_VECTOR& LightDirection() override;
+	bool load_palette(Sint32 level, Sint32 act) override;
+	bool load_palette(const std::string& path) override;
+	bool load_source(Sint32 level, Sint32 act) override;
+	bool load_source(const std::string& path) override;
+	void set_last_level(Sint32 level, Sint32 act) override;
+	void set_palettes(Sint32 type, Uint32 flags) override;
+	void diffuse_index(Sint32 value) override;
+	void specular_index(Sint32 value) override;
+	Sint32 diffuse_index() override;
+	Sint32 specular_index() override;
+	void light_direction(const NJS_VECTOR& d) override;
+	const NJS_VECTOR& light_direction() override;
 };
 
 class LanternCollection : ILantern
@@ -141,66 +141,66 @@ class LanternCollection : ILantern
 	static void callback_add(std::deque<lantern_load_cb>& c, lantern_load_cb callback);
 	static void callback_del(std::deque<lantern_load_cb>& c, lantern_load_cb callback);
 
-	Sint32 diffuse_blend[8] = { -1, -1, -1, -1, -1, -1, -1, -1 };
-	Sint32 specular_blend[8] = { -1, -1, -1, -1, -1, -1, -1, -1 };
+	Sint32 diffuse_blend_[8] = { -1, -1, -1, -1, -1, -1, -1, -1 };
+	Sint32 specular_blend_[8] = { -1, -1, -1, -1, -1, -1, -1, -1 };
 
 public:
-	size_t Add(LanternInstance& src);
-	void Remove(size_t index);
+	size_t add(LanternInstance& src);
+	void remove(size_t index);
 
-	auto Size() const
+	auto size() const
 	{
 		return instances.size();
 	}
 
-	void AddPlCallback(lantern_load_cb callback);
-	void RemovePlCallback(lantern_load_cb callback);
-	void AddSlCallback(lantern_load_cb callback);
-	void RemoveSlCallback(lantern_load_cb callback);
-	bool RunPlCallbacks(Sint32 level, Sint32 act, Sint8 time);
-	bool RunSlCallbacks(Sint32 level, Sint32 act, Sint8 time);
-	bool LoadFiles();
+	void add_pl_callback(lantern_load_cb callback);
+	void remove_pl_callback(lantern_load_cb callback);
+	void add_sl_callback(lantern_load_cb callback);
+	void remove_sl_callback(lantern_load_cb callback);
+	bool run_pl_callbacks(Sint32 level, Sint32 act, Sint8 time);
+	bool run_sl_callbacks(Sint32 level, Sint32 act, Sint8 time);
+	bool load_files();
 
 	// TODO: Expose to API when explicit multi-palette management is implemented.
 	/// Blend all indices of diffuse and specular to the same index
 	/// of a secondary palette atlas.
-	void ForwardBlendAll(bool enable);
+	void forward_blend_all(bool enable);
 	/// Blend all diffuse indices to a single destination index.
-	void DiffuseBlendAll(int value);
+	void diffuse_blend_all(int value);
 	/// Blend all specular indices to a single destination index.
-	void SpecularBlendAll(int value);
+	void specular_blend_all(int value);
 	/// Blend a single diffuse index to a single destination index.
-	void DiffuseBlend(int index, int value);
+	void diffuse_blend(int index, int value);
 	/// Get current diffuse blend destination index.
-	int DiffuseBlend(int index) const;
+	int diffuse_blend(int index) const;
 	/// Blend a single specular index to a single destination index.
-	void SpecularBlend(int index, int value);
+	void specular_blend(int index, int value);
 	/// Get current specular blend destination index.
-	int SpecularBlend(int index) const;
+	int specular_blend(int index) const;
 	/// Apply necessary shader parameters.
-	void ApplyShaderParameters();
+	void apply_parameters();
 
 	LanternInstance& operator[](size_t i) { return instances[i]; }
 
-	bool LoadPalette(Sint32 level, Sint32 act) override;
-	bool LoadPalette(const std::string& path) override;
-	bool LoadSource(Sint32 level, Sint32 act) override;
-	bool LoadSource(const std::string& path) override;
-	void SetLastLevel(Sint32 level, Sint32 act) override;
-	void SetPalettes(Sint32 type, Uint32 flags) override;
-	void DiffuseIndex(Sint32 value) override;
-	void SpecularIndex(Sint32 value) override;
+	bool load_palette(Sint32 level, Sint32 act) override;
+	bool load_palette(const std::string& path) override;
+	bool load_source(Sint32 level, Sint32 act) override;
+	bool load_source(const std::string& path) override;
+	void set_last_level(Sint32 level, Sint32 act) override;
+	void set_palettes(Sint32 type, Uint32 flags) override;
+	void diffuse_index(Sint32 value) override;
+	void specular_index(Sint32 value) override;
 
-	Sint32 DiffuseIndex() override
+	Sint32 diffuse_index() override
 	{
 		return -1;
 	}
 
-	Sint32 SpecularIndex() override
+	Sint32 specular_index() override
 	{
 		return -1;
 	}
 
-	void LightDirection(const NJS_VECTOR& d) override;
-	const NJS_VECTOR& LightDirection() override;
+	void light_direction(const NJS_VECTOR& d) override;
+	const NJS_VECTOR& light_direction() override;
 };

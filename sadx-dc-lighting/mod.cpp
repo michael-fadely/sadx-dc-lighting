@@ -89,11 +89,11 @@ static void DisplayLightDirection()
 }
 #endif
 
-static void SetMaterialParameters(const D3DMATERIAL9& material)
+static void update_material(const D3DMATERIAL9& material)
 {
 	using namespace d3d;
 
-	if (!LanternInstance::UsePalette() || !shaders_not_null())
+	if (!LanternInstance::use_palette() || !shaders_not_null())
 		return;
 
 	D3DMATERIALCOLORSOURCE colorsource;
@@ -115,7 +115,7 @@ static void __cdecl CorrectMaterial_r()
 
 	device->GetMaterial(&material);
 
-	if (!LanternInstance::UsePalette())
+	if (!LanternInstance::use_palette())
 	{
 		material.Power = LSPalette.SP_pow;
 	}
@@ -133,7 +133,7 @@ static void __cdecl CorrectMaterial_r()
 	material.Specular.b /= 255.0f;
 	material.Specular.a /= 255.0f;
 
-	SetMaterialParameters(material);
+	update_material(material);
 	device->SetMaterial(&material);
 }
 
@@ -150,7 +150,7 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 
 	do_effect = false;
 
-	if (!LanternInstance::UsePalette())
+	if (!LanternInstance::use_palette())
 	{
 		return;
 	}
@@ -198,13 +198,13 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 		flags = _nj_constant_attr_or_ | _nj_constant_attr_and_ & flags;
 	}
 
-	globals::palettes.SetPalettes(globals::light_type, flags);
+	globals::palettes.set_palettes(globals::light_type, flags);
 
 	bool use_texture = (flags & NJD_FLAG_USE_TEXTURE) != 0;
-	shader_flags(ShaderFlags_Texture, use_texture);
-	shader_flags(ShaderFlags_Alpha, (flags & NJD_FLAG_USE_ALPHA) != 0);
-	shader_flags(ShaderFlags_EnvMap, (flags & NJD_FLAG_USE_ENV) != 0);
-	shader_flags(ShaderFlags_Light, (flags & NJD_FLAG_IGNORE_LIGHT) == 0);
+	set_flags(ShaderFlags_Texture, use_texture);
+	set_flags(ShaderFlags_Alpha, (flags & NJD_FLAG_USE_ALPHA) != 0);
+	set_flags(ShaderFlags_EnvMap, (flags & NJD_FLAG_USE_ENV) != 0);
+	set_flags(ShaderFlags_Light, (flags & NJD_FLAG_IGNORE_LIGHT) == 0);
 
 	param::SourceBlend = NJD_FLAG_D3DBLEND[flags >> 29];
 	param::DestinationBlend = NJD_FLAG_D3DBLEND[flags >> 26 & 7];
@@ -228,7 +228,7 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 
 	D3DMATERIAL9 mat;
 	device->GetMaterial(&mat);
-	SetMaterialParameters(mat);
+	update_material(mat);
 
 	do_effect = true;
 
@@ -256,12 +256,12 @@ static void __cdecl CharSel_LoadA_r()
 {
 	auto original = TARGET_DYNAMIC(CharSel_LoadA);
 
-	globals::palettes.LoadPalette(LevelIDs_SkyDeck, 0);
-	globals::palettes.SetLastLevel(CurrentLevel, CurrentAct);
+	globals::palettes.load_palette(LevelIDs_SkyDeck, 0);
+	globals::palettes.set_last_level(CurrentLevel, CurrentAct);
 
 	NJS_VECTOR dir = { 1.0f, -1.0f, -1.0f };
 	njUnitVector(&dir);
-	globals::palettes.LightDirection(dir);
+	globals::palettes.light_direction(dir);
 
 	original();
 }
@@ -269,7 +269,7 @@ static void __cdecl CharSel_LoadA_r()
 static void __cdecl SetLevelAndAct_r(Uint8 level, Uint8 act)
 {
 	TARGET_DYNAMIC(SetLevelAndAct)(level, act);
-	globals::palettes.LoadFiles();
+	globals::palettes.load_files();
 }
 
 static void __cdecl GoToNextChaoStage_r()
@@ -295,14 +295,14 @@ static void __cdecl GoToNextChaoStage_r()
 			return;
 	}
 
-	globals::palettes.LoadFiles();
+	globals::palettes.load_files();
 	CurrentLevel = level;
 }
 
 static void __cdecl GoToNextLevel_r()
 {
 	TARGET_DYNAMIC(GoToNextLevel)();
-	globals::palettes.LoadFiles();
+	globals::palettes.load_files();
 }
 
 static void __cdecl IncrementAct_r(int amount)
@@ -311,20 +311,20 @@ static void __cdecl IncrementAct_r(int amount)
 
 	if (amount != 0)
 	{
-		globals::palettes.LoadFiles();
+		globals::palettes.load_files();
 	}
 }
 
 static void __cdecl SetTimeOfDay_r(Sint8 time)
 {
 	TARGET_DYNAMIC(SetTimeOfDay)(time);
-	globals::palettes.LoadFiles();
+	globals::palettes.load_files();
 }
 
 static void __cdecl LoadLevelFiles_r()
 {
 	TARGET_DYNAMIC(LoadLevelFiles)();
-	globals::palettes.LoadFiles();
+	globals::palettes.load_files();
 }
 
 static void __cdecl DrawLandTable_r()
@@ -357,7 +357,7 @@ static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
 		{
 			if (texlist == CommonTextures)
 			{
-				globals::palettes.SetPalettes(0, 0);
+				globals::palettes.set_palettes(0, 0);
 				param::AllowVertexColor = globals::object_vcolor;
 			}
 			else
@@ -369,7 +369,7 @@ static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
 						continue;
 					}
 
-					globals::palettes.SetPalettes(0, 0);
+					globals::palettes.set_palettes(0, 0);
 					param::AllowVertexColor = globals::object_vcolor;
 					break;
 				}
@@ -380,7 +380,7 @@ static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
 	return TARGET_DYNAMIC(Direct3D_SetTexList)(texlist);
 }
 
-static void __cdecl NormalScale(float x, float y, float z)
+static void __cdecl NormalScale_r(float x, float y, float z)
 {
 	if (x > FLT_EPSILON || y > FLT_EPSILON || z > FLT_EPSILON)
 	{
@@ -392,11 +392,11 @@ static void __cdecl NormalScale(float x, float y, float z)
 	}
 }
 
-void setStageLightDirection()
+void set_light_direction()
 {
-	if (globals::palettes.Size())
+	if (globals::palettes.size())
 	{
-		const auto& dir = globals::palettes.LightDirection();
+		const auto& dir = globals::palettes.light_direction();
 		CurrentStageLights[0].direction = dir;
 		CurrentStageLights[1].direction = dir;
 		CurrentStageLights[2].direction = dir;
@@ -407,13 +407,13 @@ void setStageLightDirection()
 void __cdecl SetCurrentStageLights_r(int level, int act)
 {
 	TARGET_DYNAMIC(SetCurrentStageLights)(level, act);
-	setStageLightDirection();
+	set_light_direction();
 }
 
 void __cdecl SetCurrentStageLight_EggViper_r(ObjectMaster* a1)
 {
 	TARGET_DYNAMIC(SetCurrentStageLight_EggViper)(a1);
-	setStageLightDirection();
+	set_light_direction();
 }
 
 extern "C"
@@ -432,14 +432,14 @@ extern "C"
 		MH_Initialize();
 
 		LanternInstance base(&param::PaletteA);
-		globals::palettes.Add(base);
+		globals::palettes.add(base);
 
 		globals::mod_path    = path;
 		globals::system_path = globals::mod_path + "\\system\\";
 		globals::cache_path  = globals::mod_path + "\\cache\\";
 		globals::shader_path = globals::system_path + "lantern.hlsl";
 
-		d3d::InitTrampolines();
+		d3d::init_trampolines();
 
 		CharSel_LoadA_t                 = new Trampoline(0x00512BC0, 0x00512BC6, CharSel_LoadA_r);
 		Direct3D_ParseMaterial_t        = new Trampoline(0x00784850, 0x00784858, Direct3D_ParseMaterial_r);
@@ -465,10 +465,10 @@ extern "C"
 
 		// Vertex normal correction for certain objects in
 		// Red Mountain and Sky Deck.
-		WriteCall((void*)0x00411EDA, NormalScale);
-		WriteCall((void*)0x00411F1D, NormalScale);
-		WriteCall((void*)0x00411F44, NormalScale);
-		WriteCall((void*)0x00412783, NormalScale);
+		WriteCall((void*)0x00411EDA, NormalScale_r);
+		WriteCall((void*)0x00411F1D, NormalScale_r);
+		WriteCall((void*)0x00411F44, NormalScale_r);
+		WriteCall((void*)0x00412783, NormalScale_r);
 
 		NormalScaleMultiplier = { 1.0f, 1.0f, 1.0f };
 	}

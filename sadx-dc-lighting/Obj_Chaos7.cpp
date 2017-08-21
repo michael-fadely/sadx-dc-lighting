@@ -24,12 +24,12 @@ static void __cdecl Obj_Chaos7_r(ObjectMaster* a1)
 
 		if (use)
 		{
-			globals::palettes.LoadPalette(CurrentLevel, 1);
-			globals::palettes.SetLastLevel(CurrentLevel, 1);
+			globals::palettes.load_palette(CurrentLevel, 1);
+			globals::palettes.set_last_level(CurrentLevel, 1);
 		}
 		else
 		{
-			globals::palettes.LoadFiles();
+			globals::palettes.load_files();
 		}
 	}
 }
