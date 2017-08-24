@@ -45,13 +45,16 @@ DataPointer(NJS_VECTOR, NormalScaleMultiplier, 0x03B121F8);
 DataPointer(NJS_TEXLIST*, CommonTextures, 0x03B290B0);
 
 #ifdef _DEBUG
-static void DisplayLightDirection()
+static void show_light_direction()
 {
 	using namespace globals;
 
 	auto player = CharObj1Ptrs[0];
+
 	if (player == nullptr)
+	{
 		return;
+	}
 
 	NJS_POINT3 points[2] = {
 		player->Position,
@@ -93,7 +96,9 @@ static void update_material(const D3DMATERIAL9& material)
 	using namespace d3d;
 
 	if (!LanternInstance::use_palette() || !shaders_not_null())
+	{
 		return;
+	}
 
 	D3DMATERIALCOLORSOURCE colorsource;
 	device->GetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, (DWORD*)&colorsource);
@@ -405,7 +410,7 @@ static void __cdecl NormalScale_r(float x, float y, float z)
 	}
 }
 
-void set_light_direction()
+static void set_light_direction()
 {
 	if (globals::palettes.size())
 	{
@@ -417,13 +422,13 @@ void set_light_direction()
 	}
 }
 
-void __cdecl SetCurrentStageLights_r(int level, int act)
+static void __cdecl SetCurrentStageLights_r(int level, int act)
 {
 	TARGET_DYNAMIC(SetCurrentStageLights)(level, act);
 	set_light_direction();
 }
 
-void __cdecl SetCurrentStageLight_EggViper_r(ObjectMaster* a1)
+static void __cdecl SetCurrentStageLight_EggViper_r(ObjectMaster* a1)
 {
 	TARGET_DYNAMIC(SetCurrentStageLight_EggViper)(a1);
 	set_light_direction();
@@ -435,10 +440,12 @@ extern "C"
 	EXPORT void __cdecl Init(const char *path)
 	{
 		auto handle = GetModuleHandle(L"d3d9.dll");
+
 		if (handle == nullptr)
 		{
 			MessageBoxA(WindowHandle, "Unable to detect Direct3D 9 DLL. The mod will not function.",
 				"D3D9 not loaded", MB_OK | MB_ICONERROR);
+
 			return;
 		}
 
@@ -517,7 +524,7 @@ extern "C"
 			return;
 		}
 
-		DisplayLightDirection();
+		show_light_direction();
 	}
 #endif
 }

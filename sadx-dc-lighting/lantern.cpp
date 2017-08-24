@@ -381,42 +381,39 @@ void LanternInstance::set_last_level(Sint32 level, Sint32 act)
 /// <returns><c>true</c> on success.</returns>
 bool LanternInstance::load_source(const std::string& path)
 {
-	bool result = true;
 	auto file = std::ifstream(path, std::ios::binary);
 
 	if (!file.is_open())
 	{
 		PrintDebug("[lantern] Lantern source not found: %s\n", path.c_str());
 		sl_direction = { 0.0f, -1.0f, 0.0f };
-		result = false;
+		return false;
 	}
-	else
+
+	PrintDebug("[lantern] Loading lantern source: %s\n", path.c_str());
+
+	for (int i = 0; i < 16; i++)
 	{
-		PrintDebug("[lantern] Loading lantern source: %s\n", path.c_str());
+		file.read((char*)&source_lights[i], sizeof(SourceLight));
+	}
 
-		for (int i = 0; i < 16; i++)
-		{
-			file.read((char*)&source_lights[i], sizeof(SourceLight));
-		}
-
-		file.close();
+	file.close();
 
 #ifdef USE_SL
-		param::SourceLight = source_lights[15].stage;
+	param::SourceLight = source_lights[15].stage;
 #endif
 
-		NJS_MATRIX m;
+	NJS_MATRIX m;
 
-		njUnitMatrix(m);
-		njRotateY(m, source_lights[15].stage.y);
-		njRotateZ(m, source_lights[15].stage.z);
+	njUnitMatrix(m);
+	njRotateY(m, source_lights[15].stage.y);
+	njRotateZ(m, source_lights[15].stage.z);
 
-		// Default light direction is down, so we want to rotate relative to that.
-		NJS_VECTOR vs = { 0.0f, -1.0f, 0.0f };
-		njCalcVector(m, &vs, &sl_direction);
-	}
+	// Default light direction is down, so we want to rotate relative to that.
+	NJS_VECTOR vs = { 0.0f, -1.0f, 0.0f };
+	njCalcVector(m, &vs, &sl_direction);
 
-	return result;
+	return true;
 }
 
 /// <summary>
