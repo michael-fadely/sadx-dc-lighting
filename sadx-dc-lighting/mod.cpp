@@ -273,18 +273,33 @@ static void __cdecl GoToNextChaoStage_r()
 	TARGET_DYNAMIC(GoToNextChaoStage)();
 
 	auto level = CurrentLevel;
+	auto act = CurrentAct;
+
 	switch (GetCurrentChaoStage())
 	{
 		case SADXChaoStage_StationSquare:
 			CurrentLevel = LevelIDs_SSGarden;
+			CurrentAct = 0;
 			break;
 
 		case SADXChaoStage_EggCarrier:
 			CurrentLevel = LevelIDs_ECGarden;
+			CurrentAct = 0;
 			break;
 
 		case SADXChaoStage_MysticRuins:
 			CurrentLevel = LevelIDs_MRGarden;
+			CurrentAct = 0;
+			break;
+
+		case SADXChaoStage_Race:
+			CurrentLevel = LevelIDs_ChaoRace;
+			CurrentAct = 1;
+			break;
+
+		case SADXChaoStage_RaceEntry:
+			CurrentLevel = LevelIDs_ChaoRace;
+			CurrentAct = 0;
 			break;
 
 		default:
@@ -292,7 +307,9 @@ static void __cdecl GoToNextChaoStage_r()
 	}
 
 	globals::palettes.load_files();
+
 	CurrentLevel = level;
+	CurrentAct = act;
 }
 
 static void __cdecl GoToNextLevel_r()
