@@ -1300,7 +1300,6 @@ namespace d3d
 	}
 }
 
-// These exports are for the window resize branch of the mod loader.
 extern "C"
 {
 	using namespace local;
