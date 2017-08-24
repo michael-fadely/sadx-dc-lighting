@@ -138,6 +138,13 @@ static bool use_time(Uint32 level, Uint32 act)
 		{
 			return false;
 		}
+
+		// Chao Race should not be adjusted. It always takes
+		// place during the day.
+		case LevelIDs_ChaoRace:
+		{
+			return false;
+		}
 	}
 }
 
