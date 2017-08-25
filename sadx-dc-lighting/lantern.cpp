@@ -412,6 +412,7 @@ bool LanternInstance::load_source(const std::string& path)
 	// Default light direction is down, so we want to rotate relative to that.
 	NJS_VECTOR vs = { 0.0f, -1.0f, 0.0f };
 	njCalcVector(m, &vs, &sl_direction);
+	param::LightDirection = -*(D3DXVECTOR3*)&sl_direction;
 
 	return true;
 }
