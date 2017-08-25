@@ -170,7 +170,6 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 #endif
 
 	Uint32 flags = material->attrflags;
-	//Uint32 texid = material->attr_texId & 0xFFFF;
 
 	if (material->specular.argb.a == 0)
 	{
@@ -204,28 +203,13 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 
 	globals::palettes.set_palettes(globals::light_type, flags);
 
-	bool use_texture = (flags & NJD_FLAG_USE_TEXTURE) != 0;
-	set_flags(ShaderFlags_Texture, use_texture);
+	set_flags(ShaderFlags_Texture, (flags & NJD_FLAG_USE_TEXTURE) != 0);
 	set_flags(ShaderFlags_Alpha, (flags & NJD_FLAG_USE_ALPHA) != 0);
 	set_flags(ShaderFlags_EnvMap, (flags & NJD_FLAG_USE_ENV) != 0);
 	set_flags(ShaderFlags_Light, (flags & NJD_FLAG_IGNORE_LIGHT) == 0);
 
 	// Environment map matrix
 	param::TextureTransform = *(D3DXMATRIX*)0x038A5DD0;
-	
-	/*if (use_texture)
-	{
-		auto textures = Direct3D_CurrentTexList->textures;
-		NJS_TEXMEMLIST* texmem = textures ? (NJS_TEXMEMLIST*)textures[texid].texaddr : nullptr;
-		if (texmem != nullptr)
-		{
-			auto texture = (Direct3DTexture8*)texmem->texinfo.texsurface.pSurface;
-			if (texture != nullptr)
-			{
-				param::BaseTexture = texture->GetProxyInterface();
-			}
-		}
-	}*/
 
 	D3DMATERIAL9 mat;
 	device->GetMaterial(&mat);
