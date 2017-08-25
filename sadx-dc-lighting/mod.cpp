@@ -419,7 +419,6 @@ static void set_light_direction()
 		CurrentStageLights[1].direction = dir;
 		CurrentStageLights[2].direction = dir;
 		CurrentStageLights[3].direction = dir;
-		param::LightDirection = *(D3DXVECTOR3*)&dir;
 	}
 }
 
