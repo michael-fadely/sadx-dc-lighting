@@ -447,14 +447,14 @@ bool LanternInstance::load_palette(const std::string& path)
 
 	PrintDebug("[lantern] Loading lantern palette: %s\n", path.c_str());
 
-	std::vector<ColorPair> colorData;
+	std::vector<ColorPair> color_data;
 
 	do
 	{
 		ColorPair pair = {};
 		file.read((char*)&pair.diffuse, sizeof(NJS_COLOR));
 		file.read((char*)&pair.specular, sizeof(NJS_COLOR));
-		colorData.push_back(pair);
+		color_data.push_back(pair);
 	} while (!file.eof());
 
 	file.close();
@@ -497,7 +497,7 @@ bool LanternInstance::load_palette(const std::string& path)
 	for (size_t i = 0; i < 8; i++)
 	{
 		auto index = i * 256;
-		if (index >= colorData.size() || index + 256 >= colorData.size())
+		if (index >= color_data.size() || index + 256 >= color_data.size())
 		{
 			break;
 		}
@@ -510,7 +510,7 @@ bool LanternInstance::load_palette(const std::string& path)
 
 			for (size_t x = 0; x < 256; x++)
 			{
-				const auto& color = colorData[index + x];
+				const auto& color = color_data[index + x];
 
 				auto& diffuse = pixels[y + x];
 				auto& specular = pixels[256 + y + x];
@@ -525,7 +525,7 @@ bool LanternInstance::load_palette(const std::string& path)
 
 			for (size_t x = 0; x < 256; x++)
 			{
-				const auto& color = colorData[index + x];
+				const auto& color = color_data[index + x];
 
 				auto& diffuse = pixels[y + x];
 				auto& specular = pixels[256 + y + x];

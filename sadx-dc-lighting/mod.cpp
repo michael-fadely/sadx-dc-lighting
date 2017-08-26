@@ -33,14 +33,10 @@ static Trampoline* Direct3D_SetTexList_t           = nullptr;
 static Trampoline* SetCurrentStageLights_t         = nullptr;
 static Trampoline* SetCurrentStageLight_EggViper_t = nullptr;
 
-DataArray(PaletteLight, LightPaletteData, 0x00903E88, 256);
 DataArray(StageLightData, CurrentStageLights, 0x03ABD9F8, 4);
 DataArray(NJS_TEXLIST*, LevelObjTexlists, 0x03B290B4, 4);
 
-DataPointer(NJS_COLOR, EntityVertexColor, 0x03D0848C);
-DataPointer(NJS_COLOR, LandTableVertexColor, 0x03D08494);
 DataPointer(PaletteLight, LSPalette, 0x03ABDAF0);
-DataPointer(Uint32, LastRenderFlags, 0x03D08498);
 DataPointer(NJS_VECTOR, NormalScaleMultiplier, 0x03B121F8);
 DataPointer(NJS_TEXLIST*, CommonTextures, 0x03B290B0);
 

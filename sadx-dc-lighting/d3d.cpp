@@ -184,7 +184,6 @@ namespace local
 
 	DataPointer(Direct3DDevice8*, Direct3D_Device, 0x03D128B0);
 	DataPointer(Direct3D8*, Direct3D_Object, 0x03D11F60);
-	DataPointer(D3DXMATRIX, InverseViewMatrix, 0x0389D358);
 	DataPointer(D3DXMATRIX, TransformationMatrix, 0x03D0FD80);
 	DataPointer(D3DXMATRIX, ViewMatrix, 0x0389D398);
 	DataPointer(D3DXMATRIX, WorldMatrix, 0x03D12900);
