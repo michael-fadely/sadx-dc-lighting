@@ -1051,7 +1051,7 @@ void LanternCollection::callback_add(std::deque<lantern_load_cb>& c, lantern_loa
 
 void LanternCollection::callback_del(std::deque<lantern_load_cb>& c, lantern_load_cb callback)
 {
-	std::remove(c.begin(), c.end(), callback);
+	c.erase(std::remove(c.begin(), c.end(), callback), c.end());
 }
 
 size_t LanternCollection::add(LanternInstance& src)
