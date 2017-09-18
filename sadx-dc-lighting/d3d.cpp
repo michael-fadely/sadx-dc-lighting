@@ -780,7 +780,7 @@ namespace local
 
 	static void shader_start()
 	{
-		if (!d3d::do_effect || d3d::do_effect && !drawing)
+		if (!d3d::do_effect || !drawing)
 		{
 			shader_end();
 			return;
