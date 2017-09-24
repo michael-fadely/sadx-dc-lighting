@@ -554,7 +554,7 @@ namespace local
 	{
 		load_shader_file(globals::shader_path);
 
-		std::vector<uint8_t> current_hash(shader_hash());
+		const std::vector<uint8_t> current_hash(shader_hash());
 
 		std::filesystem::path checksum_path = std::move(std::filesystem::path(globals::cache_path).append("checksum.bin"));
 
@@ -566,7 +566,7 @@ namespace local
 			}
 			else
 			{
-				std::vector<uint8_t> last_hash(read_checksum(checksum_path.string()));
+				const std::vector<uint8_t> last_hash(read_checksum(checksum_path.string()));
 
 				if (last_hash != current_hash)
 				{
@@ -580,7 +580,7 @@ namespace local
 		}
 	}
 
-	static void load_cached_shader(std::filesystem::path sid_path, std::vector<uint8_t>& data)
+	static void load_cached_shader(const std::filesystem::path& sid_path, std::vector<uint8_t>& data)
 	{
 		std::ifstream file(sid_path, std::ios_base::ate | std::ios_base::binary);
 		auto size = file.tellg();
@@ -595,7 +595,7 @@ namespace local
 		file.read(reinterpret_cast<char*>(data.data()), data.size());
 	}
 
-	static void save_cached_shader(std::filesystem::path sid_path, std::vector<uint8_t>& data)
+	static void save_cached_shader(const std::filesystem::path& sid_path, std::vector<uint8_t>& data)
 	{
 		std::ofstream file(sid_path, std::ios_base::binary);
 
@@ -629,7 +629,7 @@ namespace local
 
 		macros.clear();
 
-		filesystem::path sid_path = move(filesystem::path(globals::cache_path).append(shader_id(flags) + ".vs"));
+		const filesystem::path sid_path = move(filesystem::path(globals::cache_path).append(shader_id(flags) + ".vs"));
 		bool is_cached = exists(sid_path);
 
 		vector<uint8_t> data;
@@ -702,7 +702,7 @@ namespace local
 		sanitize(flags);
 		flags &= PS_FLAGS;
 
-		filesystem::path sid_path = move(filesystem::path(globals::cache_path).append(shader_id(flags) + ".ps"));
+		const filesystem::path sid_path = move(filesystem::path(globals::cache_path).append(shader_id(flags) + ".ps"));
 		bool is_cached = exists(sid_path);
 
 		vector<uint8_t> data;
@@ -1169,10 +1169,10 @@ namespace local
 		Direct3D_Device->SetVertexShader(buffer->FVF);
 		Direct3D_Device->SetStreamSource(0, buffer->VertexBuffer, buffer->Size);
 
-		auto indexBuffer = buffer->IndexBuffer;
-		if (indexBuffer)
+		const auto index_buffer = buffer->IndexBuffer;
+		if (index_buffer)
 		{
-			Direct3D_Device->SetIndices(indexBuffer, 0);
+			Direct3D_Device->SetIndices(index_buffer, 0);
 
 			begin();
 

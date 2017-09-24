@@ -506,7 +506,7 @@ bool LanternInstance::load_palette(const std::string& path)
 
 		if (is_32bit)
 		{
-			auto pixels = (NJS_COLOR*)rect.pBits;
+			const auto pixels = (NJS_COLOR*)rect.pBits;
 
 			for (size_t x = 0; x < 256; x++)
 			{
@@ -521,7 +521,7 @@ bool LanternInstance::load_palette(const std::string& path)
 		}
 		else
 		{
-			auto pixels = (ABGR32F*)rect.pBits;
+			const auto pixels = (ABGR32F*)rect.pBits;
 
 			for (size_t x = 0; x < 256; x++)
 			{
@@ -802,14 +802,14 @@ bool LanternCollection::run_sl_callbacks(Sint32 level, Sint32 act, Sint8 time)
 
 	for (auto& cb : sl_callbacks)
 	{
-		auto path_ptr = cb(level, act);
+		const char* path_ptr = cb(level, act);
 
 		if (path_ptr == nullptr)
 		{
 			continue;
 		}
 
-		std::string path_str = path_ptr;
+		const std::string path_str = path_ptr;
 
 		for (auto& instance : instances)
 		{
@@ -962,9 +962,9 @@ void LanternCollection::forward_blend_all(bool enable)
 }
 
 __forceinline
-void _blend_all(Sint32(&srcArray)[8], int value)
+void _blend_all(Sint32(&src_array)[8], int value)
 {
-	for (auto& i : srcArray)
+	for (auto& i : src_array)
 	{
 		i = value;
 	}
