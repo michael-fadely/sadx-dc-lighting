@@ -226,25 +226,25 @@ namespace local
 			d3d::vertex_shader = get_vertex_shader(DEFAULT_FLAGS);
 			d3d::pixel_shader = get_pixel_shader(DEFAULT_FLAGS);
 
-#ifdef PRECOMPILE_SHADERS
+		#ifdef PRECOMPILE_SHADERS
 			for (Uint32 i = 0; i < ShaderFlags_Count; i++)
 			{
 				auto flags = i;
 				local::sanitize(flags);
 
 				auto vs = (ShaderFlags)(flags & VS_FLAGS);
-				if (flags && vertex_shaders.find(vs) == vertex_shaders.end())
+				if (vertex_shaders.find(vs) == vertex_shaders.end())
 				{
 					get_vertex_shader(flags);
 				}
 
 				auto ps = (ShaderFlags)(flags & PS_FLAGS);
-				if (ps && pixel_shaders.find(ps) == pixel_shaders.end())
+				if (pixel_shaders.find(ps) == pixel_shaders.end())
 				{
 					get_pixel_shader(flags);
 				}
 			}
-#endif
+		#endif
 
 			for (auto& i : param::parameters)
 			{
