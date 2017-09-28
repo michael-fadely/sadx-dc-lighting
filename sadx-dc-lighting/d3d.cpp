@@ -17,7 +17,6 @@
 #include <MinHook.h>
 
 // Standard library
-#include <filesystem>
 #include <iomanip>
 #include <sstream>
 #include <vector>
@@ -28,11 +27,7 @@
 #include "globals.h"
 #include "../include/lanternapi.h"
 #include "ShaderParameter.h"
-
-namespace std
-{
-	using namespace experimental;
-}
+#include "FileSystem.h"
 
 namespace param
 {
@@ -334,7 +329,7 @@ namespace local
 
 	static void create_cache()
 	{
-		if (!std::filesystem::create_directory(globals::cache_path))
+		if (!filesystem::create_directory(globals::cache_path))
 		{
 			throw std::exception("Failed to create cache directory!");
 		}
@@ -342,9 +337,9 @@ namespace local
 
 	static void invalidate_cache()
 	{
-		if (std::filesystem::exists(globals::cache_path))
+		if (filesystem::exists(globals::cache_path))
 		{
-			if (!std::filesystem::remove_all(globals::cache_path))
+			if (!filesystem::remove_all(globals::cache_path))
 			{
 				throw std::runtime_error("Failed to delete cache directory!");
 			}
@@ -554,33 +549,32 @@ namespace local
 	{
 		load_shader_file(globals::shader_path);
 
+		const std::string checksum_path(move(filesystem::combine_path(globals::cache_path, "checksum.bin")));
 		const std::vector<uint8_t> current_hash(shader_hash());
 
-		std::filesystem::path checksum_path = std::move(std::filesystem::path(globals::cache_path).append("checksum.bin"));
-
-		if (std::filesystem::exists(globals::cache_path))
+		if (filesystem::exists(globals::cache_path))
 		{
-			if (!exists(checksum_path))
+			if (!filesystem::exists(checksum_path))
 			{
-				store_checksum(current_hash, checksum_path.string());
+				store_checksum(current_hash, checksum_path);
 			}
 			else
 			{
-				const std::vector<uint8_t> last_hash(read_checksum(checksum_path.string()));
+				const std::vector<uint8_t> last_hash(read_checksum(checksum_path));
 
 				if (last_hash != current_hash)
 				{
-					store_checksum(current_hash, checksum_path.string());
+					store_checksum(current_hash, checksum_path);
 				}
 			}
 		}
 		else
 		{
-			store_checksum(current_hash, checksum_path.string());
+			store_checksum(current_hash, checksum_path);
 		}
 	}
 
-	static void load_cached_shader(const std::filesystem::path& sid_path, std::vector<uint8_t>& data)
+	static void load_cached_shader(const std::string& sid_path, std::vector<uint8_t>& data)
 	{
 		std::ifstream file(sid_path, std::ios_base::ate | std::ios_base::binary);
 		auto size = file.tellg();
@@ -595,7 +589,7 @@ namespace local
 		file.read(reinterpret_cast<char*>(data.data()), data.size());
 	}
 
-	static void save_cached_shader(const std::filesystem::path& sid_path, std::vector<uint8_t>& data)
+	static void save_cached_shader(const std::string& sid_path, std::vector<uint8_t>& data)
 	{
 		std::ofstream file(sid_path, std::ios_base::binary);
 
@@ -629,8 +623,8 @@ namespace local
 
 		macros.clear();
 
-		const filesystem::path sid_path = move(filesystem::path(globals::cache_path).append(shader_id(flags) + ".vs"));
-		bool is_cached = exists(sid_path);
+		const string sid_path(move(filesystem::combine_path(globals::cache_path, shader_id(flags) + ".vs")));
+		bool is_cached = filesystem::exists(sid_path);
 
 		vector<uint8_t> data;
 
@@ -702,8 +696,8 @@ namespace local
 		sanitize(flags);
 		flags &= PS_FLAGS;
 
-		const filesystem::path sid_path = move(filesystem::path(globals::cache_path).append(shader_id(flags) + ".ps"));
-		bool is_cached = exists(sid_path);
+		const string sid_path = move(filesystem::combine_path(globals::cache_path, shader_id(flags) + ".ps"));
+		bool is_cached = filesystem::exists(sid_path);
 
 		vector<uint8_t> data;
 

@@ -174,7 +174,7 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 
 	if (globals::first_material)
 	{
-		static constexpr auto FLAG_MASK = NJD_FLAG_IGNORE_SPECULAR;
+		constexpr auto FLAG_MASK = NJD_FLAG_IGNORE_SPECULAR;
 
 		_nj_constant_attr_and_ &= ~FLAG_MASK;
 
