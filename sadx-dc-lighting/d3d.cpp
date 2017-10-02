@@ -201,16 +201,16 @@ namespace local
 	static std::vector<D3DXMACRO> macros;
 
 #ifdef USE_OIT
-	static const int numPasses                = 8;
-	static Texture depthUnits[2]              = {};
-	static Texture renderLayers[numPasses]    = {};
-	static Texture blendModeLayers[numPasses] = {};
-	static Texture depthBuffer                = nullptr;
-	static Surface depthSurface               = nullptr;
-	static Texture backBuffers[2]             = {};
-	static Surface backBufferSurface          = nullptr;
-	static Surface origRenderTarget           = nullptr;
-	static bool peeling                       = false;
+	static const int num_passes                  = 8;
+	static Texture depth_units[2]                = {};
+	static Texture render_layers[num_passes]     = {};
+	static Texture blend_mode_layers[num_passes] = {};
+	static Texture depth_buffer                  = nullptr;
+	static Surface depth_surface                 = nullptr;
+	static Texture back_buffers[2]               = {};
+	static Surface back_buffer_surface           = nullptr;
+	static Surface orig_render_target            = nullptr;
+	static bool peeling                          = false;
 
 	static VertexShader blender_vs;
 	static PixelShader blender_ps;
@@ -307,13 +307,14 @@ namespace local
 	}
 
 #ifdef USE_OIT
-	static void createDepthTextures()
+
+	static void create_depth_textures()
 	{
 		using namespace d3d;
 		auto& present = PresentParameters;
 		HRESULT h;
 
-		for (auto& it : depthUnits)
+		for (auto& it : depth_units)
 		{
 			h = device->CreateTexture(present.BackBufferWidth, present.BackBufferHeight,
 				1, D3DUSAGE_DEPTHSTENCIL, (D3DFORMAT)'ZTNI', D3DPOOL_DEFAULT, &it, nullptr);
@@ -324,7 +325,7 @@ namespace local
 			}
 		}
 
-		for (auto& it : renderLayers)
+		for (auto& it : render_layers)
 		{
 			h = device->CreateTexture(present.BackBufferWidth, present.BackBufferHeight,
 				1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &it, nullptr);
@@ -335,7 +336,7 @@ namespace local
 			}
 		}
 
-		for (auto& it : blendModeLayers)
+		for (auto& it : blend_mode_layers)
 		{
 			h = device->CreateTexture(present.BackBufferWidth, present.BackBufferHeight,
 				1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &it, nullptr);
@@ -346,7 +347,7 @@ namespace local
 			}
 		}
 
-		for (auto& it : backBuffers)
+		for (auto& it : back_buffers)
 		{
 			h = device->CreateTexture(present.BackBufferWidth, present.BackBufferHeight,
 				1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &it, nullptr);
@@ -358,42 +359,42 @@ namespace local
 		}
 
 		device->SetDepthStencilSurface(nullptr);
-		depthSurface = nullptr;
-		depthBuffer = nullptr;
+		depth_surface = nullptr;
+		depth_buffer = nullptr;
 
 		device->CreateTexture(present.BackBufferWidth, present.BackBufferHeight,
-			1, D3DUSAGE_DEPTHSTENCIL, (D3DFORMAT)'ZTNI', D3DPOOL_DEFAULT, &depthBuffer, nullptr);
+			1, D3DUSAGE_DEPTHSTENCIL, (D3DFORMAT)'ZTNI', D3DPOOL_DEFAULT, &depth_buffer, nullptr);
 
-		backBuffers[0]->GetSurfaceLevel(0, &backBufferSurface);
+		back_buffers[0]->GetSurfaceLevel(0, &back_buffer_surface);
 
-		device->GetRenderTarget(0, &origRenderTarget);
-		device->SetRenderTarget(0, backBufferSurface);
+		device->GetRenderTarget(0, &orig_render_target);
+		device->SetRenderTarget(0, back_buffer_surface);
 
-		depthBuffer->GetSurfaceLevel(0, &depthSurface);
-		device->SetDepthStencilSurface(depthSurface);
+		depth_buffer->GetSurfaceLevel(0, &depth_surface);
+		device->SetDepthStencilSurface(depth_surface);
 
 		device->SetRenderState(D3DRS_ZENABLE, TRUE);
 		device->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
 	}
 
-	static void releaseDepthTextures()
+	static void release_depth_textures()
 	{
-		for (auto& it : depthUnits)
+		for (auto& it : depth_units)
 		{
 			it = nullptr;
 		}
 
-		for (auto& it : renderLayers)
+		for (auto& it : render_layers)
 		{
 			it = nullptr;
 		}
 
-		for (auto& it : blendModeLayers)
+		for (auto& it : blend_mode_layers)
 		{
 			it = nullptr;
 		}
 
-		for (auto& it : backBuffers)
+		for (auto& it : back_buffers)
 		{
 			it = nullptr;
 		}
@@ -401,10 +402,10 @@ namespace local
 		param::AlphaDepth.release();
 		param::OpaqueDepth.release();
 
-		depthSurface      = nullptr;
-		depthBuffer       = nullptr;
-		backBufferSurface = nullptr;
-		origRenderTarget  = nullptr;
+		depth_surface      = nullptr;
+		depth_buffer       = nullptr;
+		back_buffer_surface = nullptr;
+		orig_render_target  = nullptr;
 	}
 
 #endif
@@ -1185,7 +1186,7 @@ namespace local
 			initialized = true;
 			d3d::load_shader();
 			hook_vtable();
-			createDepthTextures();
+			create_depth_textures();
 		}
 	}
 
@@ -1429,7 +1430,7 @@ namespace local
 		D3DXVECTOR2 TexCoord;
 	};
 
-	static void DrawQuad()
+	static void draw_quad()
 	{
 		const auto& present = PresentParameters;
 		QuadVertex quad[4] = {};
@@ -1510,6 +1511,7 @@ namespace local
 	}
 
 	#pragma pack(push, 1)
+
 	struct QueuedModelPointer
 	{
 		QueuedModelNode Node;
@@ -1976,7 +1978,7 @@ namespace local
 		}
 	};
 
-	static void renderLayerPasses()
+	static void render_layer_passes()
 	{
 		using namespace d3d;
 
@@ -1985,7 +1987,7 @@ namespace local
 		int passes = guard.passes;
 
 		set_flags(ShaderFlags_OIT, true);
-		param::OpaqueDepth = depthBuffer;
+		param::OpaqueDepth = depth_buffer;
 		peeling = true;
 		do_effect = true;
 
@@ -1998,13 +2000,13 @@ namespace local
 		for (int p = 0; p < passes; p++)
 		{
 			// TODO: loop per draw type & use [numPasses] depth buffers
-			for (int i = 0; i < numPasses; i++)
+			for (int i = 0; i < num_passes; i++)
 			{
 				int currId = i % 2;
 				int lastId = (i + 1) % 2;
 
-				Texture currUnit = depthUnits[currId];
-				Texture lastUnit = depthUnits[lastId];
+				Texture currUnit = depth_units[currId];
+				Texture lastUnit = depth_units[lastId];
 
 				if (!i)
 				{
@@ -2021,10 +2023,10 @@ namespace local
 				currUnit->GetSurfaceLevel(0, &unit);
 				device->SetDepthStencilSurface(unit);
 
-				renderLayers[i]->GetSurfaceLevel(0, &target);
+				render_layers[i]->GetSurfaceLevel(0, &target);
 				device->SetRenderTarget(0, target);
 
-				blendModeLayers[i]->GetSurfaceLevel(0, &blendmode);
+				blend_mode_layers[i]->GetSurfaceLevel(0, &blendmode);
 				device->SetRenderTarget(1, blendmode);
 
 				device->Clear(0, nullptr, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
@@ -2064,7 +2066,7 @@ namespace local
 		device->SetRenderTarget(1, nullptr);
 	}
 
-	static void renderBackBuffer()
+	static void render_back_buffer()
 	{
 		using namespace d3d;
 		DWORD zenable, lighting, alphablendenable, alphatestenable,
@@ -2106,21 +2108,21 @@ namespace local
 		using_shader = false;
 
 		int lastId = 0;
-		for (int i = numPasses; i > 0; i--)
+		for (int i = num_passes; i > 0; i--)
 		{
 			int currId = i % 2;
 			lastId = (i + 1) % 2;
 
-			device->SetTexture(1, backBuffers[currId]);
-			device->SetTexture(2, renderLayers[i - 1]);
-			device->SetTexture(3, blendModeLayers[i - 1]);
+			device->SetTexture(1, back_buffers[currId]);
+			device->SetTexture(2, render_layers[i - 1]);
+			device->SetTexture(3, blend_mode_layers[i - 1]);
 
 			Surface surface = nullptr;
-			backBuffers[lastId]->GetSurfaceLevel(0, &surface);
+			back_buffers[lastId]->GetSurfaceLevel(0, &surface);
 			device->SetRenderTarget(0, surface);
 			device->Clear(0, nullptr, D3DCLEAR_TARGET, 0, 0.0f, 0);
 
-			DrawQuad();
+			draw_quad();
 
 			surface = nullptr;
 
@@ -2128,13 +2130,13 @@ namespace local
 			{
 				auto i_str = std::to_string(i);
 				std::string path = "layer" + i_str + ".png";
-				D3DXSaveTextureToFileA(path.c_str(), D3DXIFF_PNG, renderLayers[i - 1], nullptr);
+				D3DXSaveTextureToFileA(path.c_str(), D3DXIFF_PNG, render_layers[i - 1], nullptr);
 
 				path = "blend" + i_str + ".png";
-				D3DXSaveTextureToFileA(path.c_str(), D3DXIFF_PNG, blendModeLayers[i - 1], nullptr);
+				D3DXSaveTextureToFileA(path.c_str(), D3DXIFF_PNG, blend_mode_layers[i - 1], nullptr);
 
 				path = "backbuffer" + i_str + ".png";
-				D3DXSaveTextureToFileA(path.c_str(), D3DXIFF_PNG, backBuffers[lastId], nullptr);
+				D3DXSaveTextureToFileA(path.c_str(), D3DXIFF_PNG, back_buffers[lastId], nullptr);
 			}
 		}
 
@@ -2147,14 +2149,14 @@ namespace local
 		device->SetVertexShader(nullptr);
 		device->SetPixelShader(nullptr);
 
-		device->SetRenderTarget(0, origRenderTarget);
-		device->SetDepthStencilSurface(depthSurface);
+		device->SetRenderTarget(0, orig_render_target);
+		device->SetDepthStencilSurface(depth_surface);
 		device->Clear(0, nullptr, D3DCLEAR_TARGET, 0, 0.0f, 0);
 
 		do_effect = false;
 
-		device->SetTexture(0, backBuffers[lastId]);
-		DrawQuad();
+		device->SetTexture(0, back_buffers[lastId]);
+		draw_quad();
 		device->SetTexture(0, nullptr);
 
 		device->SetRenderState(D3DRS_ZENABLE, zenable);
@@ -2194,7 +2196,7 @@ namespace local
 		auto draw = TARGET_STATIC(DrawQueuedModels);
 		draw();
 
-		device->SetRenderTarget(0, backBufferSurface);
+		device->SetRenderTarget(0, back_buffer_surface);
 	}
 
 	static void __cdecl DrawQueuedModels_r()
@@ -2202,7 +2204,7 @@ namespace local
 		if (!nodes.empty())
 		{
 			sort_nodes();
-			renderLayerPasses();
+			render_layer_passes();
 
 #ifdef USE_NODE_LIMIT
 			if (nodes.size() > NODE_LIMIT)
@@ -2216,7 +2218,7 @@ namespace local
 			}
 		}
 
-		renderBackBuffer();
+		render_back_buffer();
 	}
 
 	DataArray(D3DBLEND, BlendModes, 0x0088AD6C, 12);
@@ -2434,11 +2436,13 @@ extern "C"
 	EXPORT void __cdecl OnRenderDeviceLost()
 	{
 		end();
+		release_depth_textures();
 		free_shaders();
 	}
 
 	EXPORT void __cdecl OnRenderDeviceReset()
 	{
+		create_depth_textures();
 		create_shaders();
 	}
 
@@ -2446,5 +2450,6 @@ extern "C"
 	{
 		param::release_parameters();
 		free_shaders();
+		release_depth_textures();
 	}
 }
