@@ -17,7 +17,6 @@
 #include <MinHook.h>
 
 // Standard library
-#include <filesystem>
 #include <iomanip>
 #include <sstream>
 #include <vector>
@@ -28,12 +27,8 @@
 #include "globals.h"
 #include "../include/lanternapi.h"
 #include "ShaderParameter.h"
+#include "FileSystem.h"
 #include <algorithm>
-
-namespace std
-{
-	using namespace experimental;
-}
 
 namespace param
 {
@@ -225,7 +220,6 @@ namespace local
 
 	DataPointer(Direct3DDevice8*, Direct3D_Device, 0x03D128B0);
 	DataPointer(Direct3D8*, Direct3D_Object, 0x03D11F60);
-	DataPointer(D3DXMATRIX, InverseViewMatrix, 0x0389D358);
 	DataPointer(D3DXMATRIX, TransformationMatrix, 0x03D0FD80);
 	DataPointer(D3DXMATRIX, ViewMatrix, 0x0389D398);
 	DataPointer(D3DXMATRIX, WorldMatrix, 0x03D12900);
@@ -279,25 +273,25 @@ namespace local
 			d3d::vertex_shader = get_vertex_shader(DEFAULT_FLAGS);
 			d3d::pixel_shader = get_pixel_shader(DEFAULT_FLAGS);
 
-#ifdef PRECOMPILE_SHADERS
+		#ifdef PRECOMPILE_SHADERS
 			for (Uint32 i = 0; i < ShaderFlags_Count; i++)
 			{
 				auto flags = i;
 				local::sanitize(flags);
 
 				auto vs = (ShaderFlags)(flags & VS_FLAGS);
-				if (flags && vertex_shaders.find(vs) == vertex_shaders.end())
+				if (vertex_shaders.find(vs) == vertex_shaders.end())
 				{
 					get_vertex_shader(flags);
 				}
 
 				auto ps = (ShaderFlags)(flags & PS_FLAGS);
-				if (ps && pixel_shaders.find(ps) == pixel_shaders.end())
+				if (pixel_shaders.find(ps) == pixel_shaders.end())
 				{
 					get_pixel_shader(flags);
 				}
 			}
-#endif
+		#endif
 
 			for (auto& i : param::parameters)
 			{
@@ -493,7 +487,7 @@ namespace local
 
 	static void create_cache()
 	{
-		if (!std::filesystem::create_directory(globals::cache_path))
+		if (!filesystem::create_directory(globals::cache_path))
 		{
 			throw std::exception("Failed to create cache directory!");
 		}
@@ -501,9 +495,9 @@ namespace local
 
 	static void invalidate_cache()
 	{
-		if (std::filesystem::exists(globals::cache_path))
+		if (filesystem::exists(globals::cache_path))
 		{
-			if (!std::filesystem::remove_all(globals::cache_path))
+			if (!filesystem::remove_all(globals::cache_path))
 			{
 				throw std::runtime_error("Failed to delete cache directory!");
 			}
@@ -720,33 +714,32 @@ namespace local
 	{
 		load_shader_file(globals::shader_path);
 
-		std::vector<uint8_t> current_hash(shader_hash());
+		const std::string checksum_path(move(filesystem::combine_path(globals::cache_path, "checksum.bin")));
+		const std::vector<uint8_t> current_hash(shader_hash());
 
-		std::filesystem::path checksum_path = std::move(std::filesystem::path(globals::cache_path).append("checksum.bin"));
-
-		if (std::filesystem::exists(globals::cache_path))
+		if (filesystem::exists(globals::cache_path))
 		{
-			if (!exists(checksum_path))
+			if (!filesystem::exists(checksum_path))
 			{
-				store_checksum(current_hash, checksum_path.string());
+				store_checksum(current_hash, checksum_path);
 			}
 			else
 			{
-				std::vector<uint8_t> last_hash(read_checksum(checksum_path.string()));
+				const std::vector<uint8_t> last_hash(read_checksum(checksum_path));
 
 				if (last_hash != current_hash)
 				{
-					store_checksum(current_hash, checksum_path.string());
+					store_checksum(current_hash, checksum_path);
 				}
 			}
 		}
 		else
 		{
-			store_checksum(current_hash, checksum_path.string());
+			store_checksum(current_hash, checksum_path);
 		}
 	}
 
-	static void load_cached_shader(std::filesystem::path sid_path, std::vector<uint8_t>& data)
+	static void load_cached_shader(const std::string& sid_path, std::vector<uint8_t>& data)
 	{
 		std::ifstream file(sid_path, std::ios_base::ate | std::ios_base::binary);
 		auto size = file.tellg();
@@ -761,7 +754,7 @@ namespace local
 		file.read(reinterpret_cast<char*>(data.data()), data.size());
 	}
 
-	static void save_cached_shader(std::filesystem::path sid_path, std::vector<uint8_t>& data)
+	static void save_cached_shader(const std::string& sid_path, std::vector<uint8_t>& data)
 	{
 		std::ofstream file(sid_path, std::ios_base::binary);
 
@@ -795,8 +788,8 @@ namespace local
 
 		macros.clear();
 
-		filesystem::path sid_path = move(filesystem::path(globals::cache_path).append(shader_id(flags) + ".vs"));
-		bool is_cached = exists(sid_path);
+		const string sid_path(move(filesystem::combine_path(globals::cache_path, shader_id(flags) + ".vs")));
+		bool is_cached = filesystem::exists(sid_path);
 
 		vector<uint8_t> data;
 
@@ -868,8 +861,8 @@ namespace local
 		sanitize(flags);
 		flags &= PS_FLAGS;
 
-		filesystem::path sid_path = move(filesystem::path(globals::cache_path).append(shader_id(flags) + ".ps"));
-		bool is_cached = exists(sid_path);
+		const string sid_path = move(filesystem::combine_path(globals::cache_path, shader_id(flags) + ".ps"));
+		bool is_cached = filesystem::exists(sid_path);
 
 		vector<uint8_t> data;
 
@@ -946,7 +939,7 @@ namespace local
 
 	static void shader_start()
 	{
-		if (!d3d::do_effect || d3d::do_effect && !drawing)
+		if (!d3d::do_effect || !drawing)
 		{
 			shader_end();
 			return;
@@ -1382,10 +1375,10 @@ namespace local
 		Direct3D_Device->SetVertexShader(buffer->FVF);
 		Direct3D_Device->SetStreamSource(0, buffer->VertexBuffer, buffer->Size);
 
-		auto indexBuffer = buffer->IndexBuffer;
-		if (indexBuffer)
+		const auto index_buffer = buffer->IndexBuffer;
+		if (index_buffer)
 		{
-			Direct3D_Device->SetIndices(indexBuffer, 0);
+			Direct3D_Device->SetIndices(index_buffer, 0);
 
 			begin();
 
@@ -2434,7 +2427,6 @@ namespace d3d
 	}
 }
 
-// These exports are for the window resize branch of the mod loader.
 extern "C"
 {
 	using namespace local;

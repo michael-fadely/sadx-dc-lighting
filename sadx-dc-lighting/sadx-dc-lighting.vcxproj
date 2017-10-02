@@ -153,6 +153,7 @@ xcopy /C /Y /D "$(ProjectDir)lantern.hlsl" "$(OutDir)system\"</Command>
     <ClInclude Include="d3d.h" />
     <ClInclude Include="datapointers.h" />
     <ClInclude Include="ecgarden.h" />
+    <ClInclude Include="FileSystem.h" />
     <ClInclude Include="ShaderParameter.h" />
     <ClInclude Include="FixChaoGardenMaterials.h" />
     <ClInclude Include="FixCharacterMaterials.h" />
@@ -169,6 +170,7 @@ xcopy /C /Y /D "$(ProjectDir)lantern.hlsl" "$(OutDir)system\"</Command>
   <ItemGroup>
     <ClCompile Include="..\sadx-mod-loader\libmodutils\Trampoline.cpp" />
     <ClCompile Include="d3d.cpp" />
+    <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="ShaderParameter.cpp" />
     <ClCompile Include="FixChaoGardenMaterials.cpp" />
     <ClCompile Include="FixCharacterMaterials.cpp" />

@@ -47,7 +47,6 @@
 #include <algorithm>
 #include <deque>
 #include <exception>
-#include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <sstream>
@@ -69,6 +68,7 @@
 #include "Obj_SkyDeck.h"
 #include "Obj_Chaos7.h"
 #include "Trampoline.h"
+#include "FileSystem.h"
 
 // Materials
 #include "ssgarden.h"

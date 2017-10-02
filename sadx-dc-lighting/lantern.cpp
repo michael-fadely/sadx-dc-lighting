@@ -138,6 +138,13 @@ static bool use_time(Uint32 level, Uint32 act)
 		{
 			return false;
 		}
+
+		// Chao Race should not be adjusted. It always takes
+		// place during the day.
+		case LevelIDs_ChaoRace:
+		{
+			return false;
+		}
 	}
 }
 
@@ -374,42 +381,40 @@ void LanternInstance::set_last_level(Sint32 level, Sint32 act)
 /// <returns><c>true</c> on success.</returns>
 bool LanternInstance::load_source(const std::string& path)
 {
-	bool result = true;
 	auto file = std::ifstream(path, std::ios::binary);
 
 	if (!file.is_open())
 	{
 		PrintDebug("[lantern] Lantern source not found: %s\n", path.c_str());
 		sl_direction = { 0.0f, -1.0f, 0.0f };
-		result = false;
+		return false;
 	}
-	else
+
+	PrintDebug("[lantern] Loading lantern source: %s\n", path.c_str());
+
+	for (int i = 0; i < 16; i++)
 	{
-		PrintDebug("[lantern] Loading lantern source: %s\n", path.c_str());
+		file.read((char*)&source_lights[i], sizeof(SourceLight));
+	}
 
-		for (int i = 0; i < 16; i++)
-		{
-			file.read((char*)&source_lights[i], sizeof(SourceLight));
-		}
-
-		file.close();
+	file.close();
 
 #ifdef USE_SL
-		param::SourceLight = source_lights[15].stage;
+	param::SourceLight = source_lights[15].stage;
 #endif
 
-		NJS_MATRIX m;
+	NJS_MATRIX m;
 
-		njUnitMatrix(m);
-		njRotateY(m, source_lights[15].stage.y);
-		njRotateZ(m, source_lights[15].stage.z);
+	njUnitMatrix(m);
+	njRotateY(m, source_lights[15].stage.y);
+	njRotateZ(m, source_lights[15].stage.z);
 
-		// Default light direction is down, so we want to rotate relative to that.
-		NJS_VECTOR vs = { 0.0f, -1.0f, 0.0f };
-		njCalcVector(m, &vs, &sl_direction);
-	}
+	// Default light direction is down, so we want to rotate relative to that.
+	NJS_VECTOR vs = { 0.0f, -1.0f, 0.0f };
+	njCalcVector(m, &vs, &sl_direction);
+	param::LightDirection = -*(D3DXVECTOR3*)&sl_direction;
 
-	return result;
+	return true;
 }
 
 /// <summary>
@@ -442,14 +447,14 @@ bool LanternInstance::load_palette(const std::string& path)
 
 	PrintDebug("[lantern] Loading lantern palette: %s\n", path.c_str());
 
-	std::vector<ColorPair> colorData;
+	std::vector<ColorPair> color_data;
 
 	do
 	{
 		ColorPair pair = {};
 		file.read((char*)&pair.diffuse, sizeof(NJS_COLOR));
 		file.read((char*)&pair.specular, sizeof(NJS_COLOR));
-		colorData.push_back(pair);
+		color_data.push_back(pair);
 	} while (!file.eof());
 
 	file.close();
@@ -492,7 +497,7 @@ bool LanternInstance::load_palette(const std::string& path)
 	for (size_t i = 0; i < 8; i++)
 	{
 		auto index = i * 256;
-		if (index >= colorData.size() || index + 256 >= colorData.size())
+		if (index >= color_data.size() || index + 256 >= color_data.size())
 		{
 			break;
 		}
@@ -501,11 +506,11 @@ bool LanternInstance::load_palette(const std::string& path)
 
 		if (is_32bit)
 		{
-			auto pixels = (NJS_COLOR*)rect.pBits;
+			const auto pixels = (NJS_COLOR*)rect.pBits;
 
 			for (size_t x = 0; x < 256; x++)
 			{
-				const auto& color = colorData[index + x];
+				const auto& color = color_data[index + x];
 
 				auto& diffuse = pixels[y + x];
 				auto& specular = pixels[256 + y + x];
@@ -516,11 +521,11 @@ bool LanternInstance::load_palette(const std::string& path)
 		}
 		else
 		{
-			auto pixels = (ABGR32F*)rect.pBits;
+			const auto pixels = (ABGR32F*)rect.pBits;
 
 			for (size_t x = 0; x < 256; x++)
 			{
-				const auto& color = colorData[index + x];
+				const auto& color = color_data[index + x];
 
 				auto& diffuse = pixels[y + x];
 				auto& specular = pixels[256 + y + x];
@@ -797,14 +802,14 @@ bool LanternCollection::run_sl_callbacks(Sint32 level, Sint32 act, Sint8 time)
 
 	for (auto& cb : sl_callbacks)
 	{
-		auto path_ptr = cb(level, act);
+		const char* path_ptr = cb(level, act);
 
 		if (path_ptr == nullptr)
 		{
 			continue;
 		}
 
-		std::string path_str = path_ptr;
+		const std::string path_str = path_ptr;
 
 		for (auto& instance : instances)
 		{
@@ -957,9 +962,9 @@ void LanternCollection::forward_blend_all(bool enable)
 }
 
 __forceinline
-void _blend_all(Sint32(&srcArray)[8], int value)
+void _blend_all(Sint32(&src_array)[8], int value)
 {
-	for (auto& i : srcArray)
+	for (auto& i : src_array)
 	{
 		i = value;
 	}
@@ -1046,7 +1051,7 @@ void LanternCollection::callback_add(std::deque<lantern_load_cb>& c, lantern_loa
 
 void LanternCollection::callback_del(std::deque<lantern_load_cb>& c, lantern_load_cb callback)
 {
-	std::remove(c.begin(), c.end(), callback);
+	c.erase(std::remove(c.begin(), c.end(), callback), c.end());
 }
 
 size_t LanternCollection::add(LanternInstance& src)

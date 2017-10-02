@@ -33,26 +33,25 @@ static Trampoline* Direct3D_SetTexList_t           = nullptr;
 static Trampoline* SetCurrentStageLights_t         = nullptr;
 static Trampoline* SetCurrentStageLight_EggViper_t = nullptr;
 
-DataArray(PaletteLight, LightPaletteData, 0x00903E88, 256);
 DataArray(StageLightData, CurrentStageLights, 0x03ABD9F8, 4);
 DataArray(NJS_TEXLIST*, LevelObjTexlists, 0x03B290B4, 4);
 DataArray(D3DBLEND, NJD_FLAG_D3DBLEND, 0x0088AE1C, 9);
 
-DataPointer(NJS_COLOR, EntityVertexColor, 0x03D0848C);
-DataPointer(NJS_COLOR, LandTableVertexColor, 0x03D08494);
 DataPointer(PaletteLight, LSPalette, 0x03ABDAF0);
-DataPointer(Uint32, LastRenderFlags, 0x03D08498);
 DataPointer(NJS_VECTOR, NormalScaleMultiplier, 0x03B121F8);
 DataPointer(NJS_TEXLIST*, CommonTextures, 0x03B290B0);
 
 #ifdef _DEBUG
-static void DisplayLightDirection()
+static void show_light_direction()
 {
 	using namespace globals;
 
 	auto player = CharObj1Ptrs[0];
+
 	if (player == nullptr)
+	{
 		return;
+	}
 
 	NJS_POINT3 points[2] = {
 		player->Position,
@@ -94,7 +93,9 @@ static void update_material(const D3DMATERIAL9& material)
 	using namespace d3d;
 
 	if (!LanternInstance::use_palette() || !shaders_not_null())
+	{
 		return;
+	}
 
 	D3DMATERIALCOLORSOURCE colorsource;
 	device->GetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, (DWORD*)&colorsource);
@@ -166,7 +167,6 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 #endif
 
 	Uint32 flags = material->attrflags;
-	//Uint32 texid = material->attr_texId & 0xFFFF;
 
 	if (material->specular.argb.a == 0)
 	{
@@ -175,7 +175,7 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 
 	if (globals::first_material)
 	{
-		static constexpr auto FLAG_MASK = NJD_FLAG_IGNORE_SPECULAR;
+		constexpr auto FLAG_MASK = NJD_FLAG_IGNORE_SPECULAR;
 
 		_nj_constant_attr_and_ &= ~FLAG_MASK;
 
@@ -200,8 +200,7 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 
 	globals::palettes.set_palettes(globals::light_type, flags);
 
-	bool use_texture = (flags & NJD_FLAG_USE_TEXTURE) != 0;
-	set_flags(ShaderFlags_Texture, use_texture);
+	set_flags(ShaderFlags_Texture, (flags & NJD_FLAG_USE_TEXTURE) != 0);
 	set_flags(ShaderFlags_Alpha, (flags & NJD_FLAG_USE_ALPHA) != 0);
 	set_flags(ShaderFlags_EnvMap, (flags & NJD_FLAG_USE_ENV) != 0);
 	set_flags(ShaderFlags_Light, (flags & NJD_FLAG_IGNORE_LIGHT) == 0);
@@ -211,20 +210,6 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 
 	// Environment map matrix
 	param::TextureTransform = *(D3DXMATRIX*)0x038A5DD0;
-	
-	/*if (use_texture)
-	{
-		auto textures = Direct3D_CurrentTexList->textures;
-		NJS_TEXMEMLIST* texmem = textures ? (NJS_TEXMEMLIST*)textures[texid].texaddr : nullptr;
-		if (texmem != nullptr)
-		{
-			auto texture = (Direct3DTexture8*)texmem->texinfo.texsurface.pSurface;
-			if (texture != nullptr)
-			{
-				param::BaseTexture = texture->GetProxyInterface();
-			}
-		}
-	}*/
 
 	D3DMATERIAL9 mat;
 	device->GetMaterial(&mat);
@@ -277,18 +262,33 @@ static void __cdecl GoToNextChaoStage_r()
 	TARGET_DYNAMIC(GoToNextChaoStage)();
 
 	auto level = CurrentLevel;
+	auto act = CurrentAct;
+
 	switch (GetCurrentChaoStage())
 	{
 		case SADXChaoStage_StationSquare:
 			CurrentLevel = LevelIDs_SSGarden;
+			CurrentAct = 0;
 			break;
 
 		case SADXChaoStage_EggCarrier:
 			CurrentLevel = LevelIDs_ECGarden;
+			CurrentAct = 0;
 			break;
 
 		case SADXChaoStage_MysticRuins:
 			CurrentLevel = LevelIDs_MRGarden;
+			CurrentAct = 0;
+			break;
+
+		case SADXChaoStage_Race:
+			CurrentLevel = LevelIDs_ChaoRace;
+			CurrentAct = 1;
+			break;
+
+		case SADXChaoStage_RaceEntry:
+			CurrentLevel = LevelIDs_ChaoRace;
+			CurrentAct = 0;
 			break;
 
 		default:
@@ -296,7 +296,9 @@ static void __cdecl GoToNextChaoStage_r()
 	}
 
 	globals::palettes.load_files();
+
 	CurrentLevel = level;
+	CurrentAct = act;
 }
 
 static void __cdecl GoToNextLevel_r()
@@ -392,7 +394,7 @@ static void __cdecl NormalScale_r(float x, float y, float z)
 	}
 }
 
-void set_light_direction()
+static void set_light_direction()
 {
 	if (globals::palettes.size())
 	{
@@ -404,13 +406,13 @@ void set_light_direction()
 	}
 }
 
-void __cdecl SetCurrentStageLights_r(int level, int act)
+static void __cdecl SetCurrentStageLights_r(int level, int act)
 {
 	TARGET_DYNAMIC(SetCurrentStageLights)(level, act);
 	set_light_direction();
 }
 
-void __cdecl SetCurrentStageLight_EggViper_r(ObjectMaster* a1)
+static void __cdecl SetCurrentStageLight_EggViper_r(ObjectMaster* a1)
 {
 	TARGET_DYNAMIC(SetCurrentStageLight_EggViper)(a1);
 	set_light_direction();
@@ -422,10 +424,12 @@ extern "C"
 	EXPORT void __cdecl Init(const char *path)
 	{
 		auto handle = GetModuleHandle(L"d3d9.dll");
+
 		if (handle == nullptr)
 		{
 			MessageBoxA(WindowHandle, "Unable to detect Direct3D 9 DLL. The mod will not function.",
 				"D3D9 not loaded", MB_OK | MB_ICONERROR);
+
 			return;
 		}
 
@@ -506,7 +510,7 @@ extern "C"
 			return;
 		}
 
-		DisplayLightDirection();
+		show_light_direction();
 	}
 #endif
 }
