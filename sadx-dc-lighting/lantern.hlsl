@@ -218,7 +218,7 @@ PS_IN vs_main(VS_IN input)
 
 		// This is the "brightness index" calculation. Just a dot product
 		// of the vertex normal (in world space) and the light direction.
-		float _dot = dot(LightDirection, worldNormal);
+		float _dot = dot(normalize(LightDirection), worldNormal);
 
 		// The palette's brightest point is 0, and its darkest point is 1,
 		// so we push the dot product (-1 .. 1) into the rage 0 .. 1, and
