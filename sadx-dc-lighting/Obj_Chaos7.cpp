@@ -16,7 +16,7 @@ static void __cdecl Obj_Chaos7_r(ObjectMaster* a1)
 {
 	TARGET_DYNAMIC(Obj_Chaos7)(a1);
 
-	bool use = PerfectChaosPhase == 1 && !*(int*)0x3B2C578; // address is EV_MainThread_ptr
+	bool use = PerfectChaosPhase == 1 && !(*reinterpret_cast<int*>(0x3B2C578)); // address is EV_MainThread_ptr
 
 	if (use != use_secondary)
 	{

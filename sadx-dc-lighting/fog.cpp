@@ -64,20 +64,20 @@ static void __cdecl njSetFogTable_r(NJS_FOG_TABLE fogtable)
 		return;
 	}
 
-	device->GetRenderState(D3DRS_FOGTABLEMODE, (DWORD*)&fog_mode);
+	device->GetRenderState(D3DRS_FOGTABLEMODE, reinterpret_cast<DWORD*>(&fog_mode));
 	param::FogMode = fog_mode;
 	set_flags(ShaderFlags_Fog, true);
 
 	float start, end, density;
-	device->GetRenderState(D3DRS_FOGSTART, (DWORD*)&start);
-	device->GetRenderState(D3DRS_FOGEND, (DWORD*)&end);
+	device->GetRenderState(D3DRS_FOGSTART, reinterpret_cast<DWORD*>(&start));
+	device->GetRenderState(D3DRS_FOGEND, reinterpret_cast<DWORD*>(&end));
 
 	param::FogStart = start;
 	param::FogEnd = end;
 
 	if (fog_mode != D3DFOG_LINEAR)
 	{
-		device->GetRenderState(D3DRS_FOGDENSITY, (DWORD*)&density);
+		device->GetRenderState(D3DRS_FOGDENSITY, reinterpret_cast<DWORD*>(&density));
 		param::FogDensity = density;
 	}
 }

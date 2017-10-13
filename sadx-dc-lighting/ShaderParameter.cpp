@@ -8,7 +8,7 @@ bool ShaderParameter<bool>::commit(IDirect3DDevice9* device)
 {
 	if (is_modified())
 	{
-		float f = current ? 1.0f : 0.0f;
+		const auto f = current ? 1.0f : 0.0f;
 		float buffer[4] = { f, f, f, f };
 
 		device->SetVertexShaderConstantF(index, buffer, 1);
@@ -27,7 +27,7 @@ bool ShaderParameter<int>::commit(IDirect3DDevice9* device)
 {
 	if (is_modified())
 	{
-		auto f = (float)current;
+		const auto f = static_cast<float>(current);
 		float buffer[4] = { f, f, f, f };
 
 		device->SetVertexShaderConstantF(index, buffer, 1);

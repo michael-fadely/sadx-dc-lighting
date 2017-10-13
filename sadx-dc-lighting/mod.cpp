@@ -97,7 +97,7 @@ static void update_material(const D3DMATERIAL9& material)
 	}
 
 	D3DMATERIALCOLORSOURCE colorsource;
-	device->GetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, (DWORD*)&colorsource);
+	device->GetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, reinterpret_cast<DWORD*>(&colorsource));
 
 	param::DiffuseSource   = colorsource;
 	param::MaterialDiffuse = material.Diffuse;
@@ -205,7 +205,7 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 	set_flags(ShaderFlags_Light, (flags & NJD_FLAG_IGNORE_LIGHT) == 0);
 
 	// Environment map matrix
-	param::TextureTransform = *(D3DXMATRIX*)0x038A5DD0;
+	param::TextureTransform = *reinterpret_cast<D3DXMATRIX*>(0x038A5DD0);
 
 	D3DMATERIAL9 mat;
 	device->GetMaterial(&mat);
@@ -235,7 +235,7 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 
 static void __cdecl CharSel_LoadA_r()
 {
-	auto original = TARGET_DYNAMIC(CharSel_LoadA);
+	const auto original = TARGET_DYNAMIC(CharSel_LoadA);
 
 	globals::palettes.load_palette(LevelIDs_SkyDeck, 0);
 	globals::palettes.set_last_level(CurrentLevel, CurrentAct);
@@ -455,7 +455,7 @@ extern "C"
 		SetCurrentStageLight_EggViper_t = new Trampoline(0x0057E560, 0x0057E567, SetCurrentStageLight_EggViper_r);
 
 		// Material callback hijack
-		WriteJump((void*)0x0040A340, CorrectMaterial_r);
+		WriteJump(reinterpret_cast<void*>(0x0040A340), CorrectMaterial_r);
 
 		FixCharacterMaterials();
 		FixChaoGardenMaterials();
@@ -465,10 +465,10 @@ extern "C"
 
 		// Vertex normal correction for certain objects in
 		// Red Mountain and Sky Deck.
-		WriteCall((void*)0x00411EDA, NormalScale_r);
-		WriteCall((void*)0x00411F1D, NormalScale_r);
-		WriteCall((void*)0x00411F44, NormalScale_r);
-		WriteCall((void*)0x00412783, NormalScale_r);
+		WriteCall(reinterpret_cast<void*>(0x00411EDA), NormalScale_r);
+		WriteCall(reinterpret_cast<void*>(0x00411F1D), NormalScale_r);
+		WriteCall(reinterpret_cast<void*>(0x00411F44), NormalScale_r);
+		WriteCall(reinterpret_cast<void*>(0x00412783), NormalScale_r);
 
 		NormalScaleMultiplier = { 1.0f, 1.0f, 1.0f };
 	}
