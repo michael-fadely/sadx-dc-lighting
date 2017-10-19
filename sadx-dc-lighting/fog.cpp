@@ -56,16 +56,20 @@ static void __cdecl njSetFogTable_r(NJS_FOG_TABLE fogtable)
 	param::FogMode = fog_mode;
 	set_flags(ShaderFlags_Fog, true);
 
+	D3DXVECTOR3 fog_config {};
+
 	float start, end, density;
 	device->GetRenderState(D3DRS_FOGSTART, reinterpret_cast<DWORD*>(&start));
 	device->GetRenderState(D3DRS_FOGEND, reinterpret_cast<DWORD*>(&end));
 
-	param::FogStart = start;
-	param::FogEnd = end;
+	fog_config.x = start;
+	fog_config.y = end;
 
 	if (fog_mode != D3DFOG_LINEAR)
 	{
 		device->GetRenderState(D3DRS_FOGDENSITY, reinterpret_cast<DWORD*>(&density));
-		param::FogDensity = density;
+		fog_config.z = density;
 	}
+
+	param::FogConfig = fog_config;
 }

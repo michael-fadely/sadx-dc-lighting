@@ -62,10 +62,12 @@ float4 Indices : register(c22) = 0;
 float3 LightDirection : register(c26) = float3(0.0f, -1.0f, 0.0f);
 float3 NormalScale : register(c27) = float3(1, 1, 1);
 
-uint   FogMode : register(c28) = (uint)FOGMODE_NONE;
-float  FogStart : register(c29);
-float  FogEnd : register(c30);
-float  FogDensity : register(c31);
+// FogMode cannot be merged with FogConfig because of
+// Shader Model 3 restrictions on acceptable values.
+uint FogMode : register(c28) = (uint)FOGMODE_NONE;
+
+// x y and z are start, end, and density respectively
+float3 FogConfig : register(c29);
 float4 FogColor : register(c32);
 
 // .x is diffuse, .y is specular
@@ -109,10 +111,8 @@ SamplerState atlasSamplerB : register(s2) = sampler_state
 
 // Helpers
 
-#ifdef USE_FOG
 // From FixedFuncEMU.fx
 // Copyright (c) 2005 Microsoft Corporation. All rights reserved.
-
 float CalcFogFactor(float d)
 {
 	float fogCoeff;
@@ -123,21 +123,20 @@ float CalcFogFactor(float d)
 			break;
 
 		case FOGMODE_EXP:
-			fogCoeff = 1.0 / pow(E, d * FogDensity);
+			fogCoeff = 1.0 / pow(E, d * FogConfig.z);
 			break;
 
 		case FOGMODE_EXP2:
-			fogCoeff = 1.0 / pow(E, d * d * FogDensity * FogDensity);
+			fogCoeff = 1.0 / pow(E, d * d * FogConfig.z * FogConfig.z);
 			break;
 
 		case FOGMODE_LINEAR:
-			fogCoeff = (FogEnd - d) / (FogEnd - FogStart);
+			fogCoeff = (FogConfig.y - d) / (FogConfig.y - FogConfig.x);
 			break;
 	}
 
 	return clamp(fogCoeff, 0, 1);
 }
-#endif
 
 float4 GetDiffuse(in float4 vcolor)
 {

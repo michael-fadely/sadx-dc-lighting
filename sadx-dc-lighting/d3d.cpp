@@ -55,9 +55,7 @@ namespace param
 	ShaderParameter<D3DXVECTOR3> DiffuseOverrideColor(38, { 1.0f, 1.0f, 1.0f }, IShaderParameter::Type::vertex);
 
 	ShaderParameter<int>         FogMode(28,       0, IShaderParameter::Type::pixel);
-	ShaderParameter<float>       FogStart(29,   0.0f, IShaderParameter::Type::pixel);
-	ShaderParameter<float>       FogEnd(30,     0.0f, IShaderParameter::Type::pixel);
-	ShaderParameter<float>       FogDensity(31, 0.0f, IShaderParameter::Type::pixel);
+	ShaderParameter<D3DXVECTOR3> FogConfig(29,    {}, IShaderParameter::Type::pixel);
 	ShaderParameter<D3DXCOLOR>   FogColor(32,     {}, IShaderParameter::Type::pixel);
 
 #ifdef USE_SL
@@ -78,9 +76,7 @@ namespace param
 		&wvMatrixInvT,
 		&TextureTransform,
 		&FogMode,
-		&FogStart,
-		&FogEnd,
-		&FogDensity,
+		&FogConfig,
 		&FogColor,
 		&LightDirection,
 		&DiffuseSource,

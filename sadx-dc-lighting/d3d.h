@@ -32,17 +32,15 @@ namespace param
 	extern ShaderParameter<Texture> PaletteB;
 
 	extern ShaderParameter<D3DXVECTOR4> Indices;
-
 	extern ShaderParameter<D3DXVECTOR2> BlendFactor;
+
 	extern ShaderParameter<D3DXMATRIX> WorldMatrix;
 	extern ShaderParameter<D3DXMATRIX> ViewMatrix;
 	extern ShaderParameter<D3DXMATRIX> ProjectionMatrix;
 	extern ShaderParameter<D3DXMATRIX> wvMatrixInvT;
 	extern ShaderParameter<D3DXMATRIX> TextureTransform;
 	extern ShaderParameter<int> FogMode;
-	extern ShaderParameter<float> FogStart;
-	extern ShaderParameter<float> FogEnd;
-	extern ShaderParameter<float> FogDensity;
+	extern ShaderParameter<D3DXVECTOR3> FogConfig;
 	extern ShaderParameter<D3DXCOLOR> FogColor;
 	extern ShaderParameter<D3DXVECTOR3> LightDirection;
 	extern ShaderParameter<int> DiffuseSource;
