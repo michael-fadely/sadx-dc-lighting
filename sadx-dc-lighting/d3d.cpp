@@ -31,42 +31,44 @@
 
 namespace param
 {
-	ShaderParameter<Texture>     PaletteA(D3DVERTEXTEXTURESAMPLER1, nullptr);
-	ShaderParameter<Texture>     PaletteB(D3DVERTEXTEXTURESAMPLER2, nullptr);
+	ShaderParameter<Texture>     PaletteA(1, nullptr, IShaderParameter::Type::vertex);
+	ShaderParameter<Texture>     PaletteB(2, nullptr, IShaderParameter::Type::vertex);
 
-	ShaderParameter<float>       DiffuseIndexA(22, 0.0f);
-	ShaderParameter<float>       DiffuseIndexB(23, 0.0f);
-	ShaderParameter<float>       SpecularIndexA(24, 0.0f);
-	ShaderParameter<float>       SpecularIndexB(25, 0.0f);
+	ShaderParameter<float>       DiffuseIndexA(22,  0.0f, IShaderParameter::Type::vertex);
+	ShaderParameter<float>       DiffuseIndexB(23,  0.0f, IShaderParameter::Type::vertex);
+	ShaderParameter<float>       SpecularIndexA(24, 0.0f, IShaderParameter::Type::vertex);
+	ShaderParameter<float>       SpecularIndexB(25, 0.0f, IShaderParameter::Type::vertex);
 
-	ShaderParameter<float>       DiffuseBlendFactor(33, 0.0f);
-	ShaderParameter<float>       SpecularBlendFactor(34, 0.0f);
+	ShaderParameter<float>       DiffuseBlendFactor(33,  0.0f, IShaderParameter::Type::vertex);
+	ShaderParameter<float>       SpecularBlendFactor(34, 0.0f, IShaderParameter::Type::vertex);
 
-	ShaderParameter<D3DXMATRIX>  WorldMatrix(0, {});
-	ShaderParameter<D3DXMATRIX>  wvMatrix(4, {});
-	ShaderParameter<D3DXMATRIX>  ProjectionMatrix(8, {});
-	ShaderParameter<D3DXMATRIX>  wvMatrixInvT(12, {});
-	ShaderParameter<D3DXMATRIX>  TextureTransform(16, {});
-	ShaderParameter<D3DXVECTOR3> LightDirection(26, { 0.0f, -1.0f, 0.0f });
-	ShaderParameter<int>         DiffuseSource(20, 0);
-	ShaderParameter<D3DXCOLOR>   MaterialDiffuse(21, {});
-	ShaderParameter<D3DXVECTOR3> NormalScale(27, { 1.0f, 1.0f, 1.0f });
-	ShaderParameter<bool>        AllowVertexColor(35, true);
-	ShaderParameter<bool>        ForceDefaultDiffuse(36, false);
-	ShaderParameter<bool>        DiffuseOverride(37, false);
-	ShaderParameter<D3DXVECTOR3> DiffuseOverrideColor(38, { 1.0f, 1.0f, 1.0f });
+	ShaderParameter<D3DXMATRIX>  WorldMatrix(0,       {}, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXMATRIX>  wvMatrix(4,          {}, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXMATRIX>  ProjectionMatrix(8,  {}, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXMATRIX>  wvMatrixInvT(12,     {}, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXMATRIX>  TextureTransform(16, {}, IShaderParameter::Type::vertex);
 
-	ShaderParameter<int>         FogMode(28, 0);
-	ShaderParameter<float>       FogStart(29, 0.0f);
-	ShaderParameter<float>       FogEnd(30, 0.0f);
-	ShaderParameter<float>       FogDensity(31, 0.0f);
-	ShaderParameter<D3DXCOLOR>   FogColor(32, {});
+	// oh man
+	ShaderParameter<D3DXVECTOR3> LightDirection(26,      { 0.0f, -1.0f, 0.0f }, IShaderParameter::Type::vertex);
+	ShaderParameter<int>         DiffuseSource(20,                           0, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXCOLOR>   MaterialDiffuse(21,                        {}, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXVECTOR3> NormalScale(27,          { 1.0f, 1.0f, 1.0f }, IShaderParameter::Type::vertex);
+	ShaderParameter<bool>        AllowVertexColor(35,                     true, IShaderParameter::Type::vertex);
+	ShaderParameter<bool>        ForceDefaultDiffuse(36,                 false, IShaderParameter::Type::vertex);
+	ShaderParameter<bool>        DiffuseOverride(37,                     false, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXVECTOR3> DiffuseOverrideColor(38, { 1.0f, 1.0f, 1.0f }, IShaderParameter::Type::vertex);
+
+	ShaderParameter<int>         FogMode(28,       0, IShaderParameter::Type::pixel);
+	ShaderParameter<float>       FogStart(29,   0.0f, IShaderParameter::Type::pixel);
+	ShaderParameter<float>       FogEnd(30,     0.0f, IShaderParameter::Type::pixel);
+	ShaderParameter<float>       FogDensity(31, 0.0f, IShaderParameter::Type::pixel);
+	ShaderParameter<D3DXCOLOR>   FogColor(32,     {}, IShaderParameter::Type::pixel);
 
 #ifdef USE_SL
-	ShaderParameter<D3DXCOLOR> MaterialSpecular(39, {});
-	ShaderParameter<float> MaterialPower(40, 1.0f);
-	ShaderParameter<SourceLight_t> SourceLight(41, {});
-	ShaderParameter<StageLights> Lights(42, {});
+	ShaderParameter<D3DXCOLOR> MaterialSpecular(39, {}, IShaderParameter::Type::vertex);
+	ShaderParameter<float> MaterialPower(40,      1.0f, IShaderParameter::Type::vertex);
+	ShaderParameter<SourceLight_t> SourceLight(41,  {}, IShaderParameter::Type::vertex);
+	ShaderParameter<StageLights> Lights(42,         {}, IShaderParameter::Type::vertex);
 #endif
 
 	IShaderParameter* const parameters[] = {

@@ -45,7 +45,7 @@ struct StageLight
 
 struct StageLights
 {
-	StageLight lights[4]{};
+	StageLight lights[4] {};
 
 	bool operator==(const StageLights& rhs) const;
 	bool operator!=(const StageLights& rhs) const;
@@ -104,11 +104,11 @@ public:
 	static float specular_blend_factor_;
 	static bool use_palette_;
 
-	Sint8 last_time       = -1;
-	Sint32 last_act       = -1;
-	Sint32 last_level     = -1;
-	Sint32 diffuse_       = -1;
-	Sint32 specular_      = -1;
+	Sint8 last_time   = -1;
+	Sint32 last_act   = -1;
+	Sint32 last_level = -1;
+	Sint32 diffuse_   = -1;
+	Sint32 specular_  = -1;
 
 	static bool use_palette();
 	static float diffuse_blend_factor();
@@ -180,7 +180,10 @@ public:
 	/// Apply necessary shader parameters.
 	void apply_parameters();
 
-	LanternInstance& operator[](size_t i) { return instances[i]; }
+	LanternInstance& operator[](size_t i)
+	{
+		return instances[i];
+	}
 
 	bool load_palette(Sint32 level, Sint32 act) override;
 	bool load_palette(const std::string& path) override;

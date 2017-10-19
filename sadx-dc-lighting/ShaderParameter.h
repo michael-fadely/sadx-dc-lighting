@@ -1,6 +1,5 @@
 #pragma once
 
-#include <string>
 #include <vector>
 #include <atlbase.h>
 #include <d3d9.h>
@@ -14,6 +13,17 @@ using Texture      = CComPtr<IDirect3DTexture9>;
 class IShaderParameter
 {
 public:
+
+	struct Type
+	{
+		enum T
+		{
+			vertex = 0b01,
+			pixel = 0b10,
+			both = 0b11
+		};
+	};
+
 	static std::vector<IShaderParameter*> values_assigned;
 
 	virtual ~IShaderParameter() = default;
@@ -27,28 +37,20 @@ public:
 template<typename T>
 class ShaderParameter : public IShaderParameter
 {
-	enum ShaderParameterType
-	{
-		SHPARAM_VS = 1 << 0,
-		SHPARAM_PS = 1 << 1
-	};
+	const int index;
+	const Type::T type;
 
-	// TODO:
-	const int type = SHPARAM_VS | SHPARAM_PS;
-
-	int index;
-	bool reset;
-	bool assigned;
+	bool reset = false;
+	bool assigned = false;
 	T last;
 	T current;
 
 public:
-	explicit ShaderParameter(int index, const T& defaultValue)
-		: index(index),
-		  reset(false),
-		  assigned(false),
-		  last(defaultValue),
-		  current(defaultValue)
+	ShaderParameter(int index, const T& default_value, Type::T type = Type::both) :
+		index(index),
+		type(type),
+		last(default_value),
+		current(default_value)
 	{
 	}
 

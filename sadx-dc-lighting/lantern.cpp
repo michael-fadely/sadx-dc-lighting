@@ -38,9 +38,9 @@ bool SourceLight_t::operator!=(const SourceLight_t& rhs) const
 
 bool StageLight::operator==(const StageLight& rhs) const
 {
-	return !memcmp(&direction, &rhs.direction, sizeof(NJS_VECTOR))
-		&& specular == rhs.specular
+	return specular == rhs.specular
 		&& multiplier == rhs.multiplier
+		&& !memcmp(&direction, &rhs.direction, sizeof(NJS_VECTOR))
 		&& !memcmp(&diffuse, &rhs.diffuse, sizeof(NJS_VECTOR))
 		&& !memcmp(&ambient, &rhs.ambient, sizeof(NJS_VECTOR));
 }
@@ -71,8 +71,16 @@ bool ShaderParameter<SourceLight_t>::commit(IDirect3DDevice9* device)
 		float buffer[24]{};
 		memcpy(buffer, &current, sizeof(SourceLight_t));
 
-		device->SetVertexShaderConstantF(index, buffer, 6);
-		device->SetPixelShaderConstantF(index, buffer, 6);
+		if (type & Type::vertex)
+		{
+			device->SetVertexShaderConstantF(index, buffer, 6);
+		}
+
+		if (type & Type::pixel)
+		{
+			device->SetPixelShaderConstantF(index, buffer, 6);
+		}
+
 		clear();
 		return true;
 	}
@@ -85,8 +93,15 @@ bool ShaderParameter<StageLights>::commit(IDirect3DDevice9* device)
 {
 	if (is_modified())
 	{
-		device->SetVertexShaderConstantF(index, reinterpret_cast<float*>(&current), 16);
-		device->SetPixelShaderConstantF(index, reinterpret_cast<float*>(&current), 16);
+		if (type & Type::vertex)
+		{
+			device->SetVertexShaderConstantF(index, reinterpret_cast<float*>(&current), 16);
+		}
+
+		if (type & Type::pixel)
+		{
+			device->SetPixelShaderConstantF(index, reinterpret_cast<float*>(&current), 16);
+		}
 
 		clear();
 		return true;
@@ -148,10 +163,10 @@ static bool use_time(Uint32 level, Uint32 act)
 	}
 }
 
-bool LanternInstance::diffuse_override       = false;
-bool LanternInstance::diffuse_override_temp  = false;
-bool LanternInstance::specular_override      = false;
-bool LanternInstance::specular_override_temp = false;
+bool LanternInstance::diffuse_override        = false;
+bool LanternInstance::diffuse_override_temp   = false;
+bool LanternInstance::specular_override       = false;
+bool LanternInstance::specular_override_temp  = false;
 bool LanternInstance::use_palette_            = false;
 float LanternInstance::diffuse_blend_factor_  = 0.0f;
 float LanternInstance::specular_blend_factor_ = 0.0f;
