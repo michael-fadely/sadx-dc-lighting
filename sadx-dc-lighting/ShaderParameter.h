@@ -121,6 +121,7 @@ template<> bool ShaderParameter<int>::commit(IDirect3DDevice9* device);
 template<> bool ShaderParameter<float>::commit(IDirect3DDevice9* device);
 template<> bool ShaderParameter<D3DXVECTOR4>::commit(IDirect3DDevice9* device);
 template<> bool ShaderParameter<D3DXVECTOR3>::commit(IDirect3DDevice9* device);
+template<> bool ShaderParameter<D3DXVECTOR2>::commit(IDirect3DDevice9* device);
 template<> bool ShaderParameter<D3DXCOLOR>::commit(IDirect3DDevice9* device);
 template<> bool ShaderParameter<D3DXMATRIX>::commit(IDirect3DDevice9* device);
 template<> bool ShaderParameter<Texture>::commit(IDirect3DDevice9* device);

@@ -108,7 +108,32 @@ bool ShaderParameter<D3DXVECTOR3>::commit(IDirect3DDevice9* device)
 {
 	if (is_modified())
 	{
-		D3DXVECTOR4 value = { current.x, current.y, current.z, 1.0f };
+		D3DXVECTOR4 value = { current.x, current.y, current.z, 0.0f };
+
+		if (type & Type::vertex)
+		{
+			device->SetVertexShaderConstantF(index, value, 1);
+		}
+
+		if (type & Type::pixel)
+		{
+			device->SetPixelShaderConstantF(index, value, 1);
+		}
+
+		clear();
+		return true;
+	}
+
+	assigned = false;
+	return false;
+}
+
+template <>
+bool ShaderParameter<D3DXVECTOR2>::commit(IDirect3DDevice9* device)
+{
+	if (is_modified())
+	{
+		D3DXVECTOR4 value = { current.x, current.y, 0.0f, 1.0f };
 
 		if (type & Type::vertex)
 		{

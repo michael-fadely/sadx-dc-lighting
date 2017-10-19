@@ -36,8 +36,7 @@ namespace param
 
 	ShaderParameter<D3DXVECTOR4> Indices(22, {}, IShaderParameter::Type::vertex);
 
-	ShaderParameter<float>       DiffuseBlendFactor(33,  0.0f, IShaderParameter::Type::vertex);
-	ShaderParameter<float>       SpecularBlendFactor(34, 0.0f, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXVECTOR2> BlendFactor(33, {}, IShaderParameter::Type::vertex);
 
 	ShaderParameter<D3DXMATRIX>  WorldMatrix(0,       {}, IShaderParameter::Type::vertex);
 	ShaderParameter<D3DXMATRIX>  wvMatrix(4,          {}, IShaderParameter::Type::vertex);
@@ -72,8 +71,7 @@ namespace param
 		&PaletteA,
 		&PaletteB,
 		&Indices,
-		&DiffuseBlendFactor,
-		&SpecularBlendFactor,
+		&BlendFactor,
 		&WorldMatrix,
 		&wvMatrix,
 		&ProjectionMatrix,

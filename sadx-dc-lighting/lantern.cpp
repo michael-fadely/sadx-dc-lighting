@@ -582,13 +582,19 @@ bool LanternInstance::load_palette(Sint32 level, Sint32 act)
 
 void LanternInstance::diffuse_blend_factor(float f)
 {
-	param::DiffuseBlendFactor = f;
+	auto value = param::BlendFactor.value();
+	value.x = f;
+	param::BlendFactor = value;
+
 	diffuse_blend_factor_ = f;
 }
 
 void LanternInstance::specular_blend_factor(float f)
 {
-	param::SpecularBlendFactor = f;
+	auto value = param::BlendFactor.value();
+	value.y = f;
+	param::BlendFactor = value;
+
 	specular_blend_factor_ = f;
 }
 
@@ -1023,39 +1029,41 @@ void LanternCollection::apply_parameters()
 	}
 
 	// .xy is diffuse A and B, .zw is specular A and B.
+	auto indices = param::Indices.value();
+
+	// .x is diffuse, .y is specular.
+	D3DXVECTOR2 blend_factors {};
 
 	LanternInstance& i = instances[0];
 
 	int d = i.diffuse_index();
-	param::DiffuseBlendFactor = 0.0f;
-	auto value = param::Indices.value();
 
 	if (d >= 0)
 	{
-		value.x = _index_float(d, 0);
+		indices.x = _index_float(d, 0);
 
 		if (diffuse_blend_[d] >= 0)
 		{
-			value.y = _index_float(diffuse_blend_[d], 0);
-			param::DiffuseBlendFactor = LanternInstance::diffuse_blend_factor_;
+			indices.y = _index_float(diffuse_blend_[d], 0);
+			blend_factors.x = LanternInstance::diffuse_blend_factor_;
 		}
 	}
 
 	int s = i.specular_index();
-	param::SpecularBlendFactor = 0.0f;
 
 	if (s >= 0)
 	{
-		value.z = _index_float(s, 1);
+		indices.z = _index_float(s, 1);
 
 		if (specular_blend_[s] >= 0)
 		{
-			value.w = _index_float(specular_blend_[s], 1);
-			param::SpecularBlendFactor = LanternInstance::specular_blend_factor_;
+			indices.w = _index_float(specular_blend_[s], 1);
+			blend_factors.y = LanternInstance::specular_blend_factor_;
 		}
 	}
 
-	param::Indices = value;
+	param::Indices = indices;
+	param::BlendFactor = blend_factors;
 }
 
 void LanternCollection::callback_add(std::deque<lantern_load_cb>& c, lantern_load_cb callback)

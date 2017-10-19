@@ -33,8 +33,7 @@ namespace param
 
 	extern ShaderParameter<D3DXVECTOR4> Indices;
 
-	extern ShaderParameter<float> DiffuseBlendFactor;
-	extern ShaderParameter<float> SpecularBlendFactor;
+	extern ShaderParameter<D3DXVECTOR2> BlendFactor;
 	extern ShaderParameter<D3DXMATRIX> WorldMatrix;
 	extern ShaderParameter<D3DXMATRIX> ViewMatrix;
 	extern ShaderParameter<D3DXMATRIX> ProjectionMatrix;
