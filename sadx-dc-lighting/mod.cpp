@@ -499,7 +499,7 @@ extern "C"
 			}
 		}
 
-		if (!d3d::shaders_not_null())
+		if (d3d::shaders_null())
 		{
 			return;
 		}
