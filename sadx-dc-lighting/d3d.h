@@ -19,7 +19,7 @@ namespace d3d
 	void reset_overrides();
 	void load_shader();
 	void set_flags(Uint32 flags, bool add = true);
-	bool shaders_not_null();
+	bool shaders_null();
 	void init_trampolines();
 }
 

@@ -91,7 +91,7 @@ static void update_material(const D3DMATERIAL9& material)
 {
 	using namespace d3d;
 
-	if (!LanternInstance::use_palette() || !shaders_not_null())
+	if (!LanternInstance::use_palette() || shaders_null())
 	{
 		return;
 	}
@@ -143,7 +143,7 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 
 	TARGET_DYNAMIC(Direct3D_ParseMaterial)(material);
 
-	if (!shaders_not_null())
+	if (shaders_null())
 	{
 		return;
 	}

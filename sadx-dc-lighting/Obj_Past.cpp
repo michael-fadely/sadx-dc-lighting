@@ -57,7 +57,7 @@ static void __cdecl Obj_Past_r(ObjectMaster *_this)
 				{
 					QueueSound_DualEntity(1108, entity, 1, nullptr, 2);
 				}
-				else if (CurrentAct == 2 && d3d::shaders_not_null())
+				else if (CurrentAct == 2 && !d3d::shaders_null())
 				{
 					entity->Rotation.x += NJM_DEG_ANG(4.561875f);
 					entity->Rotation.x %= 65536;

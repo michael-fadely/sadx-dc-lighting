@@ -1263,9 +1263,9 @@ namespace d3d
 		}
 	}
 
-	bool shaders_not_null()
+	bool shaders_null()
 	{
-		return vertex_shader != nullptr && pixel_shader != nullptr;
+		return vertex_shader == nullptr || pixel_shader == nullptr;
 	}
 
 	void init_trampolines()

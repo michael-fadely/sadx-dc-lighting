@@ -63,7 +63,7 @@ static void __cdecl Obj_SkyDeck_r(ObjectMaster* _this)
 {
 	TARGET_DYNAMIC(Obj_SkyDeck)(_this);
 
-	if (handle || !d3d::shaders_not_null())
+	if (handle != 0 || d3d::shaders_null())
 	{
 		return;
 	}
