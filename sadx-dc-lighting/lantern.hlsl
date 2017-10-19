@@ -15,28 +15,6 @@ struct PS_IN
 	float  fogDist : FOG;
 };
 
-#ifdef USE_SL
-struct SourceLight_t
-{
-	int y, z;
-	float3 color;
-	float specular;
-	float diffuse;
-	float ambient;
-	float unknown2[15];
-};
-
-struct StageLight
-{
-	float3 direction;
-	float specular;
-	float multiplier;
-	float3 diffuse;
-	float3 ambient;
-	float padding[5];
-};
-#endif
-
 // From FixedFuncEMU.fx
 // Copyright (c) 2005 Microsoft Corporation. All rights reserved.
 #define FOGMODE_NONE   0
@@ -97,13 +75,6 @@ bool AllowVertexColor : register(c35) = true;
 bool ForceDefaultDiffuse : register(c36) = false;
 bool DiffuseOverride : register(c37) = false;
 float3 DiffuseOverrideColor : register(c38) = float3(1, 1, 1);
-
-#ifdef USE_SL
-float4 MaterialSpecular : register(c39) = float4(0.0f, 0.0f, 0.0f, 0.0f);
-float  MaterialPower : register(c40) = 1.0f;
-SourceLight_t SourceLight : register(c41);
-StageLight Lights[4] : register(c42);
-#endif
 
 // Samplers
 SamplerState baseSampler : register(s0)= sampler_state

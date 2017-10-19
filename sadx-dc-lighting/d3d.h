@@ -5,8 +5,11 @@
 #include <d3d8to9.hpp>
 #include <ninja.h>
 
-#include "lantern.h"
 #include "ShaderParameter.h"
+
+#ifdef USE_SL
+#include "lantern.h"
+#endif
 
 namespace d3d
 {
@@ -56,7 +59,9 @@ namespace param
 #ifdef USE_SL
 	extern ShaderParameter<D3DXCOLOR> MaterialSpecular;
 	extern ShaderParameter<float> MaterialPower;
+	// TODO: don't use structures as they're bloated shader-side
 	extern ShaderParameter<SourceLight_t> SourceLight;
+	// TODO: don't use structures as they're bloated shader-side
 	extern ShaderParameter<StageLights> Lights;
 #endif
 }
