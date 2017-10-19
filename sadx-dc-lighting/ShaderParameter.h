@@ -58,8 +58,8 @@ public:
 	bool commit_now(IDirect3DDevice9* device) override;
 	void release() override;
 	T value() const;
-	void operator=(const T& value);
-	void operator=(const ShaderParameter<T>& value);
+	ShaderParameter<T>& operator=(const T& value);
+	ShaderParameter<T>& operator=(const ShaderParameter<T>& value);
 };
 
 template <typename T>
@@ -95,7 +95,7 @@ T ShaderParameter<T>::value() const
 }
 
 template <typename T>
-void ShaderParameter<T>::operator=(const T& value)
+ShaderParameter<T>& ShaderParameter<T>::operator=(const T& value)
 {
 	if (!assigned)
 	{
@@ -104,12 +104,14 @@ void ShaderParameter<T>::operator=(const T& value)
 
 	assigned = true;
 	current = value;
+	return *this;
 }
 
 template <typename T>
-void ShaderParameter<T>::operator=(const ShaderParameter<T>& value)
+ShaderParameter<T>& ShaderParameter<T>::operator=(const ShaderParameter<T>& value)
 {
 	*this = value.current;
+	return *this;
 }
 
 template<> bool ShaderParameter<bool>::commit(IDirect3DDevice9* device);
