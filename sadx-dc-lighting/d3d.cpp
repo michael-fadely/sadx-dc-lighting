@@ -232,13 +232,13 @@ namespace local
 				auto flags = i;
 				local::sanitize(flags);
 
-				auto vs = (ShaderFlags)(flags & VS_FLAGS);
+				auto vs = static_cast<ShaderFlags>(flags & VS_FLAGS);
 				if (vertex_shaders.find(vs) == vertex_shaders.end())
 				{
 					get_vertex_shader(flags);
 				}
 
-				auto ps = (ShaderFlags)(flags & PS_FLAGS);
+				auto ps = static_cast<ShaderFlags>(flags & PS_FLAGS);
 				if (pixel_shaders.find(ps) == pixel_shaders.end())
 				{
 					get_pixel_shader(flags);
