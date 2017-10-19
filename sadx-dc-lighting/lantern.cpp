@@ -1022,18 +1022,21 @@ void LanternCollection::apply_parameters()
 		return;
 	}
 
+	// .xy is diffuse A and B, .zw is specular A and B.
+
 	LanternInstance& i = instances[0];
 
 	int d = i.diffuse_index();
 	param::DiffuseBlendFactor = 0.0f;
+	auto value = param::Indices.value();
 
 	if (d >= 0)
 	{
-		param::DiffuseIndexA = _index_float(d, 0);
+		value.x = _index_float(d, 0);
 
 		if (diffuse_blend_[d] >= 0)
 		{
-			param::DiffuseIndexB = _index_float(diffuse_blend_[d], 0);
+			value.y = _index_float(diffuse_blend_[d], 0);
 			param::DiffuseBlendFactor = LanternInstance::diffuse_blend_factor_;
 		}
 	}
@@ -1043,14 +1046,16 @@ void LanternCollection::apply_parameters()
 
 	if (s >= 0)
 	{
-		param::SpecularIndexA = _index_float(s, 1);
+		value.z = _index_float(s, 1);
 
 		if (specular_blend_[s] >= 0)
 		{
-			param::SpecularIndexB = _index_float(specular_blend_[s], 1);
+			value.w = _index_float(specular_blend_[s], 1);
 			param::SpecularBlendFactor = LanternInstance::specular_blend_factor_;
 		}
 	}
+
+	param::Indices = value;
 }
 
 void LanternCollection::callback_add(std::deque<lantern_load_cb>& c, lantern_load_cb callback)

@@ -26,12 +26,9 @@ namespace d3d
 namespace param
 {
 	extern ShaderParameter<Texture> PaletteA;
-	extern ShaderParameter<float> DiffuseIndexA;
-	extern ShaderParameter<float> SpecularIndexA;
-
 	extern ShaderParameter<Texture> PaletteB;
-	extern ShaderParameter<float> DiffuseIndexB;
-	extern ShaderParameter<float> SpecularIndexB;
+
+	extern ShaderParameter<D3DXVECTOR4> Indices;
 
 	extern ShaderParameter<float> DiffuseBlendFactor;
 	extern ShaderParameter<float> SpecularBlendFactor;

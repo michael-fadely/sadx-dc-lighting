@@ -34,10 +34,7 @@ namespace param
 	ShaderParameter<Texture>     PaletteA(1, nullptr, IShaderParameter::Type::vertex);
 	ShaderParameter<Texture>     PaletteB(2, nullptr, IShaderParameter::Type::vertex);
 
-	ShaderParameter<float>       DiffuseIndexA(22,  0.0f, IShaderParameter::Type::vertex);
-	ShaderParameter<float>       DiffuseIndexB(23,  0.0f, IShaderParameter::Type::vertex);
-	ShaderParameter<float>       SpecularIndexA(24, 0.0f, IShaderParameter::Type::vertex);
-	ShaderParameter<float>       SpecularIndexB(25, 0.0f, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXVECTOR4> Indices(22, {}, IShaderParameter::Type::vertex);
 
 	ShaderParameter<float>       DiffuseBlendFactor(33,  0.0f, IShaderParameter::Type::vertex);
 	ShaderParameter<float>       SpecularBlendFactor(34, 0.0f, IShaderParameter::Type::vertex);
@@ -73,11 +70,8 @@ namespace param
 
 	IShaderParameter* const parameters[] = {
 		&PaletteA,
-		&DiffuseIndexA,
-		&SpecularIndexA,
 		&PaletteB,
-		&DiffuseIndexB,
-		&SpecularIndexB,
+		&Indices,
 		&DiffuseBlendFactor,
 		&SpecularBlendFactor,
 		&WorldMatrix,

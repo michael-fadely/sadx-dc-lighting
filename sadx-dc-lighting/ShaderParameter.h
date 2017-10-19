@@ -46,7 +46,7 @@ class ShaderParameter : public IShaderParameter
 	T current;
 
 public:
-	ShaderParameter(int index, const T& default_value, Type::T type = Type::both) :
+	ShaderParameter(const int index, const T& default_value, const Type::T type) :
 		index(index),
 		type(type),
 		last(default_value),

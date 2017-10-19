@@ -78,10 +78,8 @@ float4 MaterialDiffuse : register(c21) = float4(1.0f, 1.0f, 1.0f, 1.0f);
 
 // Pre-adjusted on the CPU before being sent to the shader.
 // Used for sampling colors from the palette atlases.
-float DiffuseIndexA : register(c22) = 0;
-float DiffuseIndexB : register(c23) = 0;
-float SpecularIndexA : register(c24) = 0;
-float SpecularIndexB : register(c25) = 0;
+// .xy is diffuse A and B, .zw is specular A and B.
+float4 Indices : register(c22) = 0;
 
 float3 LightDirection : register(c26) = float3(0.0f, -1.0f, 0.0f);
 float3 NormalScale : register(c27) = float3(1, 1, 1);
@@ -235,14 +233,14 @@ PS_IN vs_main(VS_IN input)
 		}
 		else
 		{
-			pdiffuse = tex2Dlod(atlasSamplerA, float4(i, DiffuseIndexA, 0, 0));
+			pdiffuse = tex2Dlod(atlasSamplerA, float4(i, Indices.x, 0, 0));
 		}
 
-		float4 pspecular = tex2Dlod(atlasSamplerA, float4(i, SpecularIndexA, 0, 0));
+		float4 pspecular = tex2Dlod(atlasSamplerA, float4(i, Indices.z, 0, 0));
 
 		#ifdef USE_BLEND
-			float4 bdiffuse = tex2Dlod(atlasSamplerB, float4(i, DiffuseIndexB, 0, 0));
-			float4 bspecular = tex2Dlod(atlasSamplerB, float4(i, SpecularIndexB, 0, 0));
+			float4 bdiffuse = tex2Dlod(atlasSamplerB, float4(i, Indices.y, 0, 0));
+			float4 bspecular = tex2Dlod(atlasSamplerB, float4(i, Indices.w, 0, 0));
 
 			pdiffuse = lerp(pdiffuse, bdiffuse, DiffuseBlendFactor);
 			pspecular = lerp(pspecular, bspecular, SpecularBlendFactor);
