@@ -101,11 +101,6 @@ static void update_material(const D3DMATERIAL9& material)
 
 	param::DiffuseSource   = colorsource;
 	param::MaterialDiffuse = material.Diffuse;
-
-#ifdef USE_SL
-	param::MaterialSpecular = material.Specular;
-	param::MaterialPower    = material.Power;
-#endif
 }
 
 static void __cdecl CorrectMaterial_r()

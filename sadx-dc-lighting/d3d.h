@@ -7,10 +7,6 @@
 
 #include "ShaderParameter.h"
 
-#ifdef USE_SL
-#include "lantern.h"
-#endif
-
 namespace d3d
 {
 	extern IDirect3DDevice9* device;
@@ -31,36 +27,27 @@ namespace param
 	extern ShaderParameter<Texture> PaletteA;
 	extern ShaderParameter<Texture> PaletteB;
 
-	extern ShaderParameter<D3DXVECTOR4> Indices;
-	extern ShaderParameter<D3DXVECTOR2> BlendFactor;
-
 	extern ShaderParameter<D3DXMATRIX> WorldMatrix;
-	extern ShaderParameter<D3DXMATRIX> ViewMatrix;
 	extern ShaderParameter<D3DXMATRIX> ProjectionMatrix;
 	extern ShaderParameter<D3DXMATRIX> wvMatrixInvT;
 	extern ShaderParameter<D3DXMATRIX> TextureTransform;
-	extern ShaderParameter<int> FogMode;
-	extern ShaderParameter<D3DXVECTOR3> FogConfig;
-	extern ShaderParameter<D3DXCOLOR> FogColor;
-	extern ShaderParameter<D3DXVECTOR3> LightDirection;
-	extern ShaderParameter<int> DiffuseSource;
 
-	extern ShaderParameter<D3DXCOLOR> MaterialDiffuse;
+	extern ShaderParameter<D3DXVECTOR4> Indices;
+	extern ShaderParameter<D3DXVECTOR2> BlendFactor;
 
 	extern ShaderParameter<D3DXVECTOR3> NormalScale;
+	extern ShaderParameter<D3DXVECTOR3> LightDirection;
+	extern ShaderParameter<int> DiffuseSource;
+	extern ShaderParameter<D3DXCOLOR> MaterialDiffuse;
+
 	extern ShaderParameter<bool> AllowVertexColor;
 	extern ShaderParameter<bool> ForceDefaultDiffuse;
 	extern ShaderParameter<bool> DiffuseOverride;
 	extern ShaderParameter<D3DXVECTOR3> DiffuseOverrideColor;
 
-#ifdef USE_SL
-	extern ShaderParameter<D3DXCOLOR> MaterialSpecular;
-	extern ShaderParameter<float> MaterialPower;
-	// TODO: don't use structures as they're bloated shader-side
-	extern ShaderParameter<SourceLight_t> SourceLight;
-	// TODO: don't use structures as they're bloated shader-side
-	extern ShaderParameter<StageLights> Lights;
-#endif
+	extern ShaderParameter<int> FogMode;
+	extern ShaderParameter<D3DXVECTOR3> FogConfig;
+	extern ShaderParameter<D3DXCOLOR> FogColor;
 }
 
 // Same as in the mod loader except with d3d8to9 types.

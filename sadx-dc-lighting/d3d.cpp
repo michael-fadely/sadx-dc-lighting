@@ -34,65 +34,54 @@ namespace param
 	ShaderParameter<Texture>     PaletteA(1, nullptr, IShaderParameter::Type::vertex);
 	ShaderParameter<Texture>     PaletteB(2, nullptr, IShaderParameter::Type::vertex);
 
-	ShaderParameter<D3DXVECTOR4> Indices(22, {}, IShaderParameter::Type::vertex);
-
-	ShaderParameter<D3DXVECTOR2> BlendFactor(33, {}, IShaderParameter::Type::vertex);
-
-	ShaderParameter<D3DXMATRIX>  WorldMatrix(0,       {}, IShaderParameter::Type::vertex);
-	ShaderParameter<D3DXMATRIX>  wvMatrix(4,          {}, IShaderParameter::Type::vertex);
-	ShaderParameter<D3DXMATRIX>  ProjectionMatrix(8,  {}, IShaderParameter::Type::vertex);
-	ShaderParameter<D3DXMATRIX>  wvMatrixInvT(12,     {}, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXMATRIX>  WorldMatrix(0, {}, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXMATRIX>  wvMatrix(4, {}, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXMATRIX>  ProjectionMatrix(8, {}, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXMATRIX>  wvMatrixInvT(12, {}, IShaderParameter::Type::vertex);
 	ShaderParameter<D3DXMATRIX>  TextureTransform(16, {}, IShaderParameter::Type::vertex);
 
-	// oh man
-	ShaderParameter<D3DXVECTOR3> LightDirection(26,      { 0.0f, -1.0f, 0.0f }, IShaderParameter::Type::vertex);
-	ShaderParameter<int>         DiffuseSource(20,                           0, IShaderParameter::Type::vertex);
-	ShaderParameter<D3DXCOLOR>   MaterialDiffuse(21,                        {}, IShaderParameter::Type::vertex);
-	ShaderParameter<D3DXVECTOR3> NormalScale(27,          { 1.0f, 1.0f, 1.0f }, IShaderParameter::Type::vertex);
-	ShaderParameter<bool>        AllowVertexColor(35,                     true, IShaderParameter::Type::vertex);
-	ShaderParameter<bool>        ForceDefaultDiffuse(36,                 false, IShaderParameter::Type::vertex);
-	ShaderParameter<bool>        DiffuseOverride(37,                     false, IShaderParameter::Type::vertex);
-	ShaderParameter<D3DXVECTOR3> DiffuseOverrideColor(38, { 1.0f, 1.0f, 1.0f }, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXVECTOR3> NormalScale(20, { 1.0f, 1.0f, 1.0f }, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXVECTOR3> LightDirection(21, { 0.0f, -1.0f, 0.0f }, IShaderParameter::Type::vertex);
+	ShaderParameter<int>         DiffuseSource(22, 0, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXCOLOR>   MaterialDiffuse(23, {}, IShaderParameter::Type::vertex);
+	
+	ShaderParameter<D3DXVECTOR4> Indices(24, {}, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXVECTOR2> BlendFactor(25, {}, IShaderParameter::Type::vertex);
 
-	ShaderParameter<int>         FogMode(28,       0, IShaderParameter::Type::pixel);
-	ShaderParameter<D3DXVECTOR3> FogConfig(29,    {}, IShaderParameter::Type::pixel);
-	ShaderParameter<D3DXCOLOR>   FogColor(32,     {}, IShaderParameter::Type::pixel);
+	ShaderParameter<bool>        AllowVertexColor(26, true, IShaderParameter::Type::vertex);
+	ShaderParameter<bool>        ForceDefaultDiffuse(27, false, IShaderParameter::Type::vertex);
+	ShaderParameter<bool>        DiffuseOverride(28, false, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXVECTOR3> DiffuseOverrideColor(29, { 1.0f, 1.0f, 1.0f }, IShaderParameter::Type::vertex);
 
-#ifdef USE_SL
-	ShaderParameter<D3DXCOLOR> MaterialSpecular(39, {}, IShaderParameter::Type::vertex);
-	ShaderParameter<float> MaterialPower(40,      1.0f, IShaderParameter::Type::vertex);
-	ShaderParameter<SourceLight_t> SourceLight(41,  {}, IShaderParameter::Type::vertex);
-	ShaderParameter<StageLights> Lights(42,         {}, IShaderParameter::Type::vertex);
-#endif
+	ShaderParameter<int>         FogMode(30, 0, IShaderParameter::Type::pixel);
+	ShaderParameter<D3DXVECTOR3> FogConfig(31, {}, IShaderParameter::Type::pixel);
+	ShaderParameter<D3DXCOLOR>   FogColor(32, {}, IShaderParameter::Type::pixel);
 
 	IShaderParameter* const parameters[] = {
 		&PaletteA,
 		&PaletteB,
-		&Indices,
-		&BlendFactor,
+
 		&WorldMatrix,
-		&wvMatrix,
 		&ProjectionMatrix,
 		&wvMatrixInvT,
 		&TextureTransform,
-		&FogMode,
-		&FogConfig,
-		&FogColor,
+
+		&Indices,
+		&BlendFactor,
+
+		&NormalScale,
 		&LightDirection,
 		&DiffuseSource,
 		&MaterialDiffuse,
-		&NormalScale,
+
 		&AllowVertexColor,
 		&ForceDefaultDiffuse,
 		&DiffuseOverride,
 		&DiffuseOverrideColor,
 
-	#ifdef USE_SL
-		&SourceLight,
-		&MaterialSpecular,
-		&MaterialPower,
-		&Lights
-	#endif
+		&FogMode,
+		&FogConfig,
+		&FogColor,
 	};
 
 	static void release_parameters()
@@ -453,10 +442,6 @@ namespace local
 
 	static void populate_macros(Uint32 flags)
 	{
-#ifdef USE_SL
-		macros.push_back({ "USE_SL", "1" });
-#endif
-
 		while (flags != 0)
 		{
 			using namespace d3d;
@@ -838,11 +823,9 @@ namespace local
 			return;
 		}
 
-#ifndef USE_SL
 		D3DLIGHT9 light;
 		d3d::device->GetLight(0, &light);
 		param::LightDirection = -*static_cast<D3DXVECTOR3*>(&light.Direction);
-#endif
 	}
 
 	static void hook_vtable()
