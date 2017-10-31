@@ -425,6 +425,9 @@ bool LanternInstance::load_source(const std::string& path)
 	njCalcVector(m, &vs, &sl_direction);
 	param::LightDirection = -*reinterpret_cast<D3DXVECTOR3*>(&sl_direction);
 
+	PrintDebug("[lantern] Source light rotation (direction): y: %d, z: %d (x: %f, y: %f, z: %f)\n",
+		source_lights[15].stage.y, source_lights[15].stage.z, sl_direction.x, sl_direction.y, sl_direction.z);
+
 	return true;
 }
 
