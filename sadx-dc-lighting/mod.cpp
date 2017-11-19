@@ -418,8 +418,16 @@ extern "C"
 
 		if (handle == nullptr)
 		{
-			MessageBoxA(WindowHandle, "Unable to detect Direct3D 9 DLL. The mod will not function.",
-				"D3D9 not loaded", MB_OK | MB_ICONERROR);
+			MessageBoxA(WindowHandle, "Unable to detect Direct3D 9 DLL. Lantern Engine will not function. Ensure d3d8to9 is installed.",
+				"Lantern Engine Error", MB_OK | MB_ICONERROR);
+
+			return;
+		}
+
+		if (helperFunctions.Version < 5)
+		{
+			MessageBoxA(WindowHandle, "Mod loader out of date. Lantern Engine requires API version 5 or newer in order to function.",
+				"Lantern Engine Error", MB_OK | MB_ICONERROR);
 
 			return;
 		}
