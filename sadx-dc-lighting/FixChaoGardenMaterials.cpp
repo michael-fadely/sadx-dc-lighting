@@ -20,7 +20,7 @@ static Trampoline* ChaoGardenMR_SetLandTable_Evening_t = nullptr;
 static Trampoline* ChaoGardenMR_SetLandTable_Night_t   = nullptr;
 
 template<typename T = NJS_MATERIAL, size_t N>
-void copy_materials(const T(&mats)[N], size_t offset, HMODULE key = (HMODULE)0x400000)
+void copy_materials(const T(&mats)[N], size_t offset, HMODULE key = reinterpret_cast<HMODULE>(0x400000))
 {
 	memcpy((void*)((int)key + offset), (void*)mats, sizeof(T) * N);
 }

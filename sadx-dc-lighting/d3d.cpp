@@ -32,37 +32,31 @@
 
 namespace param
 {
-	ShaderParameter<Texture>     PaletteA(D3DVERTEXTEXTURESAMPLER1, nullptr);
-	ShaderParameter<Texture>     PaletteB(D3DVERTEXTEXTURESAMPLER2, nullptr);
+	ShaderParameter<Texture>     PaletteA(1, nullptr, IShaderParameter::Type::vertex);
+	ShaderParameter<Texture>     PaletteB(2, nullptr, IShaderParameter::Type::vertex);
 
-	ShaderParameter<float>       DiffuseIndexA(22, 0.0f);
-	ShaderParameter<float>       DiffuseIndexB(23, 0.0f);
-	ShaderParameter<float>       SpecularIndexA(24, 0.0f);
-	ShaderParameter<float>       SpecularIndexB(25, 0.0f);
+	ShaderParameter<D3DXMATRIX>  WorldMatrix(0, {}, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXMATRIX>  wvMatrix(4, {}, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXMATRIX>  ProjectionMatrix(8, {}, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXMATRIX>  wvMatrixInvT(12, {}, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXMATRIX>  TextureTransform(16, {}, IShaderParameter::Type::vertex);
 
-	ShaderParameter<float>       DiffuseBlendFactor(33, 0.0f);
-	ShaderParameter<float>       SpecularBlendFactor(34, 0.0f);
+	ShaderParameter<D3DXVECTOR3> NormalScale(20, { 1.0f, 1.0f, 1.0f }, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXVECTOR3> LightDirection(21, { 0.0f, -1.0f, 0.0f }, IShaderParameter::Type::vertex);
+	ShaderParameter<int>         DiffuseSource(22, 0, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXCOLOR>   MaterialDiffuse(23, {}, IShaderParameter::Type::vertex);
+	
+	ShaderParameter<D3DXVECTOR4> Indices(24, {}, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXVECTOR2> BlendFactor(25, {}, IShaderParameter::Type::vertex);
 
-	ShaderParameter<D3DXMATRIX>  WorldMatrix(0, {});
-	ShaderParameter<D3DXMATRIX>  wvMatrix(4, {});
-	ShaderParameter<D3DXMATRIX>  ProjectionMatrix(8, {});
-	ShaderParameter<D3DXMATRIX>  wvMatrixInvT(12, {});
-	ShaderParameter<D3DXMATRIX>  TextureTransform(16, {});
-	ShaderParameter<D3DXVECTOR3> LightDirection(26, { 0.0f, -1.0f, 0.0f });
-	ShaderParameter<int>         DiffuseSource(20, 0);
-	ShaderParameter<D3DXCOLOR>   MaterialDiffuse(21, {});
-	ShaderParameter<D3DXVECTOR3> NormalScale(27, { 1.0f, 1.0f, 1.0f });
-	ShaderParameter<bool>        AllowVertexColor(35, true);
-	ShaderParameter<bool>        ForceDefaultDiffuse(36, false);
-	ShaderParameter<bool>        DiffuseOverride(37, false);
-	ShaderParameter<D3DXVECTOR3> DiffuseOverrideColor(38, { 1.0f, 1.0f, 1.0f });
+	ShaderParameter<bool>        AllowVertexColor(26, true, IShaderParameter::Type::vertex);
+	ShaderParameter<bool>        ForceDefaultDiffuse(27, false, IShaderParameter::Type::vertex);
+	ShaderParameter<bool>        DiffuseOverride(28, false, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXVECTOR3> DiffuseOverrideColor(29, { 1.0f, 1.0f, 1.0f }, IShaderParameter::Type::vertex);
 
-	ShaderParameter<int>         FogMode(28, 0);
-	ShaderParameter<float>       FogStart(29, 0.0f);
-	ShaderParameter<float>       FogEnd(30, 0.0f);
-	ShaderParameter<float>       FogDensity(31, 0.0f);
-	ShaderParameter<D3DXCOLOR>   FogColor(32, {});
-
+	ShaderParameter<int>         FogMode(30, 0, IShaderParameter::Type::pixel);
+	ShaderParameter<D3DXVECTOR3> FogConfig(31, {}, IShaderParameter::Type::pixel);
+	ShaderParameter<D3DXCOLOR>   FogColor(32, {}, IShaderParameter::Type::pixel);
 #ifdef USE_OIT
 	ShaderParameter<Texture>     OpaqueDepth(3, nullptr);
 	ShaderParameter<Texture>     AlphaDepth(4, nullptr);
@@ -73,40 +67,31 @@ namespace param
 	ShaderParameter<float>       DepthOverride(50, 0.0f);
 #endif
 
-#ifdef USE_SL
-	ShaderParameter<D3DXCOLOR> MaterialSpecular(39, {});
-	ShaderParameter<float> MaterialPower(40, 1.0f);
-	ShaderParameter<SourceLight_t> SourceLight(41, {});
-	ShaderParameter<StageLights> Lights(42, {});
-#endif
-
 	IShaderParameter* const parameters[] = {
 		&PaletteA,
-		&DiffuseIndexA,
-		&SpecularIndexA,
 		&PaletteB,
-		&DiffuseIndexB,
-		&SpecularIndexB,
-		&DiffuseBlendFactor,
-		&SpecularBlendFactor,
+
 		&WorldMatrix,
-		&wvMatrix,
 		&ProjectionMatrix,
 		&wvMatrixInvT,
 		&TextureTransform,
-		&FogMode,
-		&FogStart,
-		&FogEnd,
-		&FogDensity,
-		&FogColor,
+
+		&Indices,
+		&BlendFactor,
+
+		&NormalScale,
 		&LightDirection,
 		&DiffuseSource,
 		&MaterialDiffuse,
-		&NormalScale,
+
 		&AllowVertexColor,
 		&ForceDefaultDiffuse,
 		&DiffuseOverride,
 		&DiffuseOverrideColor,
+
+		&FogMode,
+		&FogConfig,
+		&FogColor,
 
 	#ifdef USE_OIT
 		&AlphaDepth,
@@ -116,13 +101,6 @@ namespace param
 		&ViewPort,
 		&DrawDistance,
 		&DepthOverride,
-	#endif
-
-	#ifdef USE_SL
-		&SourceLight,
-		&MaterialSpecular,
-		&MaterialPower,
-		&Lights
 	#endif
 	};
 
@@ -279,13 +257,13 @@ namespace local
 				auto flags = i;
 				local::sanitize(flags);
 
-				auto vs = (ShaderFlags)(flags & VS_FLAGS);
+				auto vs = static_cast<ShaderFlags>(flags & VS_FLAGS);
 				if (vertex_shaders.find(vs) == vertex_shaders.end())
 				{
 					get_vertex_shader(flags);
 				}
 
-				auto ps = (ShaderFlags)(flags & PS_FLAGS);
+				auto ps = static_cast<ShaderFlags>(flags & PS_FLAGS);
 				if (pixel_shaders.find(ps) == pixel_shaders.end())
 				{
 					get_pixel_shader(flags);
@@ -525,7 +503,7 @@ namespace local
 		try
 		{
 			if (!CryptHashData(hHash, shader_file.data(), shader_file.size(), 0)
-				|| !CryptHashData(hHash, (BYTE*)&COMPILER_FLAGS, sizeof(COMPILER_FLAGS), 0))
+				|| !CryptHashData(hHash, reinterpret_cast<const BYTE*>(&COMPILER_FLAGS), sizeof(COMPILER_FLAGS), 0))
 			{
 				throw std::runtime_error("CryptHashData failed.");
 			}
@@ -568,7 +546,7 @@ namespace local
 		if (file.is_open() && size > 0)
 		{
 			shader_file.resize(static_cast<size_t>(size));
-			file.read((char*)shader_file.data(), size);
+			file.read(reinterpret_cast<char*>(shader_file.data()), size);
 		}
 
 		file.close();
@@ -604,7 +582,7 @@ namespace local
 			throw std::exception(error.c_str());
 		}
 
-		file.write((const char*)current_hash.data(), current_hash.size());
+		file.write(reinterpret_cast<const char*>(current_hash.data()), current_hash.size());
 		file.close();
 	}
 
@@ -622,10 +600,6 @@ namespace local
 
 	static void populate_macros(Uint32 flags)
 	{
-#ifdef USE_SL
-		macros.push_back({ "USE_SL", "1" });
-#endif
-
 		while (flags != 0)
 		{
 			using namespace d3d;
@@ -764,7 +738,7 @@ namespace local
 			throw std::runtime_error("Failed to open file for cache storage.");
 		}
 
-		file.write((char*)data.data(), data.size());
+		file.write(reinterpret_cast<char*>(data.data()), data.size());
 	}
 
 	static VertexShader get_vertex_shader(Uint32 flags)
@@ -780,7 +754,7 @@ namespace local
 		}
 		else
 		{
-			auto it = vertex_shaders.find((ShaderFlags)flags);
+			const auto it = vertex_shaders.find(static_cast<ShaderFlags>(flags));
 			if (it != vertex_shaders.end())
 			{
 				return it->second;
@@ -811,7 +785,7 @@ namespace local
 			Buffer errors;
 			Buffer buffer;
 
-			auto result = D3DXCompileShader((char*)shader_file.data(), shader_file.size(), macros.data(), nullptr,
+			auto result = D3DXCompileShader(reinterpret_cast<char*>(shader_file.data()), shader_file.size(), macros.data(), nullptr,
 				"vs_main", "vs_3_0", COMPILER_FLAGS, &buffer, &errors, nullptr);
 
 			if (FAILED(result) || errors != nullptr)
@@ -824,7 +798,7 @@ namespace local
 		}
 
 		VertexShader shader;
-		auto result = d3d::device->CreateVertexShader((const DWORD*)data.data(), &shader);
+		auto result = d3d::device->CreateVertexShader(reinterpret_cast<const DWORD*>(data.data()), &shader);
 
 		if (FAILED(result))
 		{
@@ -836,7 +810,7 @@ namespace local
 			save_cached_shader(sid_path, data);
 		}
 
-		vertex_shaders[(ShaderFlags)flags] = shader;
+		vertex_shaders[static_cast<ShaderFlags>(flags)] = shader;
 		return shader;
 	}
 
@@ -850,7 +824,7 @@ namespace local
 		}
 		else
 		{
-			auto it = pixel_shaders.find((ShaderFlags)(flags & PS_FLAGS));
+			const auto it = pixel_shaders.find(static_cast<ShaderFlags>(flags & PS_FLAGS));
 			if (it != pixel_shaders.end())
 			{
 				return it->second;
@@ -884,7 +858,7 @@ namespace local
 			Buffer errors;
 			Buffer buffer;
 
-			auto result = D3DXCompileShader((char*)shader_file.data(), shader_file.size(), macros.data(), nullptr,
+			auto result = D3DXCompileShader(reinterpret_cast<char*>(shader_file.data()), shader_file.size(), macros.data(), nullptr,
 				"ps_main", "ps_3_0", COMPILER_FLAGS, &buffer, &errors, nullptr);
 
 			if (FAILED(result) || errors != nullptr)
@@ -897,7 +871,7 @@ namespace local
 		}
 
 		PixelShader shader;
-		auto result = d3d::device->CreatePixelShader((const DWORD*)data.data(), &shader);
+		auto result = d3d::device->CreatePixelShader(reinterpret_cast<const DWORD*>(data.data()), &shader);
 
 		if (FAILED(result))
 		{
@@ -909,7 +883,7 @@ namespace local
 			save_cached_shader(sid_path, data);
 		}
 
-		pixel_shaders[(ShaderFlags)(flags & PS_FLAGS)] = shader;
+		pixel_shaders[static_cast<ShaderFlags>(flags & PS_FLAGS)] = shader;
 		return shader;
 	}
 
@@ -1014,11 +988,9 @@ namespace local
 			return;
 		}
 
-#ifndef USE_SL
 		D3DLIGHT9 light;
 		d3d::device->GetLight(0, &light);
-		param::LightDirection = -*(D3DXVECTOR3*)&light.Direction;
-#endif
+		param::LightDirection = -*static_cast<D3DXVECTOR3*>(&light.Direction);
 	}
 
 	static void hook_vtable()
@@ -1079,9 +1051,9 @@ namespace local
 		{
 			globals::first_material = true;
 
-			auto _control_3d = _nj_control_3d_flag_;
-			auto _attr_or = _nj_constant_attr_or_;
-			auto _attr_and = _nj_constant_attr_and_;
+			const auto _control_3d = _nj_control_3d_flag_;
+			const auto _attr_or = _nj_constant_attr_or_;
+			const auto _attr_and = _nj_constant_attr_and_;
 
 			run_trampoline(TARGET_DYNAMIC(njDrawModel_SADX), a1);
 
@@ -1105,9 +1077,9 @@ namespace local
 		{
 			globals::first_material = true;
 
-			auto _control_3d = _nj_control_3d_flag_;
-			auto _attr_or = _nj_constant_attr_or_;
-			auto _attr_and = _nj_constant_attr_and_;
+			const auto _control_3d = _nj_control_3d_flag_;
+			const auto _attr_or = _nj_constant_attr_or_;
+			const auto _attr_and = _nj_constant_attr_and_;
 
 			run_trampoline(TARGET_DYNAMIC(njDrawModel_SADX_Dynamic), a1);
 
@@ -1138,11 +1110,12 @@ namespace local
 	}
 
 	static bool supports_xrgb = false;
+	// ReSharper disable once CppDeclaratorNeverUsed
 	static void __cdecl CreateDirect3DDevice_c(int behavior, int type)
 	{
 		if (Direct3D_Device == nullptr && Direct3D_Object != nullptr)
 		{
-			auto fmt = *(D3DFORMAT*)((char*)0x03D0FDC0 + 0x08);
+			auto fmt = *reinterpret_cast<D3DFORMAT*>(reinterpret_cast<char*>(0x03D0FDC0) + 0x08);
 
 			auto result = Direct3D_Object->CheckDeviceFormat(DisplayAdapter, D3DDEVTYPE_HAL, fmt,
 				D3DUSAGE_QUERY_VERTEXTEXTURE, D3DRTYPE_TEXTURE, D3DFMT_X8R8G8B8);
@@ -1237,7 +1210,7 @@ namespace local
 
 	static void __cdecl Direct3D_SetViewportAndTransform_r()
 	{
-		auto original = TARGET_DYNAMIC(Direct3D_SetViewportAndTransform);
+		const auto original = TARGET_DYNAMIC(Direct3D_SetViewportAndTransform);
 		bool invalid = TransformAndViewportInvalid != 0;
 		original();
 
@@ -1249,7 +1222,7 @@ namespace local
 
 	static void __cdecl Direct3D_PerformLighting_r(int type)
 	{
-		auto target = TARGET_DYNAMIC(Direct3D_PerformLighting);
+		const auto target = TARGET_DYNAMIC(Direct3D_PerformLighting);
 
 		if (!LanternInstance::use_palette())
 		{
@@ -1366,6 +1339,7 @@ namespace local
 		return result;
 	}
 
+	// ReSharper disable once CppDeclaratorNeverUsed
 	static void __stdcall DrawMeshSetBuffer_c(MeshSetBuffer* buffer)
 	{
 		if (!buffer->FVF)
@@ -1403,7 +1377,8 @@ namespace local
 		end();
 	}
 
-	static const auto loc_77EF09 = (void*)0x0077EF09;
+	// ReSharper disable once CppDeclaratorNeverUsed
+	static const auto loc_77EF09 = reinterpret_cast<void*>(0x0077EF09);
 	static void __declspec(naked) DrawMeshSetBuffer_asm()
 	{
 		__asm
@@ -2388,9 +2363,9 @@ namespace d3d
 		}
 	}
 
-	bool shaders_not_null()
+	bool shaders_null()
 	{
-		return vertex_shader != nullptr && pixel_shader != nullptr;
+		return vertex_shader == nullptr || pixel_shader == nullptr;
 	}
 
 	void init_trampolines()
@@ -2409,15 +2384,15 @@ namespace d3d
 		PolyBuff_DrawTriangleStrip_t       = new Trampoline(0x00794760, 0x00794767, PolyBuff_DrawTriangleStrip_r);
 		PolyBuff_DrawTriangleList_t        = new Trampoline(0x007947B0, 0x007947B7, PolyBuff_DrawTriangleList_r);
 
-		WriteJump((void*)0x0077EE45, DrawMeshSetBuffer_asm);
+		WriteJump(reinterpret_cast<void*>(0x0077EE45), DrawMeshSetBuffer_asm);
 
 		// Hijacking a IDirect3DDevice8::SetTransform call in Direct3D_SetNearFarPlanes
 		// to update the projection matrix.
 		// This nops:
 		// mov ecx, [eax] (device)
 		// call dword ptr [ecx+94h] (device->SetTransform)
-		WriteData<8>((void*)0x00403234, 0x90i8);
-		WriteCall((void*)0x00403236, SetTransformHijack);
+		WriteData<8>(reinterpret_cast<void*>(0x00403234), 0x90i8);
+		WriteCall(reinterpret_cast<void*>(0x00403236), SetTransformHijack);
 
 	#ifdef USE_OIT
 		// HACK: DIRTY HACKS

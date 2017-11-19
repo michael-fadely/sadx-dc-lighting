@@ -1,6 +1,5 @@
 #pragma once
 
-#include <string>
 #include <vector>
 #include <atlbase.h>
 #include <d3d9.h>
@@ -15,6 +14,17 @@ using Surface      = CComPtr<IDirect3DSurface9>;
 class IShaderParameter
 {
 public:
+
+	struct Type
+	{
+		enum T
+		{
+			vertex = 0b01,
+			pixel = 0b10,
+			both = 0b11
+		};
+	};
+
 	static std::vector<IShaderParameter*> values_assigned;
 
 	virtual ~IShaderParameter() = default;
@@ -28,28 +38,20 @@ public:
 template<typename T>
 class ShaderParameter : public IShaderParameter
 {
-	enum ShaderParameterType
-	{
-		SHPARAM_VS = 1 << 0,
-		SHPARAM_PS = 1 << 1
-	};
+	const int index;
+	const Type::T type;
 
-	// TODO:
-	const int type = SHPARAM_VS | SHPARAM_PS;
-
-	int index;
-	bool reset;
-	bool assigned;
+	bool reset = false;
+	bool assigned = false;
 	T last;
 	T current;
 
 public:
-	explicit ShaderParameter(int index, const T& defaultValue)
-		: index(index),
-		  reset(false),
-		  assigned(false),
-		  last(defaultValue),
-		  current(defaultValue)
+	ShaderParameter(const int index, const T& default_value, const Type::T type) :
+		index(index),
+		type(type),
+		last(default_value),
+		current(default_value)
 	{
 	}
 
@@ -59,8 +61,8 @@ public:
 	bool commit_now(IDirect3DDevice9* device) override;
 	void release() override;
 	T value() const;
-	void operator=(const T& value);
-	void operator=(const ShaderParameter<T>& value);
+	ShaderParameter<T>& operator=(const T& value);
+	ShaderParameter<T>& operator=(const ShaderParameter<T>& value);
 };
 
 template <typename T>
@@ -96,7 +98,7 @@ T ShaderParameter<T>::value() const
 }
 
 template <typename T>
-void ShaderParameter<T>::operator=(const T& value)
+ShaderParameter<T>& ShaderParameter<T>::operator=(const T& value)
 {
 	if (!assigned)
 	{
@@ -105,12 +107,14 @@ void ShaderParameter<T>::operator=(const T& value)
 
 	assigned = true;
 	current = value;
+	return *this;
 }
 
 template <typename T>
-void ShaderParameter<T>::operator=(const ShaderParameter<T>& value)
+ShaderParameter<T>& ShaderParameter<T>::operator=(const ShaderParameter<T>& value)
 {
 	*this = value.current;
+	return *this;
 }
 
 template<> bool ShaderParameter<bool>::commit(IDirect3DDevice9* device);

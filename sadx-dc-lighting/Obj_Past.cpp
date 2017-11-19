@@ -9,7 +9,7 @@
 VoidFunc(sub_541990, 0x541990);
 VoidFunc(sub_543F20, 0x543F20);
 
-static const auto sub_541FC0 = (void*)0x00541FC0;
+static const auto sub_541FC0 = reinterpret_cast<void*>(0x00541FC0);
 
 static Trampoline* Obj_Past_t = nullptr;
 
@@ -35,7 +35,7 @@ static void __cdecl Obj_Past_r(ObjectMaster *_this)
 
 			entity->InvulnerableTime = CurrentAct;
 			sub_543F20();
-			memset((void*)0x3C63690, 0, sizeof(ObjectMaster*) * 4);
+			memset(reinterpret_cast<void*>(0x3C63690), 0, sizeof(ObjectMaster*) * 4);
 			_this->DeleteSub = Obj_Past_Delete_r;
 			entity->Action = 1;
 			break;
@@ -57,7 +57,7 @@ static void __cdecl Obj_Past_r(ObjectMaster *_this)
 				{
 					QueueSound_DualEntity(1108, entity, 1, nullptr, 2);
 				}
-				else if (CurrentAct == 2 && d3d::shaders_not_null())
+				else if (CurrentAct == 2 && !d3d::shaders_null())
 				{
 					entity->Rotation.x += NJM_DEG_ANG(4.561875f);
 					entity->Rotation.x %= 65536;

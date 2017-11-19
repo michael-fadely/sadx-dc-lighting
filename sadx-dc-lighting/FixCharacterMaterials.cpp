@@ -3263,7 +3263,7 @@ static void models(NJS_MODEL_SADX* model, const T(&ids)[N])
 		return;
 	}
 
-	auto it = find(materials.begin(), materials.end(), mats);
+	const auto it = find(materials.begin(), materials.end(), mats);
 
 	if (it != materials.end())
 	{
@@ -3273,7 +3273,9 @@ static void models(NJS_MODEL_SADX* model, const T(&ids)[N])
 	for (int i = 0; i < N; i++)
 	{
 		if (mats[i].attr_texId != ids[i])
+		{
 			return;
+		}
 	}
 
 	materials.push_back(mats);
@@ -3282,7 +3284,7 @@ static void models(NJS_MODEL_SADX* model, const T(&ids)[N])
 template<typename T = Uint32, size_t N>
 static void models(const std::string& id, int length, const T(&ids)[N])
 {
-	auto handle = (NJS_MODEL_SADX**)GetProcAddress(CHRMODELS, ("___" + id + "_MODELS").c_str());
+	const auto handle = reinterpret_cast<NJS_MODEL_SADX**>(GetProcAddress(CHRMODELS, ("___" + id + "_MODELS").c_str()));
 	if (!handle)
 	{
 		return;
@@ -3322,7 +3324,7 @@ static void objects(NJS_OBJECT* object, const T(&ids)[N])
 template<typename T = Uint32, size_t N>
 static void objects(const std::string& id, int length, const T(&ids)[N])
 {
-	auto handle = (NJS_OBJECT**)GetProcAddress(CHRMODELS, ("___" + id + "_OBJECTS").c_str());
+	const auto handle = reinterpret_cast<NJS_OBJECT**>(GetProcAddress(CHRMODELS, ("___" + id + "_OBJECTS").c_str()));
 	if (!handle)
 	{
 		return;
@@ -3348,7 +3350,7 @@ static void actions(NJS_ACTION* action, const T(&ids)[N])
 template<typename T = Uint32, size_t N>
 static void actions(const std::string& id, int length, const T(&ids)[N])
 {
-	auto handle = (NJS_ACTION**)GetProcAddress(CHRMODELS, ("___" + id + "_ACTIONS").c_str());
+	const auto handle = reinterpret_cast<NJS_ACTION**>(GetProcAddress(CHRMODELS, ("___" + id + "_ACTIONS").c_str()));
 	if (!handle)
 	{
 		return;
@@ -3375,7 +3377,7 @@ void FixCharacterMaterials()
 	material_register(WhiteDiffuseSecondCharSpecular, LengthOfArray(WhiteDiffuseSecondCharSpecular), &ForceWhiteDiffuseSecondCharSpecular);
 	material_register(NPCMaterials, LengthOfArray(NPCMaterials), &NPCModelsFunction);
 
-	auto handle = (size_t)CHRMODELS;
+	auto handle = reinterpret_cast<size_t>(CHRMODELS);
 
 	//Stuff that ignores lighting
 
@@ -3465,6 +3467,6 @@ void FixCharacterMaterials()
 	((NJS_MODEL*)0x008BE620)->mats[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
 	((NJS_MODEL*)0x008BE620)->mats[1].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
 
-	WriteData((char*)0x0062751B, 0i8); //Force Tornado light type
-	WriteData((char*)0x0062AC1F, 0i8); //Force Tornado light type (transformation cutscene)
+	WriteData(reinterpret_cast<char*>(0x0062751B), 0i8); //Force Tornado light type
+	WriteData(reinterpret_cast<char*>(0x0062AC1F), 0i8); //Force Tornado light type (transformation cutscene)
 }

@@ -92,21 +92,16 @@ static void update_material(const D3DMATERIAL9& material)
 {
 	using namespace d3d;
 
-	if (!LanternInstance::use_palette() || !shaders_not_null())
+	if (!LanternInstance::use_palette() || shaders_null())
 	{
 		return;
 	}
 
 	D3DMATERIALCOLORSOURCE colorsource;
-	device->GetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, (DWORD*)&colorsource);
+	device->GetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, reinterpret_cast<DWORD*>(&colorsource));
 
 	param::DiffuseSource   = colorsource;
 	param::MaterialDiffuse = material.Diffuse;
-
-#ifdef USE_SL
-	param::MaterialSpecular = material.Specular;
-	param::MaterialPower    = material.Power;
-#endif
 }
 
 static void __cdecl CorrectMaterial_r()
@@ -144,7 +139,7 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 
 	TARGET_DYNAMIC(Direct3D_ParseMaterial)(material);
 
-	if (!shaders_not_null())
+	if (shaders_null())
 	{
 		return;
 	}
@@ -209,7 +204,7 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 	param::DestinationBlend = NJD_FLAG_D3DBLEND[flags >> 26 & 7];
 
 	// Environment map matrix
-	param::TextureTransform = *(D3DXMATRIX*)0x038A5DD0;
+	param::TextureTransform = *reinterpret_cast<D3DXMATRIX*>(0x038A5DD0);
 
 	D3DMATERIAL9 mat;
 	device->GetMaterial(&mat);
@@ -239,7 +234,7 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 
 static void __cdecl CharSel_LoadA_r()
 {
-	auto original = TARGET_DYNAMIC(CharSel_LoadA);
+	const auto original = TARGET_DYNAMIC(CharSel_LoadA);
 
 	globals::palettes.load_palette(LevelIDs_SkyDeck, 0);
 	globals::palettes.set_last_level(CurrentLevel, CurrentAct);
@@ -421,14 +416,22 @@ static void __cdecl SetCurrentStageLight_EggViper_r(ObjectMaster* a1)
 extern "C"
 {
 	EXPORT ModInfo SADXModInfo = { ModLoaderVer };
-	EXPORT void __cdecl Init(const char *path)
+	EXPORT void __cdecl Init(const char *path, const HelperFunctions& helperFunctions)
 	{
 		auto handle = GetModuleHandle(L"d3d9.dll");
 
 		if (handle == nullptr)
 		{
-			MessageBoxA(WindowHandle, "Unable to detect Direct3D 9 DLL. The mod will not function.",
-				"D3D9 not loaded", MB_OK | MB_ICONERROR);
+			MessageBoxA(WindowHandle, "Unable to detect Direct3D 9 DLL. Lantern Engine will not function. Ensure d3d8to9 is installed.",
+				"Lantern Engine Error", MB_OK | MB_ICONERROR);
+
+			return;
+		}
+
+		if (helperFunctions.Version < 5)
+		{
+			MessageBoxA(WindowHandle, "Mod loader out of date. Lantern Engine requires API version 5 or newer in order to function.",
+				"Lantern Engine Error", MB_OK | MB_ICONERROR);
 
 			return;
 		}
@@ -438,10 +441,11 @@ extern "C"
 		LanternInstance base(&param::PaletteA);
 		globals::palettes.add(base);
 
+		globals::helper_functions = helperFunctions;
+
 		globals::mod_path    = path;
-		globals::system_path = globals::mod_path + "\\system\\";
-		globals::cache_path  = globals::mod_path + "\\cache\\";
-		globals::shader_path = globals::system_path + "lantern.hlsl";
+		globals::cache_path  = move(globals::mod_path + "\\cache\\");
+		globals::shader_path = move(globals::get_system_path("lantern.hlsl"));
 
 		d3d::init_trampolines();
 
@@ -459,7 +463,7 @@ extern "C"
 		SetCurrentStageLight_EggViper_t = new Trampoline(0x0057E560, 0x0057E567, SetCurrentStageLight_EggViper_r);
 
 		// Material callback hijack
-		WriteJump((void*)0x0040A340, CorrectMaterial_r);
+		WriteJump(reinterpret_cast<void*>(0x0040A340), CorrectMaterial_r);
 
 		FixCharacterMaterials();
 		FixChaoGardenMaterials();
@@ -469,10 +473,10 @@ extern "C"
 
 		// Vertex normal correction for certain objects in
 		// Red Mountain and Sky Deck.
-		WriteCall((void*)0x00411EDA, NormalScale_r);
-		WriteCall((void*)0x00411F1D, NormalScale_r);
-		WriteCall((void*)0x00411F44, NormalScale_r);
-		WriteCall((void*)0x00412783, NormalScale_r);
+		WriteCall(reinterpret_cast<void*>(0x00411EDA), NormalScale_r);
+		WriteCall(reinterpret_cast<void*>(0x00411F1D), NormalScale_r);
+		WriteCall(reinterpret_cast<void*>(0x00411F44), NormalScale_r);
+		WriteCall(reinterpret_cast<void*>(0x00412783), NormalScale_r);
 
 		NormalScaleMultiplier = { 1.0f, 1.0f, 1.0f };
 	}
@@ -492,11 +496,11 @@ extern "C"
 		#if 0
 			if (pressed & Buttons_Left)
 			{
-				globals::palettes.load_palette(globals::system_path + "diffuse test.bin");
+				globals::palettes.load_palette(globals::get_system_path("diffuse test.bin"));
 			}
 			else if (pressed & Buttons_Right)
 			{
-				globals::palettes.load_palette(globals::system_path + "specular test.bin");
+				globals::palettes.load_palette(globals::get_system_path("specular test.bin"));
 			}
 			else if (pressed & Buttons_Down)
 			{
@@ -505,7 +509,7 @@ extern "C"
 		#endif
 		}
 
-		if (!d3d::shaders_not_null())
+		if (d3d::shaders_null())
 		{
 			return;
 		}

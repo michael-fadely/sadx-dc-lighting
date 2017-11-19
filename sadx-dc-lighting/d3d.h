@@ -5,7 +5,6 @@
 #include <d3d8to9.hpp>
 #include <ninja.h>
 
-#include "lantern.h"
 #include "ShaderParameter.h"
 
 #define USE_OIT
@@ -21,42 +20,36 @@ namespace d3d
 	void reset_overrides();
 	void load_shader();
 	void set_flags(Uint32 flags, bool add = true);
-	bool shaders_not_null();
+	bool shaders_null();
 	void init_trampolines();
 }
 
 namespace param
 {
 	extern ShaderParameter<Texture> PaletteA;
-	extern ShaderParameter<float> DiffuseIndexA;
-	extern ShaderParameter<float> SpecularIndexA;
-
 	extern ShaderParameter<Texture> PaletteB;
-	extern ShaderParameter<float> DiffuseIndexB;
-	extern ShaderParameter<float> SpecularIndexB;
 
-	extern ShaderParameter<float> DiffuseBlendFactor;
-	extern ShaderParameter<float> SpecularBlendFactor;
 	extern ShaderParameter<D3DXMATRIX> WorldMatrix;
-	extern ShaderParameter<D3DXMATRIX> ViewMatrix;
 	extern ShaderParameter<D3DXMATRIX> ProjectionMatrix;
 	extern ShaderParameter<D3DXMATRIX> wvMatrixInvT;
 	extern ShaderParameter<D3DXMATRIX> TextureTransform;
-	extern ShaderParameter<int> FogMode;
-	extern ShaderParameter<float> FogStart;
-	extern ShaderParameter<float> FogEnd;
-	extern ShaderParameter<float> FogDensity;
-	extern ShaderParameter<D3DXCOLOR> FogColor;
-	extern ShaderParameter<D3DXVECTOR3> LightDirection;
-	extern ShaderParameter<int> DiffuseSource;
 
-	extern ShaderParameter<D3DXCOLOR> MaterialDiffuse;
+	extern ShaderParameter<D3DXVECTOR4> Indices;
+	extern ShaderParameter<D3DXVECTOR2> BlendFactor;
 
 	extern ShaderParameter<D3DXVECTOR3> NormalScale;
+	extern ShaderParameter<D3DXVECTOR3> LightDirection;
+	extern ShaderParameter<int> DiffuseSource;
+	extern ShaderParameter<D3DXCOLOR> MaterialDiffuse;
+
 	extern ShaderParameter<bool> AllowVertexColor;
 	extern ShaderParameter<bool> ForceDefaultDiffuse;
 	extern ShaderParameter<bool> DiffuseOverride;
 	extern ShaderParameter<D3DXVECTOR3> DiffuseOverrideColor;
+
+	extern ShaderParameter<int> FogMode;
+	extern ShaderParameter<D3DXVECTOR3> FogConfig;
+	extern ShaderParameter<D3DXCOLOR> FogColor;
 
 #ifdef USE_OIT
 	extern ShaderParameter<Texture> AlphaDepth;
@@ -66,13 +59,6 @@ namespace param
 	extern ShaderParameter<D3DXVECTOR2> ViewPort;
 	extern ShaderParameter<float> DrawDistance;
 	extern ShaderParameter<float> DepthOverride;
-#endif
-
-#ifdef USE_SL
-	extern ShaderParameter<D3DXCOLOR> MaterialSpecular;
-	extern ShaderParameter<float> MaterialPower;
-	extern ShaderParameter<SourceLight_t> SourceLight;
-	extern ShaderParameter<StageLights> Lights;
 #endif
 }
 

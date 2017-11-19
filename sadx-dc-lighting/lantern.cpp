@@ -38,9 +38,9 @@ bool SourceLight_t::operator!=(const SourceLight_t& rhs) const
 
 bool StageLight::operator==(const StageLight& rhs) const
 {
-	return !memcmp(&direction, &rhs.direction, sizeof(NJS_VECTOR))
-		&& specular == rhs.specular
+	return specular == rhs.specular
 		&& multiplier == rhs.multiplier
+		&& !memcmp(&direction, &rhs.direction, sizeof(NJS_VECTOR))
 		&& !memcmp(&diffuse, &rhs.diffuse, sizeof(NJS_VECTOR))
 		&& !memcmp(&ambient, &rhs.ambient, sizeof(NJS_VECTOR));
 }
@@ -71,8 +71,16 @@ bool ShaderParameter<SourceLight_t>::commit(IDirect3DDevice9* device)
 		float buffer[24]{};
 		memcpy(buffer, &current, sizeof(SourceLight_t));
 
-		device->SetVertexShaderConstantF(index, buffer, 6);
-		device->SetPixelShaderConstantF(index, buffer, 6);
+		if (type & Type::vertex)
+		{
+			device->SetVertexShaderConstantF(index, buffer, 6);
+		}
+
+		if (type & Type::pixel)
+		{
+			device->SetPixelShaderConstantF(index, buffer, 6);
+		}
+
 		clear();
 		return true;
 	}
@@ -85,8 +93,15 @@ bool ShaderParameter<StageLights>::commit(IDirect3DDevice9* device)
 {
 	if (is_modified())
 	{
-		device->SetVertexShaderConstantF(index, (float*)&current, 16);
-		device->SetPixelShaderConstantF(index, (float*)&current, 16);
+		if (type & Type::vertex)
+		{
+			device->SetVertexShaderConstantF(index, reinterpret_cast<float*>(&current), 16);
+		}
+
+		if (type & Type::pixel)
+		{
+			device->SetPixelShaderConstantF(index, reinterpret_cast<float*>(&current), 16);
+		}
 
 		clear();
 		return true;
@@ -148,10 +163,10 @@ static bool use_time(Uint32 level, Uint32 act)
 	}
 }
 
-bool LanternInstance::diffuse_override       = false;
-bool LanternInstance::diffuse_override_temp  = false;
-bool LanternInstance::specular_override      = false;
-bool LanternInstance::specular_override_temp = false;
+bool LanternInstance::diffuse_override        = false;
+bool LanternInstance::diffuse_override_temp   = false;
+bool LanternInstance::specular_override       = false;
+bool LanternInstance::specular_override_temp  = false;
 bool LanternInstance::use_palette_            = false;
 float LanternInstance::diffuse_blend_factor_  = 0.0f;
 float LanternInstance::specular_blend_factor_ = 0.0f;
@@ -173,7 +188,7 @@ float LanternInstance::specular_blend_factor()
 
 inline bool is_ingame()
 {
-	switch ((GameModes)GameMode)
+	switch (static_cast<GameModes>(GameMode))
 	{
 		case GameModes_Restart:
 		case GameModes_Adventure_ActionStg:
@@ -320,7 +335,7 @@ std::string LanternInstance::palette_id(Sint32 level, Sint32 act)
 		return result.str();
 	}
 
-	auto n = (level - 10) / 26;
+	int n = (level - 10) / 26;
 
 	if (n > 9)
 	{
@@ -329,7 +344,7 @@ std::string LanternInstance::palette_id(Sint32 level, Sint32 act)
 
 	!n ? result << "_" : result << n;
 
-	auto i = (char)(level - (10 + 26 * n) + 'A');
+	auto i = static_cast<char>(level - (10 + 26 * n) + 'A');
 	result << i << act;
 	return result.str();
 }
@@ -394,14 +409,10 @@ bool LanternInstance::load_source(const std::string& path)
 
 	for (int i = 0; i < 16; i++)
 	{
-		file.read((char*)&source_lights[i], sizeof(SourceLight));
+		file.read(reinterpret_cast<char*>(&source_lights[i]), sizeof(SourceLight));
 	}
 
 	file.close();
-
-#ifdef USE_SL
-	param::SourceLight = source_lights[15].stage;
-#endif
 
 	NJS_MATRIX m;
 
@@ -412,7 +423,10 @@ bool LanternInstance::load_source(const std::string& path)
 	// Default light direction is down, so we want to rotate relative to that.
 	NJS_VECTOR vs = { 0.0f, -1.0f, 0.0f };
 	njCalcVector(m, &vs, &sl_direction);
-	param::LightDirection = -*(D3DXVECTOR3*)&sl_direction;
+	param::LightDirection = -*reinterpret_cast<D3DXVECTOR3*>(&sl_direction);
+
+	PrintDebug("[lantern] Source light rotation (direction): y: %d, z: %d (x: %f, y: %f, z: %f)\n",
+		source_lights[15].stage.y, source_lights[15].stage.z, sl_direction.x, sl_direction.y, sl_direction.z);
 
 	return true;
 }
@@ -426,8 +440,8 @@ bool LanternInstance::load_source(const std::string& path)
 bool LanternInstance::load_source(Sint32 level, Sint32 act)
 {
 	std::stringstream name;
-	name << globals::system_path << "SL" << palette_id(level, act) << "B.BIN";
-	return load_source(name.str());
+	name << "SL" << palette_id(level, act) << "B.BIN";
+	return load_source(globals::get_system_path(name.str()));
 }
 
 /// <summary>
@@ -452,8 +466,8 @@ bool LanternInstance::load_palette(const std::string& path)
 	do
 	{
 		ColorPair pair = {};
-		file.read((char*)&pair.diffuse, sizeof(NJS_COLOR));
-		file.read((char*)&pair.specular, sizeof(NJS_COLOR));
+		file.read(reinterpret_cast<char*>(&pair.diffuse), sizeof(NJS_COLOR));
+		file.read(reinterpret_cast<char*>(&pair.specular), sizeof(NJS_COLOR));
 		color_data.push_back(pair);
 	} while (!file.eof());
 
@@ -506,7 +520,7 @@ bool LanternInstance::load_palette(const std::string& path)
 
 		if (is_32bit)
 		{
-			const auto pixels = (NJS_COLOR*)rect.pBits;
+			const auto pixels = static_cast<NJS_COLOR*>(rect.pBits);
 
 			for (size_t x = 0; x < 256; x++)
 			{
@@ -521,7 +535,7 @@ bool LanternInstance::load_palette(const std::string& path)
 		}
 		else
 		{
-			const auto pixels = (ABGR32F*)rect.pBits;
+			const auto pixels = static_cast<ABGR32F*>(rect.pBits);
 
 			for (size_t x = 0; x < 256; x++)
 			{
@@ -561,25 +575,31 @@ bool LanternInstance::load_palette(const std::string& path)
 bool LanternInstance::load_palette(Sint32 level, Sint32 act)
 {
 	std::stringstream name;
-	name << globals::system_path << "PL" << palette_id(level, act) << "B.BIN";
-	return load_palette(name.str());
+	name << "PL" << palette_id(level, act) << "B.BIN";
+	return load_palette(globals::get_system_path(name.str()));
 }
 
 void LanternInstance::diffuse_blend_factor(float f)
 {
-	param::DiffuseBlendFactor = f;
+	auto value = param::BlendFactor.value();
+	value.x = f;
+	param::BlendFactor = value;
+
 	diffuse_blend_factor_ = f;
 }
 
 void LanternInstance::specular_blend_factor(float f)
 {
-	param::SpecularBlendFactor = f;
+	auto value = param::BlendFactor.value();
+	value.y = f;
+	param::BlendFactor = value;
+
 	specular_blend_factor_ = f;
 }
 
 inline float _index_float(Sint32 i, Sint32 offset)
 {
-	return ((float)(2 * i + offset) + 0.5f) / 16.0f;
+	return (static_cast<float>(2 * i + offset) + 0.5f) / 16.0f;
 }
 
 /// <summary>
@@ -625,7 +645,7 @@ void LanternInstance::set_palettes(Sint32 type, Uint32 flags)
 			specular = ignore_specular ? 0 : 1;
 
 #ifdef _DEBUG
-			globals::light_dir = *(NJS_VECTOR*)&Direct3D_CurrentLight.Direction;
+			globals::light_dir = *reinterpret_cast<NJS_VECTOR*>(&Direct3D_CurrentLight.Direction);
 #endif
 			break;
 
@@ -1007,35 +1027,42 @@ void LanternCollection::apply_parameters()
 		return;
 	}
 
-	auto& i = instances[0];
+	// .xy is diffuse A and B, .zw is specular A and B.
+	auto indices = param::Indices.value();
 
-	auto d = i.diffuse_index();
-	param::DiffuseBlendFactor = 0.0f;
+	// .x is diffuse, .y is specular.
+	D3DXVECTOR2 blend_factors {};
+
+	LanternInstance& i = instances[0];
+
+	int d = i.diffuse_index();
 
 	if (d >= 0)
 	{
-		param::DiffuseIndexA = _index_float(d, 0);
+		indices.x = _index_float(d, 0);
 
 		if (diffuse_blend_[d] >= 0)
 		{
-			param::DiffuseIndexB = _index_float(diffuse_blend_[d], 0);
-			param::DiffuseBlendFactor = LanternInstance::diffuse_blend_factor_;
+			indices.y = _index_float(diffuse_blend_[d], 0);
+			blend_factors.x = LanternInstance::diffuse_blend_factor_;
 		}
 	}
 
-	auto s = i.specular_index();
-	param::SpecularBlendFactor = 0.0f;
+	int s = i.specular_index();
 
 	if (s >= 0)
 	{
-		param::SpecularIndexA = _index_float(s, 1);
+		indices.z = _index_float(s, 1);
 
 		if (specular_blend_[s] >= 0)
 		{
-			param::SpecularIndexB = _index_float(specular_blend_[s], 1);
-			param::SpecularBlendFactor = LanternInstance::specular_blend_factor_;
+			indices.w = _index_float(specular_blend_[s], 1);
+			blend_factors.y = LanternInstance::specular_blend_factor_;
 		}
 	}
+
+	param::Indices = indices;
+	param::BlendFactor = blend_factors;
 }
 
 void LanternCollection::callback_add(std::deque<lantern_load_cb>& c, lantern_load_cb callback)
