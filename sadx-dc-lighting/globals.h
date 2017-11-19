@@ -7,6 +7,8 @@
 #include "lantern.h"
 #include "../include/lanternapi.h"
 
+#include <SADXModInfo.h>
+
 namespace globals
 {
 #ifdef _DEBUG
@@ -14,9 +16,6 @@ namespace globals
 #endif
 
 	extern HelperFunctions helper_functions;
-
-	std::string get_system_path(const char* path);
-	std::string get_system_path(const std::string& path);
 
 	extern std::unordered_map<NJS_MATERIAL*, std::deque<lantern_material_cb>> material_callbacks;
 
@@ -29,4 +28,7 @@ namespace globals
 	extern std::string cache_path;
 	extern std::string shader_path;
 	extern LanternCollection palettes;
+
+	std::string get_system_path(const char* path);
+	std::string get_system_path(const std::string& path);
 }

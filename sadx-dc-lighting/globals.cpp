@@ -6,6 +6,8 @@
 #include <ninja.h>
 #include "lantern.h"
 
+#include <SADXModInfo.h>
+
 namespace globals
 {
 #ifdef _DEBUG
@@ -25,17 +27,17 @@ namespace globals
 	std::string cache_path;
 	std::string shader_path;
 	LanternCollection palettes = {};
-}
 
-std::string globals::get_system_path(const char* path)
-{
-	std::string result("SYSTEM\\");
-	result.append(path);
-	result = helper_functions.GetReplaceablePath(result.c_str());
-	return result;
-}
+	std::string get_system_path(const char* path)
+	{
+		std::string result("SYSTEM\\");
+		result.append(path);
+		result = helper_functions.GetReplaceablePath(result.c_str());
+		return result;
+	}
 
-std::string globals::get_system_path(const std::string& path)
-{
-	return move(get_system_path(path.c_str()));
+	std::string get_system_path(const std::string& path)
+	{
+		return move(get_system_path(path.c_str()));
+	}
 }
