@@ -440,8 +440,8 @@ bool LanternInstance::load_source(const std::string& path)
 bool LanternInstance::load_source(Sint32 level, Sint32 act)
 {
 	std::stringstream name;
-	name << globals::system_path << "SL" << palette_id(level, act) << "B.BIN";
-	return load_source(name.str());
+	name << "SL" << palette_id(level, act) << "B.BIN";
+	return load_source(globals::get_system_path(name.str()));
 }
 
 /// <summary>
@@ -575,8 +575,8 @@ bool LanternInstance::load_palette(const std::string& path)
 bool LanternInstance::load_palette(Sint32 level, Sint32 act)
 {
 	std::stringstream name;
-	name << globals::system_path << "PL" << palette_id(level, act) << "B.BIN";
-	return load_palette(name.str());
+	name << "PL" << palette_id(level, act) << "B.BIN";
+	return load_palette(globals::get_system_path(name.str()));
 }
 
 void LanternInstance::diffuse_blend_factor(float f)

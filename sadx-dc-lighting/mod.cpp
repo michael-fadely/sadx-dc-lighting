@@ -412,7 +412,7 @@ static void __cdecl SetCurrentStageLight_EggViper_r(ObjectMaster* a1)
 extern "C"
 {
 	EXPORT ModInfo SADXModInfo = { ModLoaderVer };
-	EXPORT void __cdecl Init(const char *path)
+	EXPORT void __cdecl Init(const char *path, const HelperFunctions& helperFunctions)
 	{
 		auto handle = GetModuleHandle(L"d3d9.dll");
 
@@ -429,10 +429,11 @@ extern "C"
 		LanternInstance base(&param::PaletteA);
 		globals::palettes.add(base);
 
+		globals::helper_functions = helperFunctions;
+
 		globals::mod_path    = path;
-		globals::system_path = globals::mod_path + "\\system\\";
-		globals::cache_path  = globals::mod_path + "\\cache\\";
-		globals::shader_path = globals::system_path + "lantern.hlsl";
+		globals::cache_path  = move(globals::mod_path + "\\cache\\");
+		globals::shader_path = move(globals::get_system_path("lantern.hlsl"));
 
 		d3d::init_trampolines();
 
@@ -482,11 +483,11 @@ extern "C"
 
 			if (pressed & Buttons_Left)
 			{
-				globals::palettes.load_palette(globals::system_path + "diffuse test.bin");
+				globals::palettes.load_palette(globals::get_system_path("diffuse test.bin"));
 			}
 			else if (pressed & Buttons_Right)
 			{
-				globals::palettes.load_palette(globals::system_path + "specular test.bin");
+				globals::palettes.load_palette(globals::get_system_path("specular test.bin"));
 			}
 			else if (pressed & Buttons_Down)
 			{
