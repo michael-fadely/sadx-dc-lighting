@@ -295,7 +295,7 @@ namespace local
 		for (auto& it : depth_units)
 		{
 			h = device->CreateTexture(present.BackBufferWidth, present.BackBufferHeight,
-				1, D3DUSAGE_DEPTHSTENCIL, (D3DFORMAT)'ZTNI', D3DPOOL_DEFAULT, &it, nullptr);
+				1, D3DUSAGE_DEPTHSTENCIL, static_cast<D3DFORMAT>('ZTNI'), D3DPOOL_DEFAULT, &it, nullptr);
 
 			if (FAILED(h))
 			{
@@ -341,7 +341,7 @@ namespace local
 		depth_buffer = nullptr;
 
 		device->CreateTexture(present.BackBufferWidth, present.BackBufferHeight,
-			1, D3DUSAGE_DEPTHSTENCIL, (D3DFORMAT)'ZTNI', D3DPOOL_DEFAULT, &depth_buffer, nullptr);
+			1, D3DUSAGE_DEPTHSTENCIL, static_cast<D3DFORMAT>('ZTNI'), D3DPOOL_DEFAULT, &depth_buffer, nullptr);
 
 		back_buffers[0]->GetSurfaceLevel(0, &back_buffer_surface);
 
@@ -1598,7 +1598,7 @@ namespace local
 			return;
 		}
 
-		switch ((_QueuedModelType)(node->Flags & 0xF))
+		switch (static_cast<_QueuedModelType>(node->Flags & 0xF))
 		{
 			case QueuedModelType_BasicModel:
 			{
@@ -1721,7 +1721,7 @@ namespace local
 
 			njSetMatrix(nullptr, orig_matrix);
 			CurrentTexList = nullptr;
-			SetMaterialAndSpriteColor((NJS_ARGB*)0x03AB9864); // &GlobalSpriteColor
+			SetMaterialAndSpriteColor(reinterpret_cast<NJS_ARGB*>(0x03AB9864)); // &GlobalSpriteColor
 			SetCurrentLightType_B(currentLightType_orig);
 			ScaleVectorThing_Restore();
 			Direct3D_SetZFunc(1u);
@@ -1827,15 +1827,15 @@ namespace local
 			}
 
 			njSetConstantMaterial(&node->Color);
-			njColorBlendingMode_(0, (NJD_COLOR_BLENDING)(node->BlendMode & 0xF));
-			njColorBlendingMode_(NJD_DESTINATION_COLOR, (NJD_COLOR_BLENDING)(node->BlendMode >> 4) & 0xF);
+			njColorBlendingMode_(0, static_cast<NJD_COLOR_BLENDING>(node->BlendMode & 0xF));
+			njColorBlendingMode_(NJD_DESTINATION_COLOR, static_cast<NJD_COLOR_BLENDING>(node->BlendMode >> 4) & 0xF);
 
 			if (fogemulation & 2 && fogemulation & 1)
 			{
 				fogemulation &= ~2u;
 			}
 
-			switch ((_QueuedModelType)(flags & 0x0F))
+			switch (static_cast<_QueuedModelType>(flags & 0x0F))
 			{
 				default:
 					break;
@@ -1847,7 +1847,7 @@ namespace local
 						break;
 					}
 
-					auto inst = (QueuedModelPointer*)node;
+					auto inst = reinterpret_cast<QueuedModelPointer*>(node);
 					auto model = inst->Model;
 
 					if (fov_orig_again != fov_orig)
@@ -1858,7 +1858,7 @@ namespace local
 					}
 
 
-					if ((unsigned int)model < 0x100000)
+					if (reinterpret_cast<unsigned int>(model) < 0x100000)
 					{
 						break;
 					}
@@ -1882,7 +1882,7 @@ namespace local
 
 				case QueuedModelType_Sprite3D:
 				{
-					auto inst = (QueuedModelSprite*)node;
+					auto inst = reinterpret_cast<QueuedModelSprite*>(node);
 
 					auto tlist = inst->Sprite.tlist;
 					if (!tlist)
@@ -1910,7 +1910,7 @@ namespace local
 
 				case QueuedModelType_Line3D:
 				{
-					auto inst = (QueuedModelLineB*)node;
+					auto inst = reinterpret_cast<QueuedModelLineB*>(node);
 					if (fov_orig_again != fov_orig)
 					{
 						fov_orig = fov_orig_again;
@@ -1930,7 +1930,7 @@ namespace local
 
 				case QueuedModelType_3DLinesMaybe:
 				{
-					auto inst = (QueuedModelLineB*)node;
+					auto inst = reinterpret_cast<QueuedModelLineB*>(node);
 					if (fov_orig_again != fov_orig)
 					{
 						fov_orig = fov_orig_again;
@@ -2335,7 +2335,7 @@ namespace d3d
 			local::d3d_exception(errors, result);
 		}
 
-		device->CreateVertexShader((const DWORD*)buffer->GetBufferPointer(), &local::blender_vs);
+		device->CreateVertexShader(static_cast<const DWORD*>(buffer->GetBufferPointer()), &local::blender_vs);
 
 		buffer = nullptr;
 		errors = nullptr;
@@ -2348,7 +2348,7 @@ namespace d3d
 			local::d3d_exception(errors, result);
 		}
 
-		device->CreatePixelShader((const DWORD*)buffer->GetBufferPointer(), &local::blender_ps);
+		device->CreatePixelShader(static_cast<const DWORD*>(buffer->GetBufferPointer()), &local::blender_ps);
 	}
 
 	void set_flags(Uint32 flags, bool add)
@@ -2398,8 +2398,8 @@ namespace d3d
 		// HACK: DIRTY HACKS
 		//WriteJump(Direct3D_EnableZWrite, Direct3D_EnableZWrite_r);
 		//WriteJump((void*)0x0077ED00, Direct3D_SetZFunc_r);
-		WriteJump((void*)0x00791940, njAlphaMode_r);
-		WriteJump((void*)0x00791990, njTextureShadingMode_r);
+		WriteJump(reinterpret_cast<void*>(0x00791940), njAlphaMode_r);
+		WriteJump(reinterpret_cast<void*>(0x00791990), njTextureShadingMode_r);
 	#endif
 	}
 }
