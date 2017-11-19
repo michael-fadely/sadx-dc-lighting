@@ -182,7 +182,8 @@ struct PS_IN
 	float4 diffuse  : COLOR0;
 	float4 specular : COLOR1;
 	float2 tex      : TEXCOORD0;
-	float  fogDist : FOG;
+	float  fogDist  : FOG;
+	float2 depth    : TEXCOORD1;
 };
 
 // Vertex shaders

@@ -58,13 +58,13 @@ namespace param
 	ShaderParameter<D3DXVECTOR3> FogConfig(31, {}, IShaderParameter::Type::pixel);
 	ShaderParameter<D3DXCOLOR>   FogColor(32, {}, IShaderParameter::Type::pixel);
 #ifdef USE_OIT
-	ShaderParameter<Texture>     OpaqueDepth(3, nullptr);
-	ShaderParameter<Texture>     AlphaDepth(4, nullptr);
-	ShaderParameter<int>         SourceBlend(47, 0);
-	ShaderParameter<int>         DestinationBlend(48, 0);
-	ShaderParameter<D3DXVECTOR2> ViewPort(46, {});
-	ShaderParameter<float>       DrawDistance(49, 0.0f);
-	ShaderParameter<float>       DepthOverride(50, 0.0f);
+	ShaderParameter<Texture>     OpaqueDepth(3, nullptr, IShaderParameter::Type::pixel);
+	ShaderParameter<Texture>     AlphaDepth(4, nullptr, IShaderParameter::Type::pixel);
+	ShaderParameter<int>         SourceBlend(47, 0, IShaderParameter::Type::pixel);
+	ShaderParameter<int>         DestinationBlend(48, 0, IShaderParameter::Type::pixel);
+	ShaderParameter<D3DXVECTOR2> ViewPort(46, {}, IShaderParameter::Type::pixel);
+	ShaderParameter<float>       DrawDistance(49, 0.0f, IShaderParameter::Type::pixel);
+	ShaderParameter<float>       DepthOverride(50, 0.0f, IShaderParameter::Type::pixel);
 #endif
 
 	IShaderParameter* const parameters[] = {
