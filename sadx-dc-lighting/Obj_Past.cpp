@@ -30,9 +30,6 @@ static void __cdecl Obj_Past_r(ObjectMaster *_this)
 	switch (entity->Action)
 	{
 		case 0:
-			// Enables palette blending in the shader.
-			set_shader_flags(ShaderFlags_Blend, true);
-
 			entity->InvulnerableTime = CurrentAct;
 			sub_543F20();
 			memset(reinterpret_cast<void*>(0x3C63690), 0, sizeof(ObjectMaster*) * 4);
@@ -62,6 +59,9 @@ static void __cdecl Obj_Past_r(ObjectMaster *_this)
 					entity->Rotation.x += NJM_DEG_ANG(4.561875f);
 					entity->Rotation.x %= 65536;
 					auto f = (njSin(entity->Rotation.x) + 1.0f) / 2.0f;
+
+					// Enables palette blending in the shader.
+					set_shader_flags(ShaderFlags_Blend, true);
 
 					// Blend both diffuse and specular index 0 to index 5.
 					set_blend(0, 5);
