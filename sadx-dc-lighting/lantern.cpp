@@ -1028,10 +1028,10 @@ void LanternCollection::apply_parameters()
 	}
 
 	// .xy is diffuse A and B, .zw is specular A and B.
-	auto indices = param::Indices.value();
+	D3DXVECTOR4 indices { 0.0f, 0.0f, 0.0f, 0.0f };
 
 	// .x is diffuse, .y is specular.
-	D3DXVECTOR2 blend_factors {};
+	D3DXVECTOR2 blend_factors { 0.0f, 0.0f };
 
 	LanternInstance& i = instances[0];
 
