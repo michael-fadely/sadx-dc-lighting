@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ninja.h>
+#include <array>
 #include <deque>
 #include <SADXStructs.h>
 
@@ -51,6 +52,11 @@ struct StageLights
 	bool operator!=(const StageLights& rhs) const;
 };
 
+struct ColorPair
+{
+	NJS_COLOR diffuse, specular;
+};
+
 #pragma pack(pop)
 
 static_assert(sizeof(SourceLight) == 0x60, "SourceLight size mismatch");
@@ -82,8 +88,9 @@ class LanternInstance : ILantern
 {
 	// TODO: handle externally
 	ShaderParameter<Texture>* atlas;
-	SourceLight source_lights[16] = {};
-	NJS_VECTOR sl_direction = {};
+	std::array<ColorPair, 256 * 8> palette_pairs {};
+	SourceLight source_lights[16] {};
+	NJS_VECTOR sl_direction {};
 
 	void copy(LanternInstance& inst);
 
@@ -120,6 +127,7 @@ public:
 
 	bool load_palette(Sint32 level, Sint32 act) override;
 	bool load_palette(const std::string& path) override;
+	void generate_atlas();
 	bool load_source(Sint32 level, Sint32 act) override;
 	bool load_source(const std::string& path) override;
 	void set_last_level(Sint32 level, Sint32 act) override;

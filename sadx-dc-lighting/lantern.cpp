@@ -19,13 +19,6 @@
 
 #include "lantern.h"
 
-#pragma pack(push, 1)
-struct ColorPair
-{
-	NJS_COLOR diffuse, specular;
-};
-#pragma pack(pop)
-
 bool SourceLight_t::operator==(const SourceLight_t& rhs) const
 {
 	return !memcmp(this, &rhs, sizeof(SourceLight_t)); 
@@ -473,6 +466,19 @@ bool LanternInstance::load_palette(const std::string& path)
 
 	file.close();
 
+	if (color_data.size() > palette_pairs.size())
+	{
+		PrintDebug("[lantern] WARNING: Palette size exceeds standard maximum.\n");
+	}
+
+	palette_pairs = {};
+	memcpy(palette_pairs.data(), color_data.data(), min(sizeof(ColorPair) * color_data.size(), sizeof(ColorPair) * palette_pairs.size()));
+	generate_atlas();
+	return true;
+}
+
+void LanternInstance::generate_atlas()
+{
 	bool is_32bit = d3d::supports_xrgb();
 	Texture texture = atlas->value();
 
@@ -510,13 +516,14 @@ bool LanternInstance::load_palette(const std::string& path)
 
 	for (size_t i = 0; i < 8; i++)
 	{
-		auto index = i * 256;
-		if (index >= color_data.size() || index + 256 >= color_data.size())
+		const auto index = i * 256;
+
+		/*if (index >= palette_pairs.size() || index + 256 >= palette_pairs.size())
 		{
 			break;
-		}
+		}*/
 
-		auto y = 512 * i;
+		const auto y = 512 * i;
 
 		if (is_32bit)
 		{
@@ -524,7 +531,7 @@ bool LanternInstance::load_palette(const std::string& path)
 
 			for (size_t x = 0; x < 256; x++)
 			{
-				const auto& color = color_data[index + x];
+				const auto& color = palette_pairs[index + x];
 
 				auto& diffuse = pixels[y + x];
 				auto& specular = pixels[256 + y + x];
@@ -539,7 +546,7 @@ bool LanternInstance::load_palette(const std::string& path)
 
 			for (size_t x = 0; x < 256; x++)
 			{
-				const auto& color = color_data[index + x];
+				const auto& color = palette_pairs[index + x];
 
 				auto& diffuse = pixels[y + x];
 				auto& specular = pixels[256 + y + x];
@@ -562,8 +569,6 @@ bool LanternInstance::load_palette(const std::string& path)
 	}
 
 	texture->UnlockRect(0);
-
-	return true;
 }
 
 /// <summary>
