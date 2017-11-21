@@ -44,10 +44,10 @@ namespace param
 	ShaderParameter<D3DXVECTOR3> NormalScale(20, { 1.0f, 1.0f, 1.0f }, IShaderParameter::Type::vertex);
 	ShaderParameter<D3DXVECTOR3> LightDirection(21, { 0.0f, -1.0f, 0.0f }, IShaderParameter::Type::vertex);
 	ShaderParameter<int>         DiffuseSource(22, 0, IShaderParameter::Type::vertex);
-	ShaderParameter<D3DXCOLOR>   MaterialDiffuse(23, {}, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXCOLOR>   MaterialDiffuse(23, { 0.0f, 0.0f, 0.0f, 0.0f }, IShaderParameter::Type::vertex);
 	
-	ShaderParameter<D3DXVECTOR4> Indices(24, {}, IShaderParameter::Type::vertex);
-	ShaderParameter<D3DXVECTOR2> BlendFactor(25, {}, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXVECTOR4> Indices(24, { 0.0f, 0.0f, 0.0f, 0.0f }, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXVECTOR2> BlendFactor(25, { 0.0f, 0.0f }, IShaderParameter::Type::vertex);
 
 	ShaderParameter<bool>        AllowVertexColor(26, true, IShaderParameter::Type::vertex);
 	ShaderParameter<bool>        ForceDefaultDiffuse(27, false, IShaderParameter::Type::vertex);
