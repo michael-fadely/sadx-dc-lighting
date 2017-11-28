@@ -45,6 +45,7 @@
 
 // Standard library
 #include <algorithm>
+#include <array>
 #include <deque>
 #include <exception>
 #include <fstream>

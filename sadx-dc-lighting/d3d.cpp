@@ -176,6 +176,7 @@ namespace local
 	static bool initialized = false;
 	static Uint32 drawing = 0;
 	static bool using_shader = false;
+	static bool supports_xrgb = false;
 	static std::vector<D3DXMACRO> macros;
 
 #ifdef USE_OIT
@@ -1109,34 +1110,37 @@ namespace local
 		end();
 	}
 
-	static bool supports_xrgb = false;
+	static void check_format()
+	{
+		const auto fmt = *reinterpret_cast<D3DFORMAT*>(reinterpret_cast<char*>(0x03D0FDC0) + 0x08);
+
+		auto result = Direct3D_Object->CheckDeviceFormat(DisplayAdapter, D3DDEVTYPE_HAL, fmt,
+			D3DUSAGE_QUERY_VERTEXTEXTURE, D3DRTYPE_TEXTURE, D3DFMT_X8R8G8B8);
+
+		if (result == D3D_OK)
+		{
+			supports_xrgb = true;
+			return;
+		}
+
+		result = Direct3D_Object->CheckDeviceFormat(DisplayAdapter, D3DDEVTYPE_HAL, fmt,
+			D3DUSAGE_QUERY_VERTEXTEXTURE, D3DRTYPE_TEXTURE, D3DFMT_A32B32G32R32F);
+
+		if (result != D3D_OK)
+		{
+			MessageBoxA(WindowHandle, "Your GPU does not support any (reasonable) vertex texture sample formats.",
+				"Insufficient GPU support", MB_OK | MB_ICONERROR);
+
+			Exit();
+		}
+	}
+
 	// ReSharper disable once CppDeclaratorNeverUsed
 	static void __cdecl CreateDirect3DDevice_c(int behavior, int type)
 	{
 		if (Direct3D_Device == nullptr && Direct3D_Object != nullptr)
 		{
-			auto fmt = *reinterpret_cast<D3DFORMAT*>(reinterpret_cast<char*>(0x03D0FDC0) + 0x08);
-
-			auto result = Direct3D_Object->CheckDeviceFormat(DisplayAdapter, D3DDEVTYPE_HAL, fmt,
-				D3DUSAGE_QUERY_VERTEXTEXTURE, D3DRTYPE_TEXTURE, D3DFMT_X8R8G8B8);
-
-			if (result == D3D_OK)
-			{
-				supports_xrgb = true;
-			}
-			else
-			{
-				result = Direct3D_Object->CheckDeviceFormat(DisplayAdapter, D3DDEVTYPE_HAL, fmt,
-					D3DUSAGE_QUERY_VERTEXTEXTURE, D3DRTYPE_TEXTURE, D3DFMT_A32B32G32R32F);
-
-				if (result != D3D_OK)
-				{
-					MessageBoxA(WindowHandle, "Your GPU does not support any (reasonable) vertex texture sample formats.",
-						"Insufficient GPU support", MB_OK | MB_ICONERROR);
-
-					Exit();
-				}
-			}
+			check_format();
 		}
 
 		auto orig = CreateDirect3DDevice_t->Target();
@@ -1144,6 +1148,7 @@ namespace local
 
 		(void)orig;
 		(void)_type;
+		(void)behavior;
 
 		__asm
 		{

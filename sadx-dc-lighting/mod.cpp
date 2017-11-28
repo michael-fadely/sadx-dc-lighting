@@ -422,16 +422,18 @@ extern "C"
 
 		if (handle == nullptr)
 		{
-			MessageBoxA(WindowHandle, "Unable to detect Direct3D 9 DLL. Lantern Engine will not function. Ensure d3d8to9 is installed.",
-				"Lantern Engine Error", MB_OK | MB_ICONERROR);
+			MessageBoxA(WindowHandle,
+				"SADX Lantern Engine will not function without d3d8to9 saved to your Sonic Adventure DX folder. "
+				"Download d3d8.dll from from https://github.com/crosire/d3d8to9",
+				"Lantern Engine Error: Missing d3d8.dll", MB_OK | MB_ICONERROR);
 
 			return;
 		}
 
 		if (helperFunctions.Version < 5)
 		{
-			MessageBoxA(WindowHandle, "Mod loader out of date. Lantern Engine requires API version 5 or newer in order to function.",
-				"Lantern Engine Error", MB_OK | MB_ICONERROR);
+			MessageBoxA(WindowHandle, "Mod loader out of date. SADX Lantern Engine requires API version 5 or newer.",
+				"Lantern Engine Error: Mod loader out of date", MB_OK | MB_ICONERROR);
 
 			return;
 		}
