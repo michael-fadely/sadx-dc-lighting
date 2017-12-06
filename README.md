@@ -9,7 +9,7 @@
 - The latest* version of the SADX Mod Loader.
 - d3d8to9: https://github.com/crosire/d3d8to9/releases/latest
 
-*If you have a reasonably new version, it has automatic update checking in the options tab. If not, download here and extract to your game's root directory: http://mm.reimuhakurei.net/sadxmods/SADXModLoader.7z
+\**If you have a reasonably new version, it has automatic update checking in the options tab. If not, download here and extract to your game's root directory: http://mm.reimuhakurei.net/sadxmods/SADXModLoader.7z*
 
 ### Installing d3d8to9
 - Download d3d8.dll from https://github.com/crosire/d3d8to9/releases/latest.
