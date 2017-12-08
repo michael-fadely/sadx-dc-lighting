@@ -16,6 +16,6 @@
 - Place d3d8.dll in the root of your SADX folder (where sonic.exe is).
 
 ### Installing sadx-dc-lighting
-- Download the archive below.
-- Open the archive, and extract the sadx-dc-lighting folder itself into your SADX mods folder. The mods folder should be in your game's root directory.
+- Download the archive from https://github.com/SonicFreak94/sadx-dc-lighting/releases/latest.
+- Open the archive and extract the sadx-dc-lighting folder itself into your SADX mods folder. The mods folder should be in your game's root directory.
 - Enable Lantern Engine from the SADX Mod Manager.
