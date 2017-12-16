@@ -38,6 +38,6 @@ namespace globals
 
 	std::string get_system_path(const std::string& path)
 	{
-		return move(get_system_path(path.c_str()));
+		return get_system_path(path.c_str());
 	}
 }

@@ -28,7 +28,7 @@ bool filesystem::remove_all(const std::string& path)
 {
 	WIN32_FIND_DATAA find_data {};
 
-	const std::string str_search(move(combine_path(path, "*.*")));
+	const std::string str_search = combine_path(path, "*.*");
 	const HANDLE find_handle = FindFirstFileA(str_search.c_str(), &find_data);
 
 	if (find_handle == INVALID_HANDLE_VALUE)
@@ -44,7 +44,7 @@ bool filesystem::remove_all(const std::string& path)
 			continue;
 		}
 
-		const std::string file_path(move(combine_path(path, find_data.cFileName)));
+		const std::string file_path = combine_path(path, find_data.cFileName);
 
 		if (find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 		{

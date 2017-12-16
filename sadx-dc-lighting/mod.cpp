@@ -442,8 +442,8 @@ extern "C"
 		globals::helper_functions = helperFunctions;
 
 		globals::mod_path    = path;
-		globals::cache_path  = move(globals::mod_path + "\\cache\\");
-		globals::shader_path = move(globals::get_system_path("lantern.hlsl"));
+		globals::cache_path  = globals::mod_path + "\\cache\\";
+		globals::shader_path = globals::get_system_path("lantern.hlsl");
 
 		d3d::init_trampolines();
 

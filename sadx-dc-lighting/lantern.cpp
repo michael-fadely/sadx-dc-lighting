@@ -348,8 +348,8 @@ void LanternInstance::copy(LanternInstance& inst)
 	last_time  = inst.last_time;
 	last_act   = inst.last_act;
 	last_level = inst.last_level;
-	diffuse_    = inst.diffuse_;
-	specular_   = inst.specular_;
+	diffuse_   = inst.diffuse_;
+	specular_  = inst.specular_;
 }
 
 LanternInstance::LanternInstance(ShaderParameter<Texture>* atlas) : atlas(atlas)
