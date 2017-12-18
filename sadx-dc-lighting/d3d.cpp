@@ -159,11 +159,6 @@ namespace local
 
 	DataPointer(Direct3DDevice8*, Direct3D_Device, 0x03D128B0);
 	DataPointer(Direct3D8*, Direct3D_Object, 0x03D11F60);
-	DataPointer(D3DXMATRIX, TransformationMatrix, 0x03D0FD80);
-	DataPointer(D3DXMATRIX, ViewMatrix, 0x0389D398);
-	DataPointer(D3DXMATRIX, WorldMatrix, 0x03D12900);
-	DataPointer(D3DXMATRIX, _ProjectionMatrix, 0x03D129C0);
-	DataPointer(int, TransformAndViewportInvalid, 0x03D0FD1C);
 
 	static auto sanitize(Uint32& flags)
 	{
@@ -1026,7 +1021,7 @@ namespace local
 
 		param::WorldMatrix = WorldMatrix;
 
-		auto wvMatrix = WorldMatrix * ViewMatrix;
+		auto wvMatrix = D3DXMATRIX(WorldMatrix) * D3DXMATRIX(ViewMatrix);
 		param::wvMatrix = wvMatrix;
 
 		D3DXMatrixInverse(&wvMatrix, nullptr, &wvMatrix);
@@ -1040,7 +1035,7 @@ namespace local
 		TARGET_DYNAMIC(Direct3D_SetProjectionMatrix)(hfov, nearPlane, farPlane);
 
 		// The view matrix can also be set here if necessary.
-		param::ProjectionMatrix = _ProjectionMatrix * TransformationMatrix;
+		param::ProjectionMatrix = D3DXMATRIX(ProjectionMatrix) * D3DXMATRIX(TransformationMatrix);
 	}
 
 	static void __cdecl Direct3D_SetViewportAndTransform_r()
@@ -1051,7 +1046,7 @@ namespace local
 
 		if (invalid)
 		{
-			param::ProjectionMatrix = _ProjectionMatrix * TransformationMatrix;
+			param::ProjectionMatrix = D3DXMATRIX(ProjectionMatrix) * D3DXMATRIX(TransformationMatrix);
 		}
 	}
 

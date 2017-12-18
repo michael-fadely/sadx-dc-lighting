@@ -7,8 +7,6 @@
 #include "globals.h"
 #include "Obj_Chaos7.h"
 
-DataPointer(Uint8, PerfectChaosPhase, 0x03C69E28);
-
 static bool use_secondary = false;
 static Trampoline* Obj_Chaos7_t = nullptr;
 

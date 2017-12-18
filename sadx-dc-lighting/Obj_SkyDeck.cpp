@@ -9,9 +9,6 @@
 
 #include "Obj_SkyDeck.h"
 
-DataPointer(int, SkyDeck_AltitudeMode, 0x03C80608);
-DataPointer(float, SkyDeck_SkyAltitude, 0x03C80610);
-
 static Trampoline* SkyDeck_SimulateAltitude_t = nullptr;
 static Trampoline* SkyBox_SkyDeck_t = nullptr;
 static Trampoline* Obj_SkyDeck_t = nullptr;
