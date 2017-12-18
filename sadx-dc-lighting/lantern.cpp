@@ -105,7 +105,7 @@ bool ShaderParameter<StageLights>::commit(IDirect3DDevice9* device)
 
 static bool use_time(Uint32 level, Uint32 act)
 {
-	if (level < LevelIDs_StationSquare || level >= LevelIDs_Past && level <= LevelIDs_SandHill)
+	if (level < LevelIDs_StationSquare || (level >= LevelIDs_Past && level <= LevelIDs_SandHill))
 	{
 		return false;
 	}

@@ -3,7 +3,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <string>
-#include <shlwapi.h>
+#include <Shlwapi.h>
 
 #pragma comment(lib, "Shlwapi.lib")
 
@@ -29,7 +29,7 @@ bool filesystem::remove_all(const std::string& path)
 	WIN32_FIND_DATAA find_data {};
 
 	const std::string str_search = combine_path(path, "*.*");
-	const HANDLE find_handle = FindFirstFileA(str_search.c_str(), &find_data);
+	HANDLE find_handle = FindFirstFileA(str_search.c_str(), &find_data);
 
 	if (find_handle == INVALID_HANDLE_VALUE)
 	{
@@ -39,6 +39,7 @@ bool filesystem::remove_all(const std::string& path)
 	do
 	{
 		const std::string file_name = find_data.cFileName;
+
 		if (file_name == "." || file_name == "..")
 		{
 			continue;
@@ -78,9 +79,9 @@ bool filesystem::remove(const std::string& path)
 
 std::string filesystem::get_directory(const std::string& path)
 {
-	const auto npos = path.npos;
-
+	const auto npos = std::string::npos;
 	auto slash = path.find_last_of('\\');
+
 	if (slash == npos)
 	{
 		slash = path.find_last_of('/');
@@ -97,8 +98,8 @@ std::string filesystem::get_directory(const std::string& path)
 	}
 
 	const auto last = slash;
-
 	slash = path.find_last_of('\\', last);
+
 	if (slash == npos)
 	{
 		slash = path.find_last_of('/', last);
@@ -119,9 +120,9 @@ bool filesystem::create_directory(const std::string& path)
 
 std::string filesystem::get_base_name(const std::string& path)
 {
-	const auto npos = path.npos;
-
+	const auto npos = std::string::npos;
 	auto slash = path.find_last_of('\\');
+
 	if (slash == npos)
 	{
 		slash = path.find_last_of('/');
@@ -137,8 +138,8 @@ std::string filesystem::get_base_name(const std::string& path)
 	}
 
 	const auto last = slash - 1;
-
 	slash = path.find_last_of('\\', last);
+
 	if (slash == npos)
 	{
 		slash = path.find_last_of('/', last);
@@ -155,7 +156,8 @@ std::string filesystem::get_base_name(const std::string& path)
 void filesystem::strip_extension(std::string& path)
 {
 	const auto dot = path.find('.');
-	if (dot == path.npos)
+
+	if (dot == std::string::npos)
 	{
 		return;
 	}
@@ -166,7 +168,8 @@ void filesystem::strip_extension(std::string& path)
 std::string filesystem::get_extension(const std::string& path, bool include_dot)
 {
 	auto dot = path.find('.');
-	if (dot == path.npos)
+
+	if (dot == std::string::npos)
 	{
 		return std::string();
 	}
@@ -189,16 +192,18 @@ std::string filesystem::get_working_directory()
 	}
 
 	const auto buffer = new char[length];
+
 	GetCurrentDirectoryA(length, buffer);
 	std::string result(buffer);
 	delete[] buffer;
+
 	return result;
 }
 
 std::string filesystem::combine_path(const std::string& path_a, const std::string& path_b)
 {
 	char buffer[MAX_PATH] {};
-	const LPSTR result = PathCombineA(buffer, path_a.c_str(), path_b.c_str());
+	LPSTR result = PathCombineA(buffer, path_a.c_str(), path_b.c_str());
 
 	if (result == nullptr)
 	{
