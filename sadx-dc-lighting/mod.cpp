@@ -33,20 +33,14 @@ static Trampoline* Direct3D_SetTexList_t           = nullptr;
 static Trampoline* SetCurrentStageLights_t         = nullptr;
 static Trampoline* SetCurrentStageLight_EggViper_t = nullptr;
 
-DataArray(StageLightData, CurrentStageLights, 0x03ABD9F8, 4);
-DataArray(NJS_TEXLIST*, LevelObjTexlists, 0x03B290B4, 4);
-DataArray(D3DBLEND, NJD_FLAG_D3DBLEND, 0x0088AE1C, 9);
-
-DataPointer(PaletteLight, LSPalette, 0x03ABDAF0);
 DataPointer(NJS_VECTOR, NormalScaleMultiplier, 0x03B121F8);
-DataPointer(NJS_TEXLIST*, CommonTextures, 0x03B290B0);
 
 #ifdef _DEBUG
 static void show_light_direction()
 {
 	using namespace globals;
 
-	auto player = CharObj1Ptrs[0];
+	auto player = EntityData1Ptrs[0];
 
 	if (player == nullptr)
 	{
@@ -446,8 +440,8 @@ extern "C"
 		globals::helper_functions = helperFunctions;
 
 		globals::mod_path    = path;
-		globals::cache_path  = move(globals::mod_path + "\\cache\\");
-		globals::shader_path = move(globals::get_system_path("lantern.hlsl"));
+		globals::cache_path  = globals::mod_path + "\\cache\\";
+		globals::shader_path = globals::get_system_path("lantern.hlsl");
 
 		d3d::init_trampolines();
 

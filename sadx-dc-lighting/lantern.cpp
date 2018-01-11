@@ -105,7 +105,7 @@ bool ShaderParameter<StageLights>::commit(IDirect3DDevice9* device)
 
 static bool use_time(Uint32 level, Uint32 act)
 {
-	if (level < LevelIDs_StationSquare || level >= LevelIDs_Past && level <= LevelIDs_SandHill)
+	if (level < LevelIDs_StationSquare || (level >= LevelIDs_Past && level <= LevelIDs_SandHill))
 	{
 		return false;
 	}
@@ -348,8 +348,8 @@ void LanternInstance::copy(LanternInstance& inst)
 	last_time  = inst.last_time;
 	last_act   = inst.last_act;
 	last_level = inst.last_level;
-	diffuse_    = inst.diffuse_;
-	specular_   = inst.specular_;
+	diffuse_   = inst.diffuse_;
+	specular_  = inst.specular_;
 }
 
 LanternInstance::LanternInstance(ShaderParameter<Texture>* atlas) : atlas(atlas)

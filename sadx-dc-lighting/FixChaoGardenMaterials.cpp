@@ -184,10 +184,6 @@ static void __cdecl ChaoGardenMR_SetLandTable_Night_r()
 	copy_materials(matlist_000338D8, 0x000338D8, ModuleHandles[2]);
 }
 
-DataPointer(NJS_OBJECT, ChaoRaceDoor_Model, 0x0340C5A4);
-DataPointer(NJS_OBJECT, BlackMarketDoor_Model, 0x034091C4);
-DataPointer(NJS_OBJECT, SSGardenExit_Model, 0x0340A9C4);
-
 static void fix_light(NJS_OBJECT* obj)
 {
 	if (!obj)

@@ -199,11 +199,6 @@ namespace local
 
 	DataPointer(Direct3DDevice8*, Direct3D_Device, 0x03D128B0);
 	DataPointer(Direct3D8*, Direct3D_Object, 0x03D11F60);
-	DataPointer(D3DXMATRIX, TransformationMatrix, 0x03D0FD80);
-	DataPointer(D3DXMATRIX, ViewMatrix, 0x0389D398);
-	DataPointer(D3DXMATRIX, WorldMatrix, 0x03D12900);
-	DataPointer(D3DXMATRIX, _ProjectionMatrix, 0x03D129C0);
-	DataPointer(int, TransformAndViewportInvalid, 0x03D0FD1C);
 
 	static auto sanitize(Uint32& flags)
 	{
@@ -528,7 +523,7 @@ namespace local
 
 			CryptDestroyHash(hHash);
 			CryptReleaseContext(hProv, 0);
-			return move(result);
+			return result;
 		}
 		catch (std::exception&)
 		{
@@ -568,7 +563,7 @@ namespace local
 		file.read(reinterpret_cast<char*>(data.data()), data.size());
 		file.close();
 
-		return move(data);
+		return data;
 	}
 
 	static void store_checksum(const std::vector<uint8_t>& current_hash, const std::basic_string<char>& checksum_path)
@@ -596,7 +591,7 @@ namespace local
 			<< std::setfill('0')
 			<< flags;
 
-		return move(result.str());
+		return result.str();
 	}
 
 	static void populate_macros(Uint32 flags)
@@ -690,8 +685,8 @@ namespace local
 	{
 		load_shader_file(globals::shader_path);
 
-		const std::string checksum_path(move(filesystem::combine_path(globals::cache_path, "checksum.bin")));
-		const std::vector<uint8_t> current_hash(shader_hash());
+		const std::string checksum_path = filesystem::combine_path(globals::cache_path, "checksum.bin");
+		const std::vector<uint8_t> current_hash = shader_hash();
 
 		if (filesystem::exists(globals::cache_path))
 		{
@@ -764,7 +759,7 @@ namespace local
 
 		macros.clear();
 
-		const string sid_path(move(filesystem::combine_path(globals::cache_path, shader_id(flags) + ".vs")));
+		const string sid_path = filesystem::combine_path(globals::cache_path, shader_id(flags) + ".vs");
 		bool is_cached = filesystem::exists(sid_path);
 
 		vector<uint8_t> data;
@@ -837,7 +832,7 @@ namespace local
 		sanitize(flags);
 		flags &= PS_FLAGS;
 
-		const string sid_path = move(filesystem::combine_path(globals::cache_path, shader_id(flags) + ".ps"));
+		const string sid_path = filesystem::combine_path(globals::cache_path, shader_id(flags) + ".ps");
 		bool is_cached = filesystem::exists(sid_path);
 
 		vector<uint8_t> data;
@@ -1194,7 +1189,7 @@ namespace local
 
 		param::WorldMatrix = WorldMatrix;
 
-		auto wvMatrix = WorldMatrix * ViewMatrix;
+		auto wvMatrix = D3DXMATRIX(WorldMatrix) * D3DXMATRIX(ViewMatrix);
 		param::wvMatrix = wvMatrix;
 
 		D3DXMatrixInverse(&wvMatrix, nullptr, &wvMatrix);
@@ -1210,7 +1205,7 @@ namespace local
 		param::DrawDistance = farPlane;
 
 		// The view matrix can also be set here if necessary.
-		param::ProjectionMatrix = _ProjectionMatrix * TransformationMatrix;
+		param::ProjectionMatrix = D3DXMATRIX(ProjectionMatrix) * D3DXMATRIX(TransformationMatrix);
 	}
 
 	static void __cdecl Direct3D_SetViewportAndTransform_r()
@@ -1221,7 +1216,7 @@ namespace local
 
 		if (invalid)
 		{
-			param::ProjectionMatrix = _ProjectionMatrix * TransformationMatrix;
+			param::ProjectionMatrix = D3DXMATRIX(ProjectionMatrix) * D3DXMATRIX(TransformationMatrix);
 		}
 	}
 
