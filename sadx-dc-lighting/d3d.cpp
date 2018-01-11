@@ -181,14 +181,15 @@ namespace local
 
 #ifdef USE_OIT
 	static const int num_passes                  = 8;
-	static Texture depth_units[2]                = {};
+	static Texture depth_maps[2]                 = {};
+	static Surface depth_buffers[2]              = {};
 	static Texture render_layers[num_passes]     = {};
 	static Texture blend_mode_layers[num_passes] = {};
-	static Texture depth_buffer                  = nullptr;
-	static Surface depth_surface                 = nullptr;
+	static Texture depth_map                     = nullptr;
 	static Texture back_buffers[2]               = {};
 	static Surface back_buffer_surface           = nullptr;
 	static Surface orig_render_target            = nullptr;
+	static Surface orig_depth_surface            = nullptr;
 	static bool peeling                          = false;
 
 	static VertexShader blender_vs;
@@ -288,10 +289,21 @@ namespace local
 		auto& present = PresentParameters;
 		HRESULT h;
 
-		for (auto& it : depth_units)
+		for (auto& it : depth_buffers)
+		{
+			h = device->CreateDepthStencilSurface(present.BackBufferWidth, present.BackBufferHeight,
+				D3DFMT_D24X8, D3DMULTISAMPLE_NONE, 0, FALSE, &it, nullptr);
+
+			if (FAILED(h))
+			{
+				throw;
+			}
+		}
+
+		for (auto& it : depth_maps)
 		{
 			h = device->CreateTexture(present.BackBufferWidth, present.BackBufferHeight,
-				1, D3DUSAGE_DEPTHSTENCIL, static_cast<D3DFORMAT>('ZTNI'), D3DPOOL_DEFAULT, &it, nullptr);
+				1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &it, nullptr);
 
 			if (FAILED(h))
 			{
@@ -332,20 +344,21 @@ namespace local
 			}
 		}
 
-		device->SetDepthStencilSurface(nullptr);
-		depth_surface = nullptr;
-		depth_buffer = nullptr;
+		depth_map = nullptr;
 
 		device->CreateTexture(present.BackBufferWidth, present.BackBufferHeight,
-			1, D3DUSAGE_DEPTHSTENCIL, static_cast<D3DFORMAT>('ZTNI'), D3DPOOL_DEFAULT, &depth_buffer, nullptr);
+			1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &depth_map, nullptr);
 
 		back_buffers[0]->GetSurfaceLevel(0, &back_buffer_surface);
 
 		device->GetRenderTarget(0, &orig_render_target);
 		device->SetRenderTarget(0, back_buffer_surface);
 
-		depth_buffer->GetSurfaceLevel(0, &depth_surface);
-		device->SetDepthStencilSurface(depth_surface);
+		Surface surface;
+		depth_map->GetSurfaceLevel(0, &surface);
+		device->SetRenderTarget(1, surface);
+
+		device->GetDepthStencilSurface(&orig_depth_surface);
 
 		device->SetRenderState(D3DRS_ZENABLE, TRUE);
 		device->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
@@ -353,7 +366,12 @@ namespace local
 
 	static void release_depth_textures()
 	{
-		for (auto& it : depth_units)
+		for (auto& it : depth_buffers)
+		{
+			it = nullptr;
+		}
+
+		for (auto& it : depth_maps)
 		{
 			it = nullptr;
 		}
@@ -376,10 +394,10 @@ namespace local
 		param::AlphaDepth.release();
 		param::OpaqueDepth.release();
 
-		depth_surface      = nullptr;
-		depth_buffer       = nullptr;
+		depth_map           = nullptr;
 		back_buffer_surface = nullptr;
 		orig_render_target  = nullptr;
+		orig_depth_surface  = nullptr;
 	}
 
 #endif
@@ -1962,7 +1980,7 @@ namespace local
 		int passes = guard.passes;
 
 		set_flags(ShaderFlags_OIT, true);
-		param::OpaqueDepth = depth_buffer;
+		param::OpaqueDepth = depth_map;
 		peeling = true;
 		do_effect = true;
 
@@ -1974,39 +1992,37 @@ namespace local
 
 		for (int p = 0; p < passes; p++)
 		{
-			// TODO: loop per draw type & use [numPasses] depth buffers
+			// TODO: loop per draw type & use [numPasses] depth buffers?
 			for (int i = 0; i < num_passes; i++)
 			{
-				int currId = i % 2;
-				int lastId = (i + 1) % 2;
-
-				Texture currUnit = depth_units[currId];
-				Texture lastUnit = depth_units[lastId];
+				int curr_id = i % 2;
+				int last_id = (i + 1) % 2;
 
 				if (!i)
 				{
-					Surface temp;
-					lastUnit->GetSurfaceLevel(0, &temp);
-					device->SetDepthStencilSurface(temp);
+					device->SetDepthStencilSurface(depth_buffers[last_id]);
 					device->Clear(0, nullptr, D3DCLEAR_ZBUFFER, 0, 0.0f, 0);
 				}
 
-				Surface unit      = nullptr;
 				Surface target    = nullptr;
 				Surface blendmode = nullptr;
 
-				currUnit->GetSurfaceLevel(0, &unit);
-				device->SetDepthStencilSurface(unit);
+				device->SetDepthStencilSurface(depth_buffers[curr_id]);
 
 				render_layers[i]->GetSurfaceLevel(0, &target);
 				device->SetRenderTarget(0, target);
 
+				Surface db = nullptr;
+				depth_maps[curr_id]->GetSurfaceLevel(0, &db);
+				device->SetRenderTarget(1, db);
+				db = nullptr;
+
 				blend_mode_layers[i]->GetSurfaceLevel(0, &blendmode);
-				device->SetRenderTarget(1, blendmode);
+				device->SetRenderTarget(2, blendmode);
 
 				device->Clear(0, nullptr, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
 
-				param::AlphaDepth = lastUnit;
+				param::AlphaDepth = depth_maps[last_id];
 
 #ifdef USE_NODE_LIMIT
 				size_t index = 0;
@@ -2024,9 +2040,6 @@ namespace local
 					guard.draw(it);
 				}
 
-				currUnit  = nullptr;
-				lastUnit  = nullptr;
-				unit      = nullptr;
 				target    = nullptr;
 				blendmode = nullptr;
 			}
@@ -2083,6 +2096,7 @@ namespace local
 		using_shader = false;
 
 		int lastId = 0;
+
 		for (int i = num_passes; i > 0; i--)
 		{
 			int currId = i % 2;
@@ -2112,6 +2126,9 @@ namespace local
 
 				path = "backbuffer" + i_str + ".png";
 				D3DXSaveTextureToFileA(path.c_str(), D3DXIFF_PNG, back_buffers[lastId], nullptr);
+
+				path = "depth" + i_str + ".png";
+				D3DXSaveTextureToFileA(path.c_str(), D3DXIFF_PNG, depth_maps[lastId], nullptr);
 			}
 		}
 
@@ -2125,7 +2142,7 @@ namespace local
 		device->SetPixelShader(nullptr);
 
 		device->SetRenderTarget(0, orig_render_target);
-		device->SetDepthStencilSurface(depth_surface);
+		device->SetDepthStencilSurface(orig_depth_surface);
 		device->Clear(0, nullptr, D3DCLEAR_TARGET, 0, 0.0f, 0);
 
 		do_effect = false;

@@ -168,6 +168,19 @@ float4 GetDiffuse(in float4 vcolor)
 	return color;
 }
 
+inline float4 encode_rgba(float v)
+{
+	float4 enc = float4(1.0, 255.0, 65025.0, 16581375.0) * v;
+	enc = frac(enc);
+	enc -= enc.yzww * float4(1.0 / 255.0, 1.0 / 255.0, 1.0 / 255.0, 0.0);
+	return enc;
+}
+
+inline float decode_rgba(float4 rgba)
+{
+	return dot(rgba, float4(1.0, 1 / 255.0, 1 / 65025.0, 1 / 16581375.0));
+}
+
 struct VS_IN
 {
 	float3 position : POSITION;
@@ -261,27 +274,23 @@ PS_IN vs_main(VS_IN input)
 uniform float alpha_bias = 1 / 255;
 
 #ifdef USE_OIT
-float4 ps_main(PS_IN input, out float oDepth : DEPTH0, float2 vpos : VPOS, out float4 blend : COLOR1) : COLOR0
+float4 ps_main(PS_IN input, out float4 oDepth : COLOR1, float2 vpos : VPOS, out float4 blend : COLOR2) : COLOR0
 #else
-float4 ps_main(PS_IN input, out float oDepth : DEPTH0, float2 vpos : VPOS) : COLOR0
+float4 ps_main(PS_IN input, out float4 oDepth : COLOR1, float2 vpos : VPOS) : COLOR0
 #endif
 {
 	float4 result;
 
-	const float C = 1.0;
-	const float offset = 1;
-
-	// Logarithmic depth
-	float currentDepth = log(C * (input.depth.x + DepthOverride) + offset) / log(C * DrawDistance + offset);
-
-	oDepth = currentDepth;
+	float currentDepth = input.depth.x / input.depth.y;
+	oDepth = encode_rgba(currentDepth);
 
 #ifdef USE_OIT
 	float2 depthcoord = vpos / ViewPort;
 
 	// Exclude any fragment whose depth exceeds that of any opaque fragment.
 	// (equivalent to D3DCMP_LESS)
-	float baseDepth = tex2D(opaqueDepthSampler, depthcoord).r;
+	float baseDepth = decode_rgba(tex2D(opaqueDepthSampler, depthcoord));
+
 	if (currentDepth >= baseDepth)
 	{
 		discard;
@@ -290,6 +299,7 @@ float4 ps_main(PS_IN input, out float oDepth : DEPTH0, float2 vpos : VPOS) : COL
 	// Discard any fragment whose depth is less than the last fragment depth.
 	// (equivalent to D3DCMP_GREATER)
 	float lastDepth = tex2D(alphaDepthSampler, depthcoord).r;
+
 	if (currentDepth <= lastDepth)
 	{
 		discard;
