@@ -168,17 +168,39 @@ float4 GetDiffuse(in float4 vcolor)
 	return color;
 }
 
-inline float4 encode_rgba(float v)
+//#define GARBAGE
+
+float4 encode_argb(float f)
 {
-	float4 enc = float4(1.0, 255.0, 65025.0, 16581375.0) * v;
-	enc = frac(enc);
-	enc -= enc.yzww * float4(1.0 / 255.0, 1.0 / 255.0, 1.0 / 255.0, 0.0);
-	return enc;
+#ifdef GARBAGE
+
+	return float4(f, 0, 0, 1);
+
+#else
+
+	const float4 bit_shift = float4(255 * 255 * 255, 255 * 255, 255, 1);
+	const float4 bit_mask = float4(0, 1.0 / 255.0, 1.0 / 255.0, 1.0 / 255.0);
+
+	float4 comp = f * bit_shift;
+	comp = frac(comp);
+	comp -= comp.xxyz * bit_mask;
+	return comp;
+
+#endif
 }
 
-inline float decode_rgba(float4 rgba)
+float decode_argb(float4 v)
 {
-	return dot(rgba, float4(1.0, 1 / 255.0, 1 / 65025.0, 1 / 16581375.0));
+#ifdef GARBAGE
+
+	return v.r;
+
+#else
+
+	const float4 bit_shift = float4(1.0 / (255.0*255.0*255.0), 1.0 / (255.0*255.0), 1.0 / 255.0, 1);
+	return dot(v, bit_shift);
+
+#endif
 }
 
 struct VS_IN
@@ -271,25 +293,25 @@ PS_IN vs_main(VS_IN input)
 	return output;
 }
 
-uniform float alpha_bias = 1 / 255;
-
 #ifdef USE_OIT
-float4 ps_main(PS_IN input, out float4 oDepth : COLOR1, float2 vpos : VPOS, out float4 blend : COLOR2) : COLOR0
+float4 ps_main(PS_IN input, float2 vpos : VPOS, out float4 oDepth : COLOR1, out float4 blend : COLOR2) : COLOR0
 #else
-float4 ps_main(PS_IN input, out float4 oDepth : COLOR1, float2 vpos : VPOS) : COLOR0
+float4 ps_main(PS_IN input, float2 vpos : VPOS, out float4 oDepth : COLOR1) : COLOR0
 #endif
 {
 	float4 result;
 
 	float currentDepth = input.depth.x / input.depth.y;
-	oDepth = encode_rgba(currentDepth);
+	oDepth = encode_argb(currentDepth);
 
 #ifdef USE_OIT
 	float2 depthcoord = vpos / ViewPort;
 
+	blend = float4((float)SourceBlend / 255, (float)DestinationBlend / 255, 0, 1);
+
 	// Exclude any fragment whose depth exceeds that of any opaque fragment.
 	// (equivalent to D3DCMP_LESS)
-	float baseDepth = decode_rgba(tex2D(opaqueDepthSampler, depthcoord));
+	float baseDepth = decode_argb(tex2D(opaqueDepthSampler, depthcoord));
 
 	if (currentDepth >= baseDepth)
 	{
@@ -298,14 +320,12 @@ float4 ps_main(PS_IN input, out float4 oDepth : COLOR1, float2 vpos : VPOS) : CO
 
 	// Discard any fragment whose depth is less than the last fragment depth.
 	// (equivalent to D3DCMP_GREATER)
-	float lastDepth = tex2D(alphaDepthSampler, depthcoord).r;
+	float lastDepth = decode_argb(tex2D(alphaDepthSampler, depthcoord));
 
 	if (currentDepth <= lastDepth)
 	{
 		discard;
 	}
-
-	blend = float4((float)SourceBlend / 255, (float)DestinationBlend / 255, 0, 1);
 #endif
 
 #ifdef USE_TEXTURE
