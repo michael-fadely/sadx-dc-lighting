@@ -187,7 +187,7 @@ namespace local
 	static std::vector<D3DXMACRO> macros;
 
 #ifdef USE_OIT
-	static const int NUM_PASSES = 8;
+	static const int NUM_PASSES = 4;
 
 	// depth texture
 	static Texture depth_maps[2] = {};
@@ -1994,6 +1994,12 @@ namespace local
 		draw_guard guard(true);
 
 		const int passes = guard.passes;
+		auto pad = ControllerPointers[0];
+
+		if (pad && pad->PressedButtons & Buttons_Right)
+		{
+			D3DXSaveTextureToFileA("depth o.png", D3DXIFF_PNG, depth_map, nullptr);
+		}
 
 		set_flags(ShaderFlags_OIT, true);
 		param::OpaqueDepth = depth_map;
@@ -2006,7 +2012,6 @@ namespace local
 		error = device->SetRenderState(D3DRS_ZENABLE, TRUE);
 		error = device->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESS);
 
-		auto pad = ControllerPointers[0];
 
 		for (int p = 0; p < passes; p++)
 		{

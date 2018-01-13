@@ -178,13 +178,13 @@ float4 encode_argb(float f)
 
 #else
 
-	const float4 bit_shift = float4(255 * 255 * 255, 255 * 255, 255, 1);
-	const float4 bit_mask = float4(0, 1.0 / 255.0, 1.0 / 255.0, 1.0 / 255.0);
+	const float4 bit_shift = float4(1.0, 255.0, 65025.0, 16581375.0);
+	const float4 bit_mask = float4(1.0 / 255.0, 1.0 / 255.0, 1.0 / 255.0, 0.0);
 
-	float4 comp = f * bit_shift;
-	comp = frac(comp);
-	comp -= comp.xxyz * bit_mask;
-	return comp;
+	float4 result = frac(bit_shift * f);
+	result -= result.yzww * bit_mask;
+
+	return result;
 
 #endif
 }
@@ -197,7 +197,7 @@ float decode_argb(float4 v)
 
 #else
 
-	const float4 bit_shift = float4(1.0 / (255.0*255.0*255.0), 1.0 / (255.0*255.0), 1.0 / 255.0, 1);
+	const float4 bit_shift = float4(1.0, 1 / 255.0, 1 / 65025.0, 1 / 16581375.0);
 	return dot(v, bit_shift);
 
 #endif
