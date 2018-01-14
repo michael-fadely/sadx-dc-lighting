@@ -1063,6 +1063,8 @@ namespace local
 		// This specifically force light type 0 to prevent
 		// the light direction from being overwritten.
 		target(0);
+
+		SetCurrentLightType(type / 2);
 		d3d::set_flags(ShaderFlags_Light, true);
 
 		if (type != globals::light_type)
