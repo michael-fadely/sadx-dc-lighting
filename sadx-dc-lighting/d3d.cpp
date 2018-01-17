@@ -1056,6 +1056,7 @@ namespace local
 
 		if (!LanternInstance::use_palette())
 		{
+			globals::light_type = 0;
 			target(type);
 			return;
 		}
@@ -1066,13 +1067,12 @@ namespace local
 
 		SetCurrentLightType(type / 2);
 		d3d::set_flags(ShaderFlags_Light, true);
+		globals::palettes.set_palettes(type, 0);
 
 		if (type != globals::light_type)
 		{
 			set_light_parameters();
 		}
-
-		globals::palettes.set_palettes(type, 0);
 	}
 
 
