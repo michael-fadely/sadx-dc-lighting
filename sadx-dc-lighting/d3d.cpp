@@ -1068,11 +1068,7 @@ namespace local
 		SetCurrentLightType(type / 2);
 		d3d::set_flags(ShaderFlags_Light, true);
 		globals::palettes.set_palettes(type, 0);
-
-		if (type != globals::light_type)
-		{
-			set_light_parameters();
-		}
+		set_light_parameters();
 	}
 
 
