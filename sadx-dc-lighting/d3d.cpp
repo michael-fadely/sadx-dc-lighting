@@ -1,7 +1,7 @@
 #include "stdafx.h"
 
 #include <Windows.h>
-#include <Wincrypt.h>
+#include <WinCrypt.h>
 
 // Direct3D
 #include <d3dx9.h>
@@ -490,7 +490,7 @@ namespace local
 		macros.push_back({});
 	}
 
-	static __declspec(noreturn) void d3d_exception(Buffer buffer, HRESULT code)
+	static __declspec(noreturn) void d3d_exception(const Buffer& buffer, HRESULT code)
 	{
 		using namespace std;
 

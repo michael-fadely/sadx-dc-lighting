@@ -184,7 +184,7 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 
 	if (_nj_control_3d_flag_ & NJD_CONTROL_3D_CONSTANT_ATTR)
 	{
-		flags = _nj_constant_attr_or_ | _nj_constant_attr_and_ & flags;
+		flags = _nj_constant_attr_or_ | (_nj_constant_attr_and_ & flags);
 	}
 
 	globals::palettes.set_palettes(globals::light_type, flags);

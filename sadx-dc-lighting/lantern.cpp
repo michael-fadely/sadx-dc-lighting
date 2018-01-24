@@ -400,9 +400,9 @@ bool LanternInstance::load_source(const std::string& path)
 
 	PrintDebug("[lantern] Loading lantern source: %s\n", path.c_str());
 
-	for (int i = 0; i < 16; i++)
+	for (auto& source_light : source_lights)
 	{
-		file.read(reinterpret_cast<char*>(&source_lights[i]), sizeof(SourceLight));
+		file.read(reinterpret_cast<char*>(&source_light), sizeof(SourceLight));
 	}
 
 	file.close();

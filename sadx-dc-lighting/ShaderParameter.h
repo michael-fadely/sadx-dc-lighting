@@ -67,7 +67,7 @@ public:
 template <typename T>
 bool ShaderParameter<T>::is_modified()
 {
-	return reset || assigned && last != current;
+	return reset || (assigned && last != current);
 }
 
 template <typename T>
