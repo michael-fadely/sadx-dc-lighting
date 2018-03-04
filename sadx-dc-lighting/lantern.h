@@ -96,7 +96,7 @@ class LanternInstance : ILantern
 
 public:
 	explicit LanternInstance(ShaderParameter<Texture>* atlas);
-	LanternInstance(LanternInstance&& instance) noexcept;
+	LanternInstance(LanternInstance&& inst) noexcept;
 
 	LanternInstance(const LanternInstance&) = default;
 	LanternInstance& operator=(LanternInstance&&) noexcept;

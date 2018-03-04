@@ -351,7 +351,6 @@ void FixChaoGardenMaterials()
 	copy_materials(matlist_02FFB7D0, 0x02FFB7D0);
 	copy_materials(matlist_02FFC674, 0x02FFC674);
 	copy_materials(matlist_02FFD018, 0x02FFD018);
-	copy_materials(matlist_02FFE3E4, 0x02FFE3E4);
 	copy_materials(matlist_030007B4, 0x030007B4);
 	copy_materials(matlist_03000C10, 0x03000C10);
 	copy_materials(matlist_03001964, 0x03001964);

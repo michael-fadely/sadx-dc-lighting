@@ -1,7 +1,7 @@
 #include "stdafx.h"
 
 #include <Windows.h>
-#include <Wincrypt.h>
+#include <WinCrypt.h>
 
 // Direct3D
 #include <d3dx9.h>
@@ -687,7 +687,7 @@ namespace local
 		macros.push_back({});
 	}
 
-	static __declspec(noreturn) void d3d_exception(Buffer buffer, HRESULT code)
+	static __declspec(noreturn) void d3d_exception(const Buffer& buffer, HRESULT code)
 	{
 		using namespace std;
 
@@ -1258,6 +1258,7 @@ namespace local
 
 		if (!LanternInstance::use_palette())
 		{
+			globals::light_type = 0;
 			target(type);
 			return;
 		}
@@ -1265,14 +1266,11 @@ namespace local
 		// This specifically force light type 0 to prevent
 		// the light direction from being overwritten.
 		target(0);
+
+		SetCurrentLightType(type / 2);
 		d3d::set_flags(ShaderFlags_Light, true);
-
-		if (type != globals::light_type)
-		{
-			set_light_parameters();
-		}
-
 		globals::palettes.set_palettes(type, 0);
+		set_light_parameters();
 	}
 
 

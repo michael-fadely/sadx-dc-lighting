@@ -26,7 +26,7 @@
 // Windows API
 #include <Windows.h>
 #include <atlbase.h>
-#include <Wincrypt.h>
+#include <WinCrypt.h>
 
 // Direct3D
 #include <d3d9.h>
