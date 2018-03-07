@@ -1061,11 +1061,21 @@ namespace local
 			return;
 		}
 
-		// This specifically force light type 0 to prevent
+		// This specifically forces light type 0 to prevent
 		// the light direction from being overwritten.
 		target(0);
 
-		SetCurrentLightType(type / 2);
+		auto div2 = type / 2;
+
+		if (div2 != CurrentLightType)
+		{
+			CurrentLightType = div2;
+
+			// deliberately avoiding the call to SetCurrentLightType_Copy
+			// to maintain onion-blur compatibility
+			CurrentLightType_Copy = div2;
+		}
+
 		d3d::set_flags(ShaderFlags_Light, true);
 		globals::palettes.set_palettes(type, 0);
 		set_light_parameters();
