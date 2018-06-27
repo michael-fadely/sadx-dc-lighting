@@ -824,6 +824,8 @@ namespace local
 		param::LightDirection = -*static_cast<D3DXVECTOR3*>(&light.Direction);
 	}
 
+#define MHOOK(NAME) MH_CreateHook(vtbl[IndexOf_ ## NAME], NAME ## _r, (LPVOID*)&NAME ## _t)
+
 	static void hook_vtable()
 	{
 		enum
@@ -837,13 +839,10 @@ namespace local
 
 		auto vtbl = (void**)(*(void**)d3d::device);
 
-	#define HOOK(NAME) \
-	MH_CreateHook(vtbl[IndexOf_ ## NAME], NAME ## _r, (LPVOID*)& ## NAME ## _t)
-
-		HOOK(DrawPrimitive);
-		HOOK(DrawIndexedPrimitive);
-		HOOK(DrawPrimitiveUP);
-		HOOK(DrawIndexedPrimitiveUP);
+		MHOOK(DrawPrimitive);
+		MHOOK(DrawIndexedPrimitive);
+		MHOOK(DrawPrimitiveUP);
+		MHOOK(DrawIndexedPrimitiveUP);
 
 		MH_EnableHook(MH_ALL_HOOKS);
 	}
