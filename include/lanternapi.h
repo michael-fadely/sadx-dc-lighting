@@ -34,8 +34,8 @@ extern "C" {
 	API void sl_load_register(lantern_load_cb callback);
 	API void sl_load_unregister(lantern_load_cb callback);
 
-	API void material_register(NJS_MATERIAL** materials, int length, lantern_material_cb callback);
-	API void material_unregister(NJS_MATERIAL** materials, int length, lantern_material_cb callback);
+	API void material_register(const NJS_MATERIAL** materials, int length, lantern_material_cb callback);
+	API void material_unregister(const NJS_MATERIAL** materials, int length, lantern_material_cb callback);
 
 	API void set_shader_flags(unsigned int flags, bool add);
 

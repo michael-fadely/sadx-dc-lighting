@@ -16,7 +16,7 @@ namespace globals
 
 	HelperFunctions helper_functions {};
 
-	std::unordered_map<NJS_MATERIAL*, std::deque<lantern_material_cb>> material_callbacks {};
+	std::unordered_map<const NJS_MATERIAL*, std::deque<lantern_material_cb>> material_callbacks {};
 
 	Sint32 light_type       = 0;
 	bool landtable_specular = false;

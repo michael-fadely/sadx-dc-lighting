@@ -9,12 +9,12 @@
 #include "../include/lanternapi.h"
 #include "FixCharacterMaterials.h"
 
-static HMODULE CHRMODELS = GetModuleHandle(L"CHRMODELS_orig");
-static HMODULE ADV00MODELS = GetModuleHandle(L"ADV00MODELS");
-static HMODULE ADV03MODELS = GetModuleHandle(L"ADV03MODELS");
+static HMODULE CHRMODELS        = GetModuleHandle(L"CHRMODELS_orig");
+static HMODULE ADV00MODELS      = GetModuleHandle(L"ADV00MODELS");
+static HMODULE ADV03MODELS      = GetModuleHandle(L"ADV03MODELS");
 static HMODULE BOSSCHAOS0MODELS = GetModuleHandle(L"BOSSCHAOS0MODELS");
 
-static NJS_MATERIAL* WhiteDiffuse[] = {
+static const NJS_MATERIAL* WhiteDiffuse[] = {
 	//Egg Hornet
 	((NJS_MATERIAL*)0x0155D1DC),
 	//Egg Viper cockpit
@@ -53,12 +53,12 @@ static NJS_MATERIAL* WhiteDiffuse[] = {
 	((NJS_MATERIAL*)0x00974138),
 };
 
-static NJS_MATERIAL* ChaosPuddle[] = {
+static const NJS_MATERIAL* ChaosPuddle[] = {
 	((NJS_MATERIAL*)0x038D936C),
 	((NJS_MATERIAL*)0x038DDA04),
 };
 
-static NJS_MATERIAL* Chaos2Materials[] = {
+static const NJS_MATERIAL* Chaos2Materials[] = {
 	//Chaos 2
 	//extending arm
 	((NJS_MATERIAL*)0x01143380),
@@ -136,7 +136,7 @@ static NJS_MATERIAL* Chaos2Materials[] = {
 	((NJS_MATERIAL*)0x011309EC),
 };
 
-static NJS_MATERIAL* SpecialBossMaterials[] = {
+static const NJS_MATERIAL* SpecialBossMaterials[] = {
 	//Chaos 6
 	((NJS_MATERIAL*)0x01271BCC),
 	((NJS_MATERIAL*)0x01271BE0),
@@ -328,7 +328,7 @@ static NJS_MATERIAL* SpecialBossMaterials[] = {
 	((NJS_MATERIAL*)0x013975D8),
 };
 
-static NJS_MATERIAL* ObjectSpecular[] = {
+static const NJS_MATERIAL* ObjectSpecular[] = {
 	//Tornado 2 transformation cutscene
 	((NJS_MATERIAL*)0x028634D8),
 	((NJS_MATERIAL*)0x028634EC),
@@ -858,7 +858,7 @@ static NJS_MATERIAL* ObjectSpecular[] = {
 	((NJS_MATERIAL*)0x00989764),
 };
 
-static NJS_MATERIAL* LevelSpecular[] = {
+static const NJS_MATERIAL* LevelSpecular[] = {
 	//Tornado 2 transformation cutscene
 	((NJS_MATERIAL*)0x0285F230),
 	((NJS_MATERIAL*)0x0285F028),
@@ -1027,7 +1027,7 @@ static NJS_MATERIAL* LevelSpecular[] = {
 	((NJS_MATERIAL*)0x0098AAE0),
 };
 
-static NJS_MATERIAL* SecondCharacterSpecular[] = {
+static const NJS_MATERIAL* SecondCharacterSpecular[] = {
 	//Policemen in Chaos 0
 	((NJS_MATERIAL*)0x0337A6B0),
 	((NJS_MATERIAL*)0x0337A518),
@@ -1637,7 +1637,7 @@ static NJS_MATERIAL* SecondCharacterSpecular[] = {
 	((NJS_MATERIAL*)0x00892A50),
 };
 
-static NJS_MATERIAL* FirstCharacterSpecular[] = {
+static const NJS_MATERIAL* FirstCharacterSpecular[] = {
 	//Metal Sonic jump ball
 	(NJS_MATERIAL*)((size_t)CHRMODELS + 0x0059C268),
 	//Policemen in Chaos 0
@@ -2485,7 +2485,7 @@ static NJS_MATERIAL* FirstCharacterSpecular[] = {
 	((NJS_MATERIAL*)0x00898F5C),
 };
 
-static NJS_MATERIAL* WhiteDiffuseSecondCharSpecular[] = {
+static const NJS_MATERIAL* WhiteDiffuseSecondCharSpecular[] = {
 	//Metal Sonic in Amy's cutscene
 	((NJS_MATERIAL*)0x032D31BC),
 	((NJS_MATERIAL*)0x032D31D0),
@@ -2493,7 +2493,7 @@ static NJS_MATERIAL* WhiteDiffuseSecondCharSpecular[] = {
 	((NJS_MATERIAL*)0x032D31F8),
 };
 
-static NJS_MATERIAL* E101Material[] = {
+static const NJS_MATERIAL* E101Material[] = {
 	((NJS_MATERIAL*)0x014D5EB0),
 	((NJS_MATERIAL*)0x00C409AC),
 	((NJS_MATERIAL*)0x0312C188),
@@ -2503,7 +2503,7 @@ static NJS_MATERIAL* E101Material[] = {
 	((NJS_MATERIAL*)0x030A7B00),
 };
 
-static NJS_MATERIAL* NPCMaterials[] = {
+static const NJS_MATERIAL* NPCMaterials[] = {
 	(NJS_MATERIAL*)((size_t)ADV00MODELS + 0x0021251C),
 	(NJS_MATERIAL*)((size_t)ADV00MODELS + 0x00212158),
 	(NJS_MATERIAL*)((size_t)ADV00MODELS + 0x0021216C),
@@ -3243,8 +3243,8 @@ static bool Chaos2Function(NJS_MATERIAL* material, Uint32 flags)
 #ifdef _DEBUG
 static std::vector<NJS_MATERIAL*> materials;
 
-template<typename T = Uint32, size_t N>
-static void models(NJS_MODEL_SADX* model, const T(&ids)[N])
+template <typename T = Uint32, size_t N>
+static void models(NJS_MODEL_SADX* model, const T (&ids)[N])
 {
 	if (!model)
 	{
@@ -3281,8 +3281,9 @@ static void models(NJS_MODEL_SADX* model, const T(&ids)[N])
 	materials.push_back(mats);
 	PrintDebug("HIT: 0x%08X\n", (int)mats - (int)CHRMODELS);
 }
-template<typename T = Uint32, size_t N>
-static void models(const std::string& id, int length, const T(&ids)[N])
+
+template <typename T = Uint32, size_t N>
+static void models(const std::string& id, int length, const T (&ids)[N])
 {
 	const auto handle = reinterpret_cast<NJS_MODEL_SADX**>(GetProcAddress(CHRMODELS, ("___" + id + "_MODELS").c_str()));
 	if (!handle)
@@ -3296,8 +3297,8 @@ static void models(const std::string& id, int length, const T(&ids)[N])
 	}
 }
 
-template<typename T = Uint32, size_t N>
-static void objects(NJS_OBJECT* object, const T(&ids)[N])
+template <typename T = Uint32, size_t N>
+static void objects(NJS_OBJECT* object, const T (&ids)[N])
 {
 	if (!object)
 	{
@@ -3321,8 +3322,9 @@ static void objects(NJS_OBJECT* object, const T(&ids)[N])
 		objects(object->sibling, ids);
 	}
 }
-template<typename T = Uint32, size_t N>
-static void objects(const std::string& id, int length, const T(&ids)[N])
+
+template <typename T = Uint32, size_t N>
+static void objects(const std::string& id, int length, const T (&ids)[N])
 {
 	const auto handle = reinterpret_cast<NJS_OBJECT**>(GetProcAddress(CHRMODELS, ("___" + id + "_OBJECTS").c_str()));
 	if (!handle)
@@ -3336,8 +3338,8 @@ static void objects(const std::string& id, int length, const T(&ids)[N])
 	}
 }
 
-template<typename T = Uint32, size_t N>
-static void actions(NJS_ACTION* action, const T(&ids)[N])
+template <typename T = Uint32, size_t N>
+static void actions(NJS_ACTION* action, const T (&ids)[N])
 {
 	if (!action)
 	{
@@ -3347,8 +3349,9 @@ static void actions(NJS_ACTION* action, const T(&ids)[N])
 	auto object = action->object;
 	objects(object, ids);
 }
-template<typename T = Uint32, size_t N>
-static void actions(const std::string& id, int length, const T(&ids)[N])
+
+template <typename T = Uint32, size_t N>
+static void actions(const std::string& id, int length, const T (&ids)[N])
 {
 	const auto handle = reinterpret_cast<NJS_ACTION**>(GetProcAddress(CHRMODELS, ("___" + id + "_ACTIONS").c_str()));
 	if (!handle)
