@@ -120,20 +120,9 @@ float CalcFogFactor(float d)
 
 float4 GetDiffuse(in float4 vcolor)
 {
-	if (!AllowVertexColor)
-	{
-		return float4(1, 1, 1, vcolor.a);
-	}
-
-	if (ForceDefaultDiffuse)
-	{
-		return float4(178.0 / 255.0, 178.0 / 255.0, 178.0 / 255.0, MaterialDiffuse.a);
-	}
-
 	float4 color = (DiffuseSource == D3DMCS_COLOR1 && any(vcolor)) ? vcolor : MaterialDiffuse;
 
-	int3 icolor = color.rgb * 255.0;
-	if (icolor.r == 178 && icolor.g == 178 && icolor.b == 178)
+	if (!AllowVertexColor || ForceDefaultDiffuse)
 	{
 		return float4(1, 1, 1, color.a);
 	}
@@ -155,7 +144,7 @@ struct PS_IN
 	float4 diffuse  : COLOR0;
 	float4 specular : COLOR1;
 	float2 tex      : TEXCOORD0;
-	float  fogDist : FOG;
+	float  fogDist  : FOG;
 };
 
 // Vertex shaders

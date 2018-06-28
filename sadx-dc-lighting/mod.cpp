@@ -187,6 +187,20 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 		flags = _nj_constant_attr_or_ | (_nj_constant_attr_and_ & flags);
 	}
 
+	// HACK: fixes stupid default material color
+	// TODO: toggle? What if someone actually wants this color?
+	if ((EntityVertexColor.color & 0xFFFFFF) == 0xB2B2B2)
+	{
+		EntityVertexColor.color |= 0xFFFFFF;
+	}
+
+	// HACK: fixes stupid default material color
+	// TODO: toggle? What if someone actually wants this color?
+	if ((LandTableVertexColor.color & 0xFFFFFF) == 0xB2B2B2)
+	{
+		LandTableVertexColor.color |= 0xFFFFFF;
+	}
+
 	globals::palettes.set_palettes(globals::light_type, flags);
 
 	set_flags(ShaderFlags_Texture, (flags & NJD_FLAG_USE_TEXTURE) != 0);
@@ -404,9 +418,58 @@ static void __cdecl SetCurrentStageLight_EggViper_r(ObjectMaster* a1)
 	set_light_direction();
 }
 
+void __cdecl InitLandTableMeshSet_r(NJS_MODEL_SADX* model, NJS_MESHSET_SADX* meshset)
+{
+	if (meshset->buffer)
+	{
+		return;
+	}
+
+	NJS_VECTOR*   normals   = model->normals;
+	NJS_POINT3*   points    = model->points;
+	NJS_MATERIAL* materials = model->mats;
+
+	MeshSetBuffer_Allocate(meshset);
+
+	if (!meshset->buffer)
+	{
+		return;
+	}
+
+	if ((meshset->type_matId & 0x3FFF) != 0x3FFF)
+	{
+		const auto& material = materials[meshset->type_matId & 0x3FFF];
+		LandTableVertexColor = material.diffuse;
+
+		// HACK: fixes stupid default material color
+		// TODO: toggle? What if someone actually wants this color?
+		if ((LandTableVertexColor.color & 0x00FFFFFF) == 0xB2B2B2)
+		{
+			LandTableVertexColor.color |= 0xFFFFFF;
+		}
+	}
+
+	int i = 0;
+	if (meshset->vertuv)
+	{
+		i = 1;
+	}
+
+	if (normals)
+	{
+		i += 2;
+	}
+
+	VBufferFuncPtr func = MeshSetInitFunctions[i][static_cast<uint32_t>(meshset->type_matId) >> 14u];
+	if (func)
+	{
+		func(meshset, points, normals);
+	}
+}
+
 extern "C"
 {
-	EXPORT ModInfo SADXModInfo = { ModLoaderVer };
+	EXPORT ModInfo SADXModInfo = { ModLoaderVer, nullptr, nullptr, 0, nullptr, 0, nullptr, 0, nullptr, 0 };
 	EXPORT void __cdecl Init(const char *path, const HelperFunctions& helperFunctions)
 	{
 		auto handle = GetModuleHandle(L"d3d9.dll");
@@ -430,6 +493,8 @@ extern "C"
 		}
 
 		MH_Initialize();
+
+		WriteJump(InitLandTableMeshSet, InitLandTableMeshSet_r);
 
 		LanternInstance base(&param::PaletteA);
 		globals::palettes.add(base);
