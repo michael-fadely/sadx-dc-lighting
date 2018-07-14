@@ -96,26 +96,26 @@ void allow_landtable_specular(bool allow)
 	landtable_specular = allow;
 }
 
-void set_diffuse(int n, bool permanent)
+void set_diffuse(int32_t n, bool permanent)
 {
 	palettes.diffuse_index(n);
 	LanternInstance::diffuse_override = n >= 0;
 	LanternInstance::diffuse_override_temp = !permanent;
 }
 
-void set_specular(int n, bool permanent)
+void set_specular(int32_t n, bool permanent)
 {
 	palettes.specular_index(n);
 	LanternInstance::specular_override = n >= 0;
 	LanternInstance::specular_override_temp = !permanent;
 }
 
-int get_diffuse()
+int32_t get_diffuse()
 {
 	return (!palettes.size()) ? -1 : palettes[0].diffuse_index();
 }
 
-int get_specular()
+int32_t get_specular()
 {
 	return (!palettes.size()) ? -1 : palettes[0].specular_index();
 }
@@ -147,7 +147,7 @@ void diffuse_override_rgb(float r, float g, float b)
 	param::DiffuseOverrideColor = color;
 }
 
-void set_diffuse_blend(int src, int dest)
+void set_diffuse_blend(int32_t src, int32_t dest)
 {
 	if (dest < -1 || dest > 7)
 	{
@@ -170,7 +170,7 @@ void set_diffuse_blend(int src, int dest)
 	palettes.diffuse_blend(src, dest);
 }
 
-void set_specular_blend(int src, int dest)
+void set_specular_blend(int32_t src, int32_t dest)
 {
 	if (dest < -1 || dest > 7)
 	{
@@ -193,7 +193,7 @@ void set_specular_blend(int src, int dest)
 	palettes.specular_blend(src, dest);
 }
 
-int get_diffuse_blend(int src)
+int32_t get_diffuse_blend(int32_t src)
 {
 	if (src < 0 || src > 7)
 	{
@@ -203,7 +203,7 @@ int get_diffuse_blend(int src)
 	return palettes.diffuse_blend(src);
 }
 
-int get_specular_blend(int src)
+int32_t get_specular_blend(int32_t src)
 {
 	if (src < 0 || src > 7)
 	{
@@ -235,7 +235,7 @@ float get_specular_blend_factor()
 	return LanternInstance::specular_blend_factor();
 }
 
-void set_blend(int src, int dest)
+void set_blend(int32_t src, int32_t dest)
 {
 	set_diffuse_blend(src, dest);
 	set_specular_blend(src, dest);

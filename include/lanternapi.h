@@ -9,6 +9,7 @@
 #else
 #include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
 #endif
 
 #ifdef LANTERN_API
@@ -66,7 +67,7 @@ extern "C" {
 	 * \sa sl_load_register
 	 * \sa sl_load_unregister
 	 */
-	typedef const char* (__cdecl* lantern_load_cb)(int level, int act);
+	typedef const char* (__cdecl* lantern_load_cb)(int32_t level, int32_t act);
 
 	/**
 	 * \brief The function prototype used for material callbacks.
@@ -177,7 +178,7 @@ extern "C" {
 	 * \sa set_specular
 	 * \sa get_diffuse
 	 */
-	API void set_diffuse(int n, bool permanent);
+	API void set_diffuse(int32_t n, bool permanent);
 
 	/**
 	 * \brief Temporarily (optionally permanently) sets the specular palette index.
@@ -188,7 +189,7 @@ extern "C" {
 	 * \sa set_diffuse
 	 * \sa get_specular
 	 */
-	API void set_specular(int n, bool permanent);
+	API void set_specular(int32_t n, bool permanent);
 
 	/**
 	 * \brief Enables shader input diffuse color override set by \c diffuse_override_rgb
@@ -206,13 +207,13 @@ extern "C" {
 	 * \brief Gets the currently set diffuse index.
 	 * \sa set_diffuse
 	 */
-	API int get_diffuse();
+	API int32_t get_diffuse(void);
 
 	/**
 	 * \brief Gets the currently set specular index.
 	 * \sa set_specular
 	 */
-	API int get_specular();
+	API int32_t get_specular(void);
 
 	/**
 	 * \brief Enable blending from a source diffuse
@@ -226,7 +227,7 @@ extern "C" {
 	 * Destination index in the range -1 to 7.
 	 * -1 disables blending for the specified source index.
 	 */
-	API void set_diffuse_blend(int src, int dest);
+	API void set_diffuse_blend(int32_t src, int32_t dest);
 
 	/**
 	 * \brief Enable blending from a source specular
@@ -240,14 +241,14 @@ extern "C" {
 	 * Destination index in the range -1 to 7.
 	 * -1 disables blending for the specified source index.
 	 */
-	API void set_specular_blend(int src, int dest);
+	API void set_specular_blend(int32_t src, int32_t dest);
 
 	/**
 	 * \brief Sets blend indices for diffuse and specular simultaneously.
 	 * \sa set_diffuse_blend
 	 * \sa set_specular_blend
 	 */
-	API void set_blend(int src, int dest);
+	API void set_blend(int32_t src, int32_t dest);
 
 	/**
 	 * \brief Returns the current destination blend index
@@ -258,7 +259,7 @@ extern "C" {
 	 *
 	 * \return A value in the range 0 to 7, or -1 if not set.
 	 */
-	API int get_diffuse_blend(int src);
+	API int32_t get_diffuse_blend(int32_t src);
 
 	/**
 	 * \brief Returns the current destination blend index
@@ -269,7 +270,7 @@ extern "C" {
 	 *
 	 * \return A value in the range 0 to 7, or -1 if not set.
 	 */
-	API int get_specular_blend(int src);
+	API int32_t get_specular_blend(int32_t src);
 
 	/**
 	 * \brief Set diffuse index blending factor.
@@ -288,12 +289,12 @@ extern "C" {
 	/**
 	 * \brief Gets the diffuse blend factor set by set_diffuse_blend_factor.
 	 */
-	API float get_diffuse_blend_factor();
+	API float get_diffuse_blend_factor(void);
 
 	/**
 	 * \brief Gets the specular blend factor set by set_specular_blend_factor.
 	 */
-	API float get_specular_blend_factor();
+	API float get_specular_blend_factor(void);
 
 	/**
 	 * \brief Set diffuse and specular index blending factor simultaneously.
@@ -322,10 +323,10 @@ extern "C" {
 	 * 
 	 * \sa set_alpha_reject
 	 */
-	API float get_alpha_reject();
+	API float get_alpha_reject(void);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // _LANTERNAPI_H
+#endif /* _LANTERNAPI_H */
