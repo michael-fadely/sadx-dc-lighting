@@ -3108,7 +3108,7 @@ static const NJS_MATERIAL* NPCMaterials[] = {
 	(NJS_MATERIAL*)((size_t)ADV00MODELS + 0x0022B660),
 };
 
-static bool ForceLevelSpecular(NJS_MATERIAL* material, Uint32 flags)
+static bool ForceLevelSpecular(NJS_MATERIAL* material, uint32_t flags)
 {
 	set_diffuse(0, false);
 	set_specular(0, false);
@@ -3116,7 +3116,7 @@ static bool ForceLevelSpecular(NJS_MATERIAL* material, Uint32 flags)
 	return true;
 }
 
-static bool ForceObjectSpecular(NJS_MATERIAL* material, Uint32 flags)
+static bool ForceObjectSpecular(NJS_MATERIAL* material, uint32_t flags)
 {
 	set_diffuse(0, false);
 	set_specular(1, false);
@@ -3124,7 +3124,7 @@ static bool ForceObjectSpecular(NJS_MATERIAL* material, Uint32 flags)
 	return true;
 }
 
-static bool ForceFirstCharacterSpecular(NJS_MATERIAL* material, Uint32 flags)
+static bool ForceFirstCharacterSpecular(NJS_MATERIAL* material, uint32_t flags)
 {
 	set_diffuse(2, false);
 	set_specular(2, false);
@@ -3132,7 +3132,7 @@ static bool ForceFirstCharacterSpecular(NJS_MATERIAL* material, Uint32 flags)
 	return true;
 }
 
-static bool ForceSecondCharacterSpecular(NJS_MATERIAL* material, Uint32 flags)
+static bool ForceSecondCharacterSpecular(NJS_MATERIAL* material, uint32_t flags)
 {
 	set_diffuse(2, false);
 	set_specular(3, false);
@@ -3140,7 +3140,7 @@ static bool ForceSecondCharacterSpecular(NJS_MATERIAL* material, Uint32 flags)
 	return true;
 }
 
-static bool ForceWhiteDiffuse(NJS_MATERIAL* material, Uint32 flags)
+static bool ForceWhiteDiffuse(NJS_MATERIAL* material, uint32_t flags)
 {
 	set_diffuse(1, false);
 	diffuse_override(true);
@@ -3148,7 +3148,7 @@ static bool ForceWhiteDiffuse(NJS_MATERIAL* material, Uint32 flags)
 	return true;
 }
 
-static bool ForceWhiteDiffuseSecondCharSpecular(NJS_MATERIAL* material, Uint32 flags)
+static bool ForceWhiteDiffuseSecondCharSpecular(NJS_MATERIAL* material, uint32_t flags)
 {
 	set_specular(3, false);
 	set_diffuse(1, false);
@@ -3157,7 +3157,7 @@ static bool ForceWhiteDiffuseSecondCharSpecular(NJS_MATERIAL* material, Uint32 f
 	return true;
 }
 
-static bool E101Function(NJS_MATERIAL* material, Uint32 flags)
+static bool E101Function(NJS_MATERIAL* material, uint32_t flags)
 {
 	if (CurrentLevel == 33 || CurrentLevel == 32)
 	{
@@ -3172,7 +3172,7 @@ static bool E101Function(NJS_MATERIAL* material, Uint32 flags)
 	return true;
 }
 
-static bool ChaosPuddleFunc(NJS_MATERIAL* material, Uint32 flags)
+static bool ChaosPuddleFunc(NJS_MATERIAL* material, uint32_t flags)
 {
 	if (CurrentLevel == 18 || CurrentLevel == 16 || CurrentLevel == 19)
 	{
@@ -3189,7 +3189,7 @@ static bool ChaosPuddleFunc(NJS_MATERIAL* material, Uint32 flags)
 	return true;
 }
 
-static bool NPCModelsFunction(NJS_MATERIAL* material, Uint32 flags)
+static bool NPCModelsFunction(NJS_MATERIAL* material, uint32_t flags)
 {
 	use_default_diffuse(true);
 
@@ -3215,7 +3215,7 @@ static bool NPCModelsFunction(NJS_MATERIAL* material, Uint32 flags)
 	return true;
 }
 
-static bool SpecialBossFunction(NJS_MATERIAL* material, Uint32 flags)
+static bool SpecialBossFunction(NJS_MATERIAL* material, uint32_t flags)
 {
 	set_diffuse(4, false);
 	set_specular(5, false);
@@ -3223,7 +3223,7 @@ static bool SpecialBossFunction(NJS_MATERIAL* material, Uint32 flags)
 	return true;
 }
 
-static bool Chaos2Function(NJS_MATERIAL* material, Uint32 flags)
+static bool Chaos2Function(NJS_MATERIAL* material, uint32_t flags)
 {
 	if (CurrentLevel == 16)
 	{

@@ -38,14 +38,14 @@ void sl_load_unregister(lantern_load_cb callback)
 	palettes.remove_sl_callback(callback);
 }
 
-void material_register(const NJS_MATERIAL** materials, int length, lantern_material_cb callback)
+void material_register(const NJS_MATERIAL** materials, size_t length, lantern_material_cb callback)
 {
 	if (length < 1 || materials == nullptr || callback == nullptr)
 	{
 		return;
 	}
 
-	for (int i = 0; i < length; i++)
+	for (size_t i = 0; i < length; i++)
 	{
 		auto material = materials[i];
 		auto it = material_callbacks.find(material);
@@ -61,14 +61,14 @@ void material_register(const NJS_MATERIAL** materials, int length, lantern_mater
 	}
 }
 
-void material_unregister(const NJS_MATERIAL** materials, int length, lantern_material_cb callback)
+void material_unregister(const NJS_MATERIAL** materials, size_t length, lantern_material_cb callback)
 {
 	if (length < 1 || materials == nullptr || callback == nullptr)
 	{
 		return;
 	}
 
-	for (int i = 0; i < length; i++)
+	for (size_t i = 0; i < length; i++)
 	{
 		auto it = material_callbacks.find(materials[i]);
 
@@ -86,7 +86,7 @@ void material_unregister(const NJS_MATERIAL** materials, int length, lantern_mat
 	}
 }
 
-void set_shader_flags(unsigned int flags, bool add)
+void set_shader_flags(uint32_t flags, bool add)
 {
 	d3d::set_flags(flags, add);
 }
@@ -143,7 +143,7 @@ void diffuse_override(bool enable)
 
 void diffuse_override_rgb(float r, float g, float b)
 {
-	D3DXVECTOR3 color = { r, g, b };
+	const D3DXVECTOR3 color = { r, g, b };
 	param::DiffuseOverrideColor = color;
 }
 
