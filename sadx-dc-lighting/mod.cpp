@@ -127,6 +127,16 @@ static void __cdecl CorrectMaterial_r()
 	device->SetMaterial(&material);
 }
 
+inline void fix_default_color(Uint32& color)
+{
+	// HACK: fixes stupid default material color
+	// TODO: toggle? What if someone actually wants this color?
+	if ((color & 0xFFFFFF) == 0xB2B2B2)
+	{
+		color |= 0xFFFFFF;
+	}
+}
+
 static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 {
 	using namespace d3d;
@@ -187,19 +197,8 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 		flags = _nj_constant_attr_or_ | (_nj_constant_attr_and_ & flags);
 	}
 
-	// HACK: fixes stupid default material color
-	// TODO: toggle? What if someone actually wants this color?
-	if ((EntityVertexColor.color & 0xFFFFFF) == 0xB2B2B2)
-	{
-		EntityVertexColor.color |= 0xFFFFFF;
-	}
-
-	// HACK: fixes stupid default material color
-	// TODO: toggle? What if someone actually wants this color?
-	if ((LandTableVertexColor.color & 0xFFFFFF) == 0xB2B2B2)
-	{
-		LandTableVertexColor.color |= 0xFFFFFF;
-	}
+	fix_default_color(EntityVertexColor.color);
+	fix_default_color(LandTableVertexColor.color);
 
 	globals::palettes.set_palettes(globals::light_type, flags);
 
@@ -440,14 +439,9 @@ void __cdecl InitLandTableMeshSet_r(NJS_MODEL_SADX* model, NJS_MESHSET_SADX* mes
 	{
 		const auto& material = materials[meshset->type_matId & 0x3FFF];
 		LandTableVertexColor = material.diffuse;
-
-		// HACK: fixes stupid default material color
-		// TODO: toggle? What if someone actually wants this color?
-		if ((LandTableVertexColor.color & 0x00FFFFFF) == 0xB2B2B2)
-		{
-			LandTableVertexColor.color |= 0xFFFFFF;
-		}
 	}
+
+	fix_default_color(LandTableVertexColor.color);
 
 	int i = 0;
 	if (meshset->vertuv)
