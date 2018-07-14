@@ -1201,6 +1201,9 @@ namespace d3d
 	PixelShader pixel_shader;
 	bool do_effect = false;
 
+	float alpha_ref_value = 16.0f / 255.0f;
+	bool alpha_ref_temp = false;
+
 	bool supports_xrgb()
 	{
 		return local::supports_xrgb;
@@ -1217,6 +1220,12 @@ namespace d3d
 		if (LanternInstance::specular_override_temp)
 		{
 			LanternInstance::specular_override = false;
+		}
+
+		if (alpha_ref_temp)
+		{
+			param::AlphaRef = alpha_ref_value;
+			alpha_ref_temp = false;
 		}
 
 		param::ForceDefaultDiffuse = false;

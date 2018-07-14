@@ -241,8 +241,21 @@ void set_blend(int32_t src, int32_t dest)
 	set_specular_blend(src, dest);
 }
 
-void set_alpha_reject(float threshold)
+void set_alpha_reject(float threshold, bool permanent)
 {
+	if (!permanent)
+	{
+		if (!d3d::alpha_ref_temp)
+		{
+			d3d::alpha_ref_value = param::AlphaRef.value();
+			d3d::alpha_ref_temp = true;
+		}
+	}
+	else
+	{
+		d3d::alpha_ref_value = threshold;
+	}
+
 	param::AlphaRef = threshold;
 }
 

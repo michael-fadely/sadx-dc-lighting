@@ -311,13 +311,15 @@ extern "C" {
 	 * Note that this is separate from the one used by the
 	 * fixed-function pipeline.
 	 * 
-	 * \param threshold A threshold in the range 0.0f to 1.0f.
+	 * \param threshold A threshold in the range 0.0f to 1.0f. The default value is (\c 16.0f / \c 255.0f).
 	 * Behavior of values outside this range is undefined.
+	 * \param permanent If \c true, the value will persist after the next draw call.
+	 * If \c false, the value will reset to the last permanent value.
 	 */
-	API void set_alpha_reject(float threshold);
+	API void set_alpha_reject(float threshold, bool permanent);
 
 	/**
-	 * \brief Gets the shader alpha rejection threshold.
+	 * \brief Gets the shader alpha rejection threshold. The default value is (\c 16.0f / \c 255.0f).
 	 * Note that this is separate from the one used by the
 	 * fixed-function pipeline.
 	 * 
