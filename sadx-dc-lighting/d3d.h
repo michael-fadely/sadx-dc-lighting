@@ -48,6 +48,7 @@ namespace param
 	extern ShaderParameter<int> FogMode;
 	extern ShaderParameter<D3DXVECTOR3> FogConfig;
 	extern ShaderParameter<D3DXCOLOR> FogColor;
+	extern ShaderParameter<float> AlphaRef;
 }
 
 // Same as in the mod loader except with d3d8to9 types.
