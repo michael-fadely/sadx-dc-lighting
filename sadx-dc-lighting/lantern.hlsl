@@ -22,9 +22,6 @@
 	AlphaArg1 = Texture;    \
 	AlphaArg2 = Current
 
-// This never changes
-static const float AlphaRef = 16.0f / 255.0f;
-
 // Textures
 
 Texture2D BaseTexture : register(t0);
@@ -88,6 +85,7 @@ uint FogMode : register(c30) = (uint)FOGMODE_NONE;
 // x y and z are start, end, and density respectively
 float3 FogConfig : register(c31);
 float4 FogColor  : register(c32);
+float  AlphaRef  : register(c33) = 16.0f / 255.0f;
 
 // Helpers
 

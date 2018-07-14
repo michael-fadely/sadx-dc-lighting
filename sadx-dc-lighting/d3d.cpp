@@ -56,6 +56,7 @@ namespace param
 	ShaderParameter<int>         FogMode(30, 0, IShaderParameter::Type::pixel);
 	ShaderParameter<D3DXVECTOR3> FogConfig(31, {}, IShaderParameter::Type::pixel);
 	ShaderParameter<D3DXCOLOR>   FogColor(32, {}, IShaderParameter::Type::pixel);
+	ShaderParameter<float>       AlphaRef(33, {}, IShaderParameter::Type::pixel);
 
 	IShaderParameter* const parameters[] = {
 		&PaletteA,
@@ -82,6 +83,7 @@ namespace param
 		&FogMode,
 		&FogConfig,
 		&FogColor,
+		&AlphaRef,
 	};
 
 	static void release_parameters()
@@ -749,6 +751,18 @@ namespace local
 		{
 			shader_end();
 			return;
+		}
+
+		DWORD alpharef;
+		d3d::device->GetRenderState(D3DRS_ALPHAREF, &alpharef);
+
+		if (alpharef)
+		{
+			param::AlphaRef = static_cast<float>(alpharef) / 255.0f;
+		}
+		else
+		{
+			param::AlphaRef = 0;
 		}
 
 		globals::palettes.apply_parameters();
