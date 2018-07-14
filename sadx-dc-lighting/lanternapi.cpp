@@ -240,3 +240,13 @@ void set_blend(int src, int dest)
 	set_diffuse_blend(src, dest);
 	set_specular_blend(src, dest);
 }
+
+void set_alpha_reject(float threshold)
+{
+	param::AlphaRef = threshold;
+}
+
+float get_alpha_reject()
+{
+	return param::AlphaRef.value();
+}

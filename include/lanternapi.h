@@ -62,11 +62,11 @@ extern "C" {
 	/**
 	 * \brief Enable blending from a source diffuse
 	 * index to a destination diffuse index.
-
+	 *
 	 * \param src
 	 * Source index in the range -1 to 7.
 	 * -1 applies to all source indices.
-
+	 *
 	 * \param dest
 	 * Destination index in the range -1 to 7.
 	 * -1 disables blending for the specified source index.
@@ -76,11 +76,11 @@ extern "C" {
 	/**
 	 * \brief Enable blending from a source specular
 	 * index to a destination specular index.
-
+	 *
 	 * \param src
 	 * Source index in the range -1 to 7.
 	 * -1 applies to all source indices.
-
+	 *
 	 * \param dest
 	 * Destination index in the range -1 to 7.
 	 * -1 disables blending for the specified source index.
@@ -97,10 +97,10 @@ extern "C" {
 	/**
 	 * \brief Returns the current destination blend index
 	 * for the specified source diffuse index.
-
+	 *
 	 * \param src Source index in the range 0 to 7.
 	 * Values outside this range will always return -1.
-
+	 *
 	 * \return A value in the range 0 to 7, or -1 if not set.
 	 */
 	API int get_diffuse_blend(int src);
@@ -108,10 +108,10 @@ extern "C" {
 	/**
 	 * \brief Returns the current destination blend index
 	 * for the specified source specular index.
-
+	 *
 	 * \param src Source index in the range 0 to 7.
 	 * Values outside this range will always return -1.
-
+	 *
 	 * \return A value in the range 0 to 7, or -1 if not set.
 	 */
 	API int get_specular_blend(int src);
@@ -144,11 +144,30 @@ extern "C" {
 	 * \brief Set diffuse and specular index blending factor simultaneously.
 	 * \param factor A blending factor in the range 0.0f to 1.0f.
 	 * Behavior of values outside this range is undefined.
-
+	 * 
 	 * \see set_diffuse_blend_factor
 	 * \see set_specular_blend_factor
 	 */
 	API void set_blend_factor(float factor);
+
+	/**
+	 * \brief Sets the shader alpha rejection threshold.
+	 * Note that this is separate from the one used by the
+	 * fixed-function pipeline.
+	 * 
+	 * \param threshold A threshold in the range 0.0f to 1.0f.
+	 * Behavior of values outside this range is undefined.
+	 */
+	API void set_alpha_reject(float threshold);
+
+	/**
+	 * \brief Gets the shader alpha rejection threshold.
+	 * Note that this is separate from the one used by the
+	 * fixed-function pipeline.
+	 * 
+	 * \see set_alpha_reject
+	 */
+	API float get_alpha_reject();
 
 #ifdef __cplusplus
 }
