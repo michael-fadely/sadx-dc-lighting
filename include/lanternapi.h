@@ -132,7 +132,7 @@ extern "C" {
 	 * \sa lantern_material_cb
 	 * \sa material_unregister
 	 */
-	API void material_register(const NJS_MATERIAL** materials, size_t length, lantern_material_cb callback);
+	API void material_register(NJS_MATERIAL const* const* materials, size_t length, lantern_material_cb callback);
 
 	/**
 	 * \brief Unregisters a previously registered material callback.
@@ -143,7 +143,7 @@ extern "C" {
 	 * \sa lantern_material_cb
 	 * \sa material_register
 	 */
-	API void material_unregister(const NJS_MATERIAL** materials, size_t length, lantern_material_cb callback);
+	API void material_unregister(NJS_MATERIAL const* const* materials, size_t length, lantern_material_cb callback);
 
 	/**
 	 * \brief Permanently add or remove material flags to be used during the next draw call.
