@@ -40,7 +40,7 @@ void sl_load_unregister(lantern_load_cb callback)
 
 void material_register(NJS_MATERIAL const* const* materials, size_t length, lantern_material_cb callback)
 {
-	if (length < 1 || materials == nullptr || callback == nullptr)
+	if (!length || materials == nullptr || callback == nullptr)
 	{
 		return;
 	}
@@ -63,7 +63,7 @@ void material_register(NJS_MATERIAL const* const* materials, size_t length, lant
 
 void material_unregister(NJS_MATERIAL const* const* materials, size_t length, lantern_material_cb callback)
 {
-	if (length < 1 || materials == nullptr || callback == nullptr)
+	if (!length || materials == nullptr || callback == nullptr)
 	{
 		return;
 	}
