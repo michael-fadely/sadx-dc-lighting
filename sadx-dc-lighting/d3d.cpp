@@ -57,6 +57,7 @@ namespace param
 	ShaderParameter<D3DXVECTOR3> FogConfig(31, {}, IShaderParameter::Type::pixel);
 	ShaderParameter<D3DXCOLOR>   FogColor(32, {}, IShaderParameter::Type::pixel);
 	ShaderParameter<float>       AlphaRef(33, 16.0f / 255.0f, IShaderParameter::Type::pixel);
+	ShaderParameter<D3DXVECTOR3> ViewPosition(34, {}, IShaderParameter::Type::pixel);
 
 	IShaderParameter* const parameters[] = {
 		&PaletteA,
@@ -84,6 +85,7 @@ namespace param
 		&FogConfig,
 		&FogColor,
 		&AlphaRef,
+		&ViewPosition,
 	};
 
 	static void release_parameters()
@@ -1037,6 +1039,7 @@ namespace local
 
 		// The view matrix can also be set here if necessary.
 		param::ProjectionMatrix = D3DXMATRIX(ProjectionMatrix) * D3DXMATRIX(TransformationMatrix);
+		param::ViewPosition = D3DXVECTOR3(InverseViewMatrix._41, InverseViewMatrix._42, InverseViewMatrix._43);
 	}
 
 	static void __cdecl Direct3D_SetViewportAndTransform_r()
