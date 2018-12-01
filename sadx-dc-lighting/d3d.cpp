@@ -1051,9 +1051,57 @@ namespace local
 		end();
 	}
 
+	static constexpr auto age_threshold = 4;
+
+	struct OhGod
+	{
+		uint32_t time;
+		D3DXMATRIX transform;
+	};
+
+	static bool enable_blur = false;
+	std::unordered_map<NJS_MODEL_SADX*, OhGod> transform_map;
+
+	static void store_transform(NJS_MODEL_SADX* ptr)
+	{
+		if (!ptr || !enable_blur)
+		{
+			return;
+		}
+
+		D3DXMATRIX m;
+		njGetMatrix(&m[0]);
+
+		param::CurrentTransform = m;
+
+		auto it = transform_map.find(ptr);
+
+		if (it != transform_map.end())
+		{
+			if (FrameCounter - it->second.time < age_threshold)
+			{
+				param::LastTransform = it->second.transform;
+
+				it->second.time = static_cast<uint32_t>(FrameCounter);
+				it->second.transform = m;
+			}
+			else
+			{
+				param::LastTransform = m;
+				it = transform_map.erase(it);
+			}
+		}
+		else
+		{
+			transform_map[ptr] = { static_cast<uint32_t>(FrameCounter), m };
+			param::LastTransform = m;
+		}
+	}
+
 	static void __cdecl njDrawModel_SADX_r(NJS_MODEL_SADX* a1)
 	{
 		begin();
+		store_transform(a1);
 
 		if (a1 && a1->nbMat && a1->mats)
 		{
@@ -1080,6 +1128,7 @@ namespace local
 	static void __cdecl njDrawModel_SADX_Dynamic_r(NJS_MODEL_SADX* a1)
 	{
 		begin();
+		store_transform(a1);
 
 		if (a1 && a1->nbMat && a1->mats)
 		{
@@ -1264,15 +1313,73 @@ namespace local
 #define D3D_ORIG(NAME) \
 	NAME ## _t
 
+	template<typename T, typename... Args>
+	static HRESULT run_d3d_trampoline(const T& original, Args... args)
+	{
+		using namespace d3d;
+
+		shader_start();
+		auto result = original(args...);
+
+		if (SUCCEEDED(result) && enable_blur)
+		{
+		#define STORE_RS(RS) \
+			DWORD RS; \
+			d3d::device->GetRenderState(D3DRS_ ## RS, &RS)
+
+		#define RESTORE_RS(RS) \
+			d3d::device->SetRenderState(D3DRS_ ## RS, RS);
+
+			STORE_RS(ALPHABLENDENABLE);
+			STORE_RS(ZENABLE);
+			STORE_RS(ZFUNC);
+
+			if (ALPHABLENDENABLE && !ZENABLE)
+			{
+				return result;
+			}
+
+			device->SetRenderState(D3DRS_ZENABLE, TRUE);
+			device->SetRenderState(D3DRS_ZFUNC, D3DCMP_EQUAL);
+			device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+
+			Surface surface;
+			velocity_buffer->GetSurfaceLevel(0, &surface);
+			device->SetRenderTarget(0, surface);
+
+			VertexShader vs;
+			device->GetVertexShader(&vs);
+
+			PixelShader ps;
+			device->GetPixelShader(&ps);
+
+			device->SetVertexShader(velocity_vs);
+			device->SetPixelShader(velocity_ps);
+
+			result = original(args...);
+
+			device->SetVertexShader(vs);
+			device->SetPixelShader(ps);
+
+			surface = nullptr;
+			color_buffer->GetSurfaceLevel(0, &surface);
+			device->SetRenderTarget(0, surface);
+
+			RESTORE_RS(ALPHABLENDENABLE);
+			RESTORE_RS(ZENABLE);
+			RESTORE_RS(ZFUNC);
+		}
+
+		shader_end();
+		return result;
+	}
+
 	static HRESULT __stdcall DrawPrimitive_r(IDirect3DDevice9* _this,
 		D3DPRIMITIVETYPE PrimitiveType,
 		UINT StartVertex,
 		UINT PrimitiveCount)
 	{
-		shader_start();
-		auto result = D3D_ORIG(DrawPrimitive)(_this, PrimitiveType, StartVertex, PrimitiveCount);
-		shader_end();
-		return result;
+		return run_d3d_trampoline(D3D_ORIG(DrawPrimitive), _this, PrimitiveType, StartVertex, PrimitiveCount);
 	}
 	static HRESULT __stdcall DrawIndexedPrimitive_r(IDirect3DDevice9* _this,
 		D3DPRIMITIVETYPE PrimitiveType,
@@ -1282,10 +1389,7 @@ namespace local
 		UINT startIndex,
 		UINT primCount)
 	{
-		shader_start();
-		auto result = D3D_ORIG(DrawIndexedPrimitive)(_this, PrimitiveType, BaseVertexIndex, MinVertexIndex, NumVertices, startIndex, primCount);
-		shader_end();
-		return result;
+		return run_d3d_trampoline(D3D_ORIG(DrawIndexedPrimitive), _this, PrimitiveType, BaseVertexIndex, MinVertexIndex, NumVertices, startIndex, primCount);
 	}
 	static HRESULT __stdcall DrawPrimitiveUP_r(IDirect3DDevice9* _this,
 		D3DPRIMITIVETYPE PrimitiveType,
@@ -1293,10 +1397,7 @@ namespace local
 		CONST void* pVertexStreamZeroData,
 		UINT VertexStreamZeroStride)
 	{
-		shader_start();
-		auto result = D3D_ORIG(DrawPrimitiveUP)(_this, PrimitiveType, PrimitiveCount, pVertexStreamZeroData, VertexStreamZeroStride);
-		shader_end();
-		return result;
+		return run_d3d_trampoline(D3D_ORIG(DrawPrimitiveUP), _this, PrimitiveType, PrimitiveCount, pVertexStreamZeroData, VertexStreamZeroStride);
 	}
 	static HRESULT __stdcall DrawIndexedPrimitiveUP_r(IDirect3DDevice9* _this,
 		D3DPRIMITIVETYPE PrimitiveType,
@@ -1308,10 +1409,11 @@ namespace local
 		CONST void* pVertexStreamZeroData,
 		UINT VertexStreamZeroStride)
 	{
-		shader_start();
-		auto result = D3D_ORIG(DrawIndexedPrimitiveUP)(_this, PrimitiveType, MinVertexIndex, NumVertices, PrimitiveCount, pIndexData, IndexDataFormat, pVertexStreamZeroData, VertexStreamZeroStride);
-		shader_end();
-		return result;
+		return run_d3d_trampoline(D3D_ORIG(DrawIndexedPrimitiveUP),
+		                          _this, PrimitiveType, MinVertexIndex,
+		                          NumVertices, PrimitiveCount, pIndexData,
+		                          IndexDataFormat, pVertexStreamZeroData,
+		                          VertexStreamZeroStride);
 	}
 
 	// ReSharper disable once CppDeclaratorNeverUsed
@@ -1416,31 +1518,16 @@ namespace local
 	}
 #pragma endregion
 
-
 	NJS_VECTOR sonic_positions[8] {};
 
 	static void __cdecl Sonic_Display_r(ObjectMaster* o);
 	static Trampoline Sonic_Display_t(0x004948C0, 0x004948C7, Sonic_Display_r);
 	static void __cdecl Sonic_Display_r(ObjectMaster* o)
 	{
-		auto data1 = o->Data1;
-		const auto& last_pos = sonic_positions[data1->Index];
-
-		D3DXMATRIX curr;
-		D3DXMatrixTranslation(&curr, data1->Position.x, data1->Position.y, data1->Position.z);
-		curr = curr * ViewMatrix * ProjectionMatrix;
-
-		D3DXMATRIX last;
-		D3DXMatrixTranslation(&last, last_pos.x, last_pos.y, last_pos.z);
-		last = last * ViewMatrix * ProjectionMatrix;
-
-		param::CurrentTransform = curr;
-		param::LastTransform    = last;
-
 		auto original = reinterpret_cast<decltype(Sonic_Display_r)*>(Sonic_Display_t.Target());
+		enable_blur = true;
 		original(o);
-
-		sonic_positions[data1->Index] = data1->Position;
+		enable_blur = false;
 	}
 }
 
