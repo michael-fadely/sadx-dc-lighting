@@ -1,6 +1,6 @@
 float4x4 CurrentTransform : register(c50);
 float4x4 LastTransform    : register(c54);
-float2   Viewport         : register(c58);
+//float2   Viewport         : register(c58);
 
 struct VS_IN
 {
@@ -17,6 +17,7 @@ void vs_main(VS_IN input,
 
 float4 ps_main(float4 curr_pos : POSITION1, float4 last_pos : TEXCOORD0) : COLOR
 {
+	return float4(1, 0, 0, 1);
 	float2 a = curr_pos.xy / curr_pos.w;
 	a = a * 0.5 + 0.5;
 

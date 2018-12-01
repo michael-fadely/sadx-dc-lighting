@@ -29,5 +29,5 @@ void vs_main(in  float3 pos_in  : POSITION,
 
 float4 ps_main(in float2 uv : TEXCOORD) : COLOR
 {
-	return float4(tex2D(tex_sampler, uv).rgb, 1);
+	return tex2D(tex_sampler, uv);
 }

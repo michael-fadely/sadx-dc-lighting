@@ -1340,12 +1340,12 @@ namespace local
 			}
 
 			device->SetRenderState(D3DRS_ZENABLE, TRUE);
-			device->SetRenderState(D3DRS_ZFUNC, D3DCMP_EQUAL);
+			device->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
 			device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
 
 			Surface surface;
 			velocity_buffer->GetSurfaceLevel(0, &surface);
-			device->SetRenderTarget(0, surface);
+			auto hr = device->SetRenderTarget(0, surface);
 
 			VertexShader vs;
 			device->GetVertexShader(&vs);
@@ -1482,7 +1482,7 @@ namespace local
 
 		device->SetRenderTarget(0, og_render_target);
 
-		device->SetTexture(1, color_buffer);
+		auto hr = device->SetTexture(1, velocity_buffer);
 
 		VertexShader vs;
 		device->GetVertexShader(&vs);
@@ -1507,10 +1507,15 @@ namespace local
 
 		device->SetTexture(1, nullptr);
 
+		Surface surface;
+		velocity_buffer->GetSurfaceLevel(0, &surface);
+		device->SetRenderTarget(0, surface);
+		device->Clear(1, nullptr, D3DCLEAR_TARGET, 0, 0.0f, 0);
+
 		device->SetVertexShader(vs);
 		device->SetPixelShader(ps);
 
-		Surface surface;
+		surface = nullptr;
 		color_buffer->GetSurfaceLevel(0, &surface);
 		device->SetRenderTarget(0, surface);
 
