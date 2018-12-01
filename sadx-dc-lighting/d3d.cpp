@@ -162,6 +162,9 @@ namespace local
 	DataPointer(Direct3DDevice8*, Direct3D_Device, 0x03D128B0);
 	DataPointer(Direct3D8*, Direct3D_Object, 0x03D11F60);
 
+	static CComPtr<IDirect3DTexture9> color_buffer = nullptr;
+	static CComPtr<IDirect3DTexture9> velocity_buffer = nullptr;
+
 	static auto sanitize(Uint32& flags)
 	{
 		flags &= ShaderFlags_Mask;
@@ -177,6 +180,12 @@ namespace local
 		}
 
 		return flags;
+	}
+
+	static void free_render_targets()
+	{
+		color_buffer = nullptr;
+		velocity_buffer = nullptr;
 	}
 
 	static void free_shaders()
@@ -195,9 +204,42 @@ namespace local
 
 	static VertexShader get_vertex_shader(Uint32 flags);
 	static PixelShader get_pixel_shader(Uint32 flags);
+	static void load_velocity_shader();
+
+	static void create_render_targets()
+	{
+		using namespace d3d;
+
+		HRESULT hr;
+
+		hr = device->CreateTexture(HorizontalResolution, VerticalResolution, 1, D3DUSAGE_RENDERTARGET,
+		                           D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &color_buffer, nullptr);
+
+		if (FAILED(hr))
+		{
+			throw;
+		}
+
+		hr = device->CreateTexture(HorizontalResolution, VerticalResolution, 1, D3DUSAGE_RENDERTARGET,
+		                           D3DFMT_G32R32F, D3DPOOL_DEFAULT, &velocity_buffer, nullptr);
+
+		if (FAILED(hr))
+		{
+			throw;
+		}
+	}
 
 	static void create_shaders()
 	{
+		try
+		{
+			load_velocity_shader();
+		}
+		catch (const std::exception& ex)
+		{
+			MessageBoxA(WindowHandle, ex.what(), "Velocity Shader creation failed", MB_OK | MB_ICONERROR);
+		}
+
 		try
 		{
 			d3d::vertex_shader = get_vertex_shader(DEFAULT_FLAGS);
@@ -720,6 +762,76 @@ namespace local
 		return shader;
 	}
 
+	static void load_velocity_shader()
+	{
+		std::vector<uint8_t> vs_data, ps_data;
+
+		{
+			PrintDebug("[lantern] Compiling VELOCITY shader\n");
+
+			std::vector<uint8_t> velocity_hlsl;
+			std::ifstream file(globals::get_system_path("velocity.hlsl"), std::ios::ate | std::ios::binary);
+
+			if (!file.is_open())
+			{
+				throw std::runtime_error("Error loading velocity.hlsl; idfk why");
+			}
+
+			auto size = file.tellg();
+			file.seekg(0);
+
+			velocity_hlsl.resize(static_cast<size_t>(size));
+			file.read(reinterpret_cast<char*>(velocity_hlsl.data()), velocity_hlsl.size());
+
+			file.close();
+
+			Buffer errors;
+			Buffer buffer;
+
+			auto result = D3DXCompileShader(reinterpret_cast<const char*>(velocity_hlsl.data()), velocity_hlsl.size(), nullptr, nullptr,
+			                                "vs_main", "vs_3_0", COMPILER_FLAGS, &buffer, &errors, nullptr);
+
+			if (FAILED(result) || errors != nullptr)
+			{
+				d3d_exception(errors, result);
+			}
+
+			vs_data.resize(static_cast<size_t>(buffer->GetBufferSize()));
+			memcpy(vs_data.data(), buffer->GetBufferPointer(), vs_data.size());
+
+			buffer = nullptr;
+			errors = nullptr;
+
+			// am I dumb?
+			result = D3DXCompileShader(reinterpret_cast<const char*>(velocity_hlsl.data()), velocity_hlsl.size(), nullptr, nullptr,
+			                           "ps_main", "ps_3_0", COMPILER_FLAGS, &buffer, &errors, nullptr);
+
+			if (FAILED(result) || errors != nullptr)
+			{
+				d3d_exception(errors, result);
+			}
+
+			ps_data.resize(static_cast<size_t>(buffer->GetBufferSize()));
+			memcpy(ps_data.data(), buffer->GetBufferPointer(), ps_data.size());
+		}
+
+		VertexShader vs;
+		auto result = d3d::device->CreateVertexShader(reinterpret_cast<const DWORD*>(vs_data.data()), &vs);
+
+		if (FAILED(result))
+		{
+			d3d_exception(nullptr, result);
+		}
+
+		PixelShader ps;
+		result = d3d::device->CreatePixelShader(reinterpret_cast<const DWORD*>(ps_data.data()), &ps);
+
+		if (FAILED(result))
+		{
+			d3d_exception(nullptr, result);
+		}
+	}
+
 	static void begin()
 	{
 		++drawing;
@@ -1191,6 +1303,16 @@ namespace local
 		param::ProjectionMatrix = *matrix;
 		return _device->SetTransform(type, matrix);
 	}
+
+	static void __cdecl Direct3D_Present_r();
+	static Trampoline Direct3D_Present_t(0x0078BA30, 0x0078BA35, Direct3D_Present_r);
+	static void __cdecl Direct3D_Present_r()
+	{
+		auto original = reinterpret_cast<decltype(Direct3D_Present_r)*>(Direct3D_Present_t.Target());
+
+		// TODO: do shit
+		original();
+	}
 #pragma endregion
 }
 
@@ -1238,6 +1360,7 @@ namespace d3d
 			return;
 		}
 
+		local::create_render_targets();
 		local::clear_shaders();
 		local::create_shaders();
 	}
@@ -1294,17 +1417,20 @@ extern "C"
 	EXPORT void __cdecl OnRenderDeviceLost()
 	{
 		end();
+		free_render_targets();
 		free_shaders();
 	}
 
 	EXPORT void __cdecl OnRenderDeviceReset()
 	{
+		create_render_targets();
 		create_shaders();
 	}
 
 	EXPORT void __cdecl OnExit()
 	{
 		param::release_parameters();
+		free_render_targets();
 		free_shaders();
 	}
 }

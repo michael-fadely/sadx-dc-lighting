@@ -93,6 +93,7 @@
     <PostBuildEvent>
       <Command>xcopy /C /Y /D "$(ProjectDir)mod.ini" "$(OutDir)"
 xcopy /C /Y /D "$(ProjectDir)lantern.hlsl" "$(OutDir)system\"
+xcopy /C /Y /D "$(ProjectDir)velocity.hlsl" "$(OutDir)system\"
 xcopy /C /Y /D "$(OutDir)$(TargetName).lib" "$(OutDir)api\"
 xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Command>
     </PostBuildEvent>
@@ -120,6 +121,7 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
     <PostBuildEvent>
       <Command>xcopy /C /Y /D "$(ProjectDir)mod.ini" "$(OutDir)"
 xcopy /C /Y /D "$(ProjectDir)lantern.hlsl" "$(OutDir)system\"
+xcopy /C /Y /D "$(ProjectDir)velocity.hlsl" "$(OutDir)system\"
 xcopy /C /Y /D "$(OutDir)$(TargetName).lib" "$(OutDir)api\"
 xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Command>
     </PostBuildEvent>
@@ -149,6 +151,7 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
     <PostBuildEvent>
       <Command>xcopy /C /Y /D "$(ProjectDir)mod.ini" "$(OutDir)"
 xcopy /C /Y /D "$(ProjectDir)lantern.hlsl" "$(OutDir)system\"
+xcopy /C /Y /D "$(ProjectDir)velocity.hlsl" "$(OutDir)system\"
 xcopy /C /Y /D "$(OutDir)$(TargetName).lib" "$(OutDir)api\"
 xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Command>
     </PostBuildEvent>
@@ -199,6 +202,11 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
   </ItemGroup>
   <ItemGroup>
     <None Include="lantern.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="velocity.hlsl">
       <FileType>Document</FileType>
     </None>
   </ItemGroup>
