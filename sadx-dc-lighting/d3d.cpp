@@ -1415,6 +1415,33 @@ namespace local
 		original();
 	}
 #pragma endregion
+
+
+	NJS_VECTOR sonic_positions[8] {};
+
+	static void __cdecl Sonic_Display_r(ObjectMaster* o);
+	static Trampoline Sonic_Display_t(0x004948C0, 0x004948C7, Sonic_Display_r);
+	static void __cdecl Sonic_Display_r(ObjectMaster* o)
+	{
+		auto data1 = o->Data1;
+		const auto& last_pos = sonic_positions[data1->Index];
+
+		D3DXMATRIX curr;
+		D3DXMatrixTranslation(&curr, data1->Position.x, data1->Position.y, data1->Position.z);
+		curr = curr * ViewMatrix * ProjectionMatrix;
+
+		D3DXMATRIX last;
+		D3DXMatrixTranslation(&last, last_pos.x, last_pos.y, last_pos.z);
+		last = last * ViewMatrix * ProjectionMatrix;
+
+		param::CurrentTransform = curr;
+		param::LastTransform    = last;
+
+		auto original = reinterpret_cast<decltype(Sonic_Display_r)*>(Sonic_Display_t.Target());
+		original(o);
+
+		sonic_positions[data1->Index] = data1->Position;
+	}
 }
 
 namespace d3d
