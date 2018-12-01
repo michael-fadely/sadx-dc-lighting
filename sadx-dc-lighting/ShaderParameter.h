@@ -8,7 +8,9 @@
 using VertexShader = CComPtr<IDirect3DVertexShader9>;
 using PixelShader  = CComPtr<IDirect3DPixelShader9>;
 using Buffer       = CComPtr<ID3DXBuffer>;
+using BaseTexture  = CComPtr<IDirect3DBaseTexture9>;
 using Texture      = CComPtr<IDirect3DTexture9>;
+using Surface      = CComPtr<IDirect3DSurface9>;
 
 class IShaderParameter
 {

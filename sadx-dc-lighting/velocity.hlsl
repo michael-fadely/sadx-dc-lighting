@@ -1,5 +1,6 @@
-float4x4 current_transform : c0;
-float4x4 last_transform    : c4;
+float4x4 CurrentTransform : register(c50);
+float4x4 LastTransform    : register(c54);
+float2   Viewport         : register(c58);
 
 struct VS_IN
 {
@@ -10,8 +11,8 @@ void vs_main(VS_IN input,
              out float4 pos  : POSITION,
              out float4 pos2 : TEXCOORD0)
 {
-	pos  = mul(float4(input.position, 1), current_transform);
-	pos2 = mul(float4(input.position, 1), last_transform);
+	pos  = mul(float4(input.position, 1), CurrentTransform);
+	pos2 = mul(float4(input.position, 1), LastTransform);
 }
 
 float4 ps_main(float4 curr_pos : POSITION1, float4 last_pos : TEXCOORD0) : COLOR

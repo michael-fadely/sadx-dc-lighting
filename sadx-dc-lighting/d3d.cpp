@@ -58,6 +58,9 @@ namespace param
 	ShaderParameter<D3DXCOLOR>   FogColor(32, {}, IShaderParameter::Type::pixel);
 	ShaderParameter<float>       AlphaRef(33, 16.0f / 255.0f, IShaderParameter::Type::pixel);
 
+	ShaderParameter<D3DXMATRIX>  CurrentTransform(50, {}, IShaderParameter::Type::pixel);
+	ShaderParameter<D3DXMATRIX>  LastTransform(54, {}, IShaderParameter::Type::pixel);
+
 	IShaderParameter* const parameters[] = {
 		&PaletteA,
 		&PaletteB,
@@ -84,6 +87,9 @@ namespace param
 		&FogConfig,
 		&FogColor,
 		&AlphaRef,
+
+		&CurrentTransform,
+		&LastTransform,
 	};
 
 	static void release_parameters()
@@ -162,8 +168,48 @@ namespace local
 	DataPointer(Direct3DDevice8*, Direct3D_Device, 0x03D128B0);
 	DataPointer(Direct3D8*, Direct3D_Object, 0x03D11F60);
 
-	static CComPtr<IDirect3DTexture9> color_buffer = nullptr;
-	static CComPtr<IDirect3DTexture9> velocity_buffer = nullptr;
+	static Texture color_buffer     = nullptr;
+	static Texture velocity_buffer  = nullptr;
+	static Surface og_render_target = nullptr;
+
+	VertexShader velocity_vs, quad_vs;
+	PixelShader velocity_ps, quad_ps;
+
+	struct QuadVertex
+	{
+		static const UINT format = D3DFVF_XYZRHW | D3DFVF_TEX1;
+		D3DXVECTOR4 position;
+		D3DXVECTOR2 uv;
+	};
+
+	static void draw_quad()
+	{
+		const auto& present = PresentParameters;
+		QuadVertex quad[4] = {};
+
+		const float width_half_pixel  = present.BackBufferWidth - 0.5f;
+		const float height_half_pixel = present.BackBufferHeight - 0.5f;
+
+		constexpr float left   = 0.0f;
+		constexpr float top    = 0.0f;
+		constexpr float right  = 1.0f;
+		constexpr float bottom = 1.0f;
+
+		quad[0].position = D3DXVECTOR4(-0.5f, -0.5f, 0.5f, 1.0f);
+		quad[0].uv       = D3DXVECTOR2(left, top);
+
+		quad[1].position = D3DXVECTOR4(width_half_pixel, -0.5f, 0.5f, 1.0f);
+		quad[1].uv       = D3DXVECTOR2(right, top);
+
+		quad[2].position = D3DXVECTOR4(-0.5f, height_half_pixel, 0.5f, 1.0f);
+		quad[2].uv       = D3DXVECTOR2(left, bottom);
+
+		quad[3].position = D3DXVECTOR4(width_half_pixel, height_half_pixel, 0.5f, 1.0f);
+		quad[3].uv       = D3DXVECTOR2(right, bottom);
+
+		d3d::device->SetFVF(QuadVertex::format);
+		d3d::device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, &quad, sizeof(QuadVertex));
+	}
 
 	static auto sanitize(Uint32& flags)
 	{
@@ -184,8 +230,9 @@ namespace local
 
 	static void free_render_targets()
 	{
-		color_buffer = nullptr;
-		velocity_buffer = nullptr;
+		color_buffer     = nullptr;
+		velocity_buffer  = nullptr;
+		og_render_target = nullptr;
 	}
 
 	static void free_shaders()
@@ -194,6 +241,11 @@ namespace local
 		pixel_shaders.clear();
 		d3d::vertex_shader = nullptr;
 		d3d::pixel_shader = nullptr;
+
+		velocity_vs = nullptr;
+		velocity_ps = nullptr;
+		quad_vs = nullptr;
+		quad_ps = nullptr;
 	}
 
 	static void clear_shaders()
@@ -204,13 +256,13 @@ namespace local
 
 	static VertexShader get_vertex_shader(Uint32 flags);
 	static PixelShader get_pixel_shader(Uint32 flags);
-	static void load_velocity_shader();
+	static void load_generic_shader(const std::string& name, VertexShader&, PixelShader&);
 
 	static void create_render_targets()
 	{
 		using namespace d3d;
 
-		HRESULT hr;
+		HRESULT hr = 0;
 
 		hr = device->CreateTexture(HorizontalResolution, VerticalResolution, 1, D3DUSAGE_RENDERTARGET,
 		                           D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &color_buffer, nullptr);
@@ -227,17 +279,32 @@ namespace local
 		{
 			throw;
 		}
+
+		device->GetRenderTarget(0, &og_render_target);
+
+		Surface surface;
+		color_buffer->GetSurfaceLevel(0, &surface);
+		device->SetRenderTarget(0, surface);
 	}
 
 	static void create_shaders()
 	{
 		try
 		{
-			load_velocity_shader();
+			load_generic_shader("velocity.hlsl", velocity_vs, velocity_ps);
 		}
 		catch (const std::exception& ex)
 		{
 			MessageBoxA(WindowHandle, ex.what(), "Velocity Shader creation failed", MB_OK | MB_ICONERROR);
+		}
+
+		try
+		{
+			load_generic_shader("quad.hlsl", quad_vs, quad_ps);
+		}
+		catch (const std::exception& ex)
+		{
+			MessageBoxA(WindowHandle, ex.what(), "Quad Shader creation failed", MB_OK | MB_ICONERROR);
 		}
 
 		try
@@ -762,33 +829,35 @@ namespace local
 		return shader;
 	}
 
-	static void load_velocity_shader()
+	static void load_generic_shader(const std::string& name, VertexShader& vs, PixelShader& ps)
 	{
 		std::vector<uint8_t> vs_data, ps_data;
 
 		{
-			PrintDebug("[lantern] Compiling VELOCITY shader\n");
+			PrintDebug("[lantern] Compiling %s\n", name.c_str());
 
-			std::vector<uint8_t> velocity_hlsl;
-			std::ifstream file(globals::get_system_path("velocity.hlsl"), std::ios::ate | std::ios::binary);
+			std::vector<uint8_t> hlsl;
+			std::ifstream file(globals::get_system_path(name), std::ios::ate | std::ios::binary);
 
 			if (!file.is_open())
 			{
-				throw std::runtime_error("Error loading velocity.hlsl; idfk why");
+				std::stringstream ss;
+				ss << "Error loading shader: " << name;
+				throw std::runtime_error(ss.str().c_str()); // ew
 			}
 
 			auto size = file.tellg();
 			file.seekg(0);
 
-			velocity_hlsl.resize(static_cast<size_t>(size));
-			file.read(reinterpret_cast<char*>(velocity_hlsl.data()), velocity_hlsl.size());
+			hlsl.resize(static_cast<size_t>(size));
+			file.read(reinterpret_cast<char*>(hlsl.data()), hlsl.size());
 
 			file.close();
 
 			Buffer errors;
 			Buffer buffer;
 
-			auto result = D3DXCompileShader(reinterpret_cast<const char*>(velocity_hlsl.data()), velocity_hlsl.size(), nullptr, nullptr,
+			auto result = D3DXCompileShader(reinterpret_cast<const char*>(hlsl.data()), hlsl.size(), nullptr, nullptr,
 			                                "vs_main", "vs_3_0", COMPILER_FLAGS, &buffer, &errors, nullptr);
 
 			if (FAILED(result) || errors != nullptr)
@@ -802,8 +871,7 @@ namespace local
 			buffer = nullptr;
 			errors = nullptr;
 
-			// am I dumb?
-			result = D3DXCompileShader(reinterpret_cast<const char*>(velocity_hlsl.data()), velocity_hlsl.size(), nullptr, nullptr,
+			result = D3DXCompileShader(reinterpret_cast<const char*>(hlsl.data()), hlsl.size(), nullptr, nullptr,
 			                           "ps_main", "ps_3_0", COMPILER_FLAGS, &buffer, &errors, nullptr);
 
 			if (FAILED(result) || errors != nullptr)
@@ -815,7 +883,6 @@ namespace local
 			memcpy(ps_data.data(), buffer->GetBufferPointer(), ps_data.size());
 		}
 
-		VertexShader vs;
 		auto result = d3d::device->CreateVertexShader(reinterpret_cast<const DWORD*>(vs_data.data()), &vs);
 
 		if (FAILED(result))
@@ -823,7 +890,6 @@ namespace local
 			d3d_exception(nullptr, result);
 		}
 
-		PixelShader ps;
 		result = d3d::device->CreatePixelShader(reinterpret_cast<const DWORD*>(ps_data.data()), &ps);
 
 		if (FAILED(result))
@@ -1308,9 +1374,44 @@ namespace local
 	static Trampoline Direct3D_Present_t(0x0078BA30, 0x0078BA35, Direct3D_Present_r);
 	static void __cdecl Direct3D_Present_r()
 	{
+		using namespace d3d;
+
 		auto original = reinterpret_cast<decltype(Direct3D_Present_r)*>(Direct3D_Present_t.Target());
 
-		// TODO: do shit
+		device->SetRenderTarget(0, og_render_target);
+
+		device->SetTexture(1, color_buffer);
+
+		VertexShader vs;
+		device->GetVertexShader(&vs);
+
+		PixelShader ps;
+		device->GetPixelShader(&ps);
+
+		device->SetVertexShader(quad_vs);
+		device->SetPixelShader(quad_ps);
+
+		DWORD ALPHABLENDENABLE, ZENABLE;
+		device->GetRenderState(D3DRS_ALPHABLENDENABLE, &ALPHABLENDENABLE);
+		device->GetRenderState(D3DRS_ZENABLE, &ZENABLE);
+
+		device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+		device->SetRenderState(D3DRS_ZENABLE, FALSE);
+
+		draw_quad();
+
+		device->SetRenderState(D3DRS_ALPHABLENDENABLE, ALPHABLENDENABLE);
+		device->SetRenderState(D3DRS_ZENABLE, ZENABLE);
+
+		device->SetTexture(1, nullptr);
+
+		device->SetVertexShader(vs);
+		device->SetPixelShader(ps);
+
+		Surface surface;
+		color_buffer->GetSurfaceLevel(0, &surface);
+		device->SetRenderTarget(0, surface);
+
 		original();
 	}
 #pragma endregion
