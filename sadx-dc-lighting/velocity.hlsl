@@ -7,22 +7,23 @@ struct VS_IN
 	float3 position : POSITION;
 };
 
-void vs_main(VS_IN input,
-             out float4 pos  : POSITION,
-             out float4 pos2 : TEXCOORD0)
+void vs_main(in  float4 pos_in : POSITION,
+             out float4 pos_out  : POSITION,
+             out float4 pos1 : TEXCOORD0,
+             out float4 pos2 : TEXCOORD1)
 {
-	pos  = mul(float4(input.position, 1), CurrentTransform);
-	pos2 = mul(float4(input.position, 1), LastTransform);
+	pos_out = mul(pos_in, CurrentTransform);
+
+	pos1 = pos_out;
+	pos2 = mul(pos_in, LastTransform);
 }
 
-float4 ps_main(float4 curr_pos : POSITION1, float4 last_pos : TEXCOORD0) : COLOR
+float4 ps_main(float2 bullshit : VPOS, float4 curr_pos : TEXCOORD0, float4 last_pos : TEXCOORD1) : COLOR
 {
-	return float4(1, 0, 0, 1);
-	float2 a = curr_pos.xy / curr_pos.w;
-	a = a * 0.5 + 0.5;
+	float2 velocity = (curr_pos.xy / curr_pos.w) - (last_pos.xy / last_pos.w);
 
-	float2 b = last_pos.xy / last_pos.w;
-	b = b * 0.5 + 0.5;
+	velocity *= 0.5;
+	velocity.y *= -1.0;
 
-	return float4(a - b, 0, 0);
+	return float4(velocity, 1.0f, 1.0f);
 }

@@ -29,6 +29,13 @@
 #include "ShaderParameter.h"
 #include "FileSystem.h"
 
+#define STORE_RS(RS) \
+	DWORD RS; \
+	d3d::device->GetRenderState(D3DRS_ ## RS, &RS)
+
+#define RESTORE_RS(RS) \
+	d3d::device->SetRenderState(D3DRS_ ## RS, RS);
+
 namespace param
 {
 	ShaderParameter<Texture>     PaletteA(1, nullptr, IShaderParameter::Type::vertex);
@@ -58,8 +65,8 @@ namespace param
 	ShaderParameter<D3DXCOLOR>   FogColor(32, {}, IShaderParameter::Type::pixel);
 	ShaderParameter<float>       AlphaRef(33, 16.0f / 255.0f, IShaderParameter::Type::pixel);
 
-	ShaderParameter<D3DXMATRIX>  CurrentTransform(50, {}, IShaderParameter::Type::pixel);
-	ShaderParameter<D3DXMATRIX>  LastTransform(54, {}, IShaderParameter::Type::pixel);
+	ShaderParameter<D3DXMATRIX>  CurrentTransform(50, {}, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXMATRIX>  LastTransform(54, {}, IShaderParameter::Type::vertex);
 
 	IShaderParameter* const parameters[] = {
 		&PaletteA,
@@ -173,7 +180,10 @@ namespace local
 	static Surface og_render_target = nullptr;
 
 	VertexShader velocity_vs, quad_vs;
-	PixelShader velocity_ps, quad_ps;
+	PixelShader velocity_ps, quad_ps, blur_ps;
+	D3DXMATRIX _proj_matrix {};
+	D3DXMATRIX _view_matrix {};
+	D3DXMATRIX _view_matrix_inv {};
 
 	struct QuadVertex
 	{
@@ -246,6 +256,7 @@ namespace local
 		velocity_ps = nullptr;
 		quad_vs = nullptr;
 		quad_ps = nullptr;
+		blur_ps = nullptr;
 	}
 
 	static void clear_shaders()
@@ -256,6 +267,11 @@ namespace local
 
 	static VertexShader get_vertex_shader(Uint32 flags);
 	static PixelShader get_pixel_shader(Uint32 flags);
+
+	static void load_generic_vs(std::vector<uint8_t>& hlsl, VertexShader& vs);
+	static void load_generic_vs(const std::string& name, VertexShader& vs);
+	static void load_generic_ps(std::vector<uint8_t>& hlsl, PixelShader& ps);
+	static void load_generic_ps(const std::string& name, PixelShader& ps);
 	static void load_generic_shader(const std::string& name, VertexShader&, PixelShader&);
 
 	static void create_render_targets()
@@ -263,6 +279,8 @@ namespace local
 		using namespace d3d;
 
 		HRESULT hr = 0;
+		color_buffer = nullptr;
+		velocity_buffer = nullptr;
 
 		hr = device->CreateTexture(HorizontalResolution, VerticalResolution, 1, D3DUSAGE_RENDERTARGET,
 		                           D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &color_buffer, nullptr);
@@ -280,6 +298,7 @@ namespace local
 			throw;
 		}
 
+		og_render_target = nullptr;
 		device->GetRenderTarget(0, &og_render_target);
 
 		Surface surface;
@@ -291,20 +310,34 @@ namespace local
 	{
 		try
 		{
+			velocity_vs = nullptr;
+			velocity_ps = nullptr;
 			load_generic_shader("velocity.hlsl", velocity_vs, velocity_ps);
 		}
 		catch (const std::exception& ex)
 		{
-			MessageBoxA(WindowHandle, ex.what(), "Velocity Shader creation failed", MB_OK | MB_ICONERROR);
+			MessageBoxA(WindowHandle, ex.what(), "VELOCITY Shader creation failed", MB_OK | MB_ICONERROR);
 		}
 
 		try
 		{
+			quad_vs = nullptr;
+			quad_ps = nullptr;
 			load_generic_shader("quad.hlsl", quad_vs, quad_ps);
 		}
 		catch (const std::exception& ex)
 		{
-			MessageBoxA(WindowHandle, ex.what(), "Quad Shader creation failed", MB_OK | MB_ICONERROR);
+			MessageBoxA(WindowHandle, ex.what(), "QUAD Shader creation failed", MB_OK | MB_ICONERROR);
+		}
+
+		try
+		{
+			blur_ps = nullptr;
+			load_generic_ps("blur.hlsl", blur_ps);
+		}
+		catch (const std::exception& ex)
+		{
+			MessageBoxA(WindowHandle, ex.what(), "BLUR Shader creation failed", MB_OK | MB_ICONERROR);
 		}
 
 		try
@@ -829,20 +862,17 @@ namespace local
 		return shader;
 	}
 
-	static void load_generic_shader(const std::string& name, VertexShader& vs, PixelShader& ps)
+	std::vector<uint8_t> load_hlsl(const std::string& name)
 	{
-		std::vector<uint8_t> vs_data, ps_data;
+		std::vector<uint8_t> hlsl;
 
 		{
-			PrintDebug("[lantern] Compiling %s\n", name.c_str());
-
-			std::vector<uint8_t> hlsl;
 			std::ifstream file(globals::get_system_path(name), std::ios::ate | std::ios::binary);
 
 			if (!file.is_open())
 			{
 				std::stringstream ss;
-				ss << "Error loading shader: " << name;
+				ss << "Error loading shader source: " << name;
 				throw std::runtime_error(ss.str().c_str()); // ew
 			}
 
@@ -851,44 +881,58 @@ namespace local
 
 			hlsl.resize(static_cast<size_t>(size));
 			file.read(reinterpret_cast<char*>(hlsl.data()), hlsl.size());
-
-			file.close();
-
-			Buffer errors;
-			Buffer buffer;
-
-			auto result = D3DXCompileShader(reinterpret_cast<const char*>(hlsl.data()), hlsl.size(), nullptr, nullptr,
-			                                "vs_main", "vs_3_0", COMPILER_FLAGS, &buffer, &errors, nullptr);
-
-			if (FAILED(result) || errors != nullptr)
-			{
-				d3d_exception(errors, result);
-			}
-
-			vs_data.resize(static_cast<size_t>(buffer->GetBufferSize()));
-			memcpy(vs_data.data(), buffer->GetBufferPointer(), vs_data.size());
-
-			buffer = nullptr;
-			errors = nullptr;
-
-			result = D3DXCompileShader(reinterpret_cast<const char*>(hlsl.data()), hlsl.size(), nullptr, nullptr,
-			                           "ps_main", "ps_3_0", COMPILER_FLAGS, &buffer, &errors, nullptr);
-
-			if (FAILED(result) || errors != nullptr)
-			{
-				d3d_exception(errors, result);
-			}
-
-			ps_data.resize(static_cast<size_t>(buffer->GetBufferSize()));
-			memcpy(ps_data.data(), buffer->GetBufferPointer(), ps_data.size());
 		}
 
-		auto result = d3d::device->CreateVertexShader(reinterpret_cast<const DWORD*>(vs_data.data()), &vs);
+		return hlsl;
+	}
+
+	static void load_generic_vs(std::vector<uint8_t>& hlsl, VertexShader& vs)
+	{
+		std::vector<uint8_t> vs_data;
+		Buffer errors;
+		Buffer buffer;
+
+		auto result = D3DXCompileShader(reinterpret_cast<const char*>(hlsl.data()), hlsl.size(), nullptr, nullptr,
+		                                "vs_main", "vs_3_0", COMPILER_FLAGS, &buffer, &errors, nullptr);
+
+		if (FAILED(result) || errors != nullptr)
+		{
+			d3d_exception(errors, result);
+		}
+
+		vs_data.resize(static_cast<size_t>(buffer->GetBufferSize()));
+		memcpy(vs_data.data(), buffer->GetBufferPointer(), vs_data.size());
+
+		result = d3d::device->CreateVertexShader(reinterpret_cast<const DWORD*>(vs_data.data()), &vs);
 
 		if (FAILED(result))
 		{
 			d3d_exception(nullptr, result);
 		}
+	}
+
+	static void load_generic_vs(const std::string& name, VertexShader& vs)
+	{
+		auto hlsl = load_hlsl(name);
+		load_generic_vs(hlsl, vs);
+	}
+
+	static void load_generic_ps(std::vector<uint8_t>& hlsl, PixelShader& ps)
+	{
+		std::vector<uint8_t> ps_data;
+		Buffer errors;
+		Buffer buffer;
+
+		auto result = D3DXCompileShader(reinterpret_cast<const char*>(hlsl.data()), hlsl.size(), nullptr, nullptr,
+		                                "ps_main", "ps_3_0", COMPILER_FLAGS, &buffer, &errors, nullptr);
+
+		if (FAILED(result) || errors != nullptr)
+		{
+			d3d_exception(errors, result);
+		}
+
+		ps_data.resize(static_cast<size_t>(buffer->GetBufferSize()));
+		memcpy(ps_data.data(), buffer->GetBufferPointer(), ps_data.size());
 
 		result = d3d::device->CreatePixelShader(reinterpret_cast<const DWORD*>(ps_data.data()), &ps);
 
@@ -896,6 +940,19 @@ namespace local
 		{
 			d3d_exception(nullptr, result);
 		}
+	}
+
+	static void load_generic_ps(const std::string& name, PixelShader& ps)
+	{
+		auto hlsl = load_hlsl(name);
+		load_generic_ps(hlsl, ps);
+	}
+
+	static void load_generic_shader(const std::string& name, VertexShader& vs, PixelShader& ps)
+	{
+		auto hlsl = load_hlsl(name);
+		load_generic_vs(hlsl, vs);
+		load_generic_ps(hlsl, ps);
 	}
 
 	static void begin()
@@ -1060,17 +1117,17 @@ namespace local
 	};
 
 	static bool enable_blur = false;
-	std::unordered_map<NJS_MODEL_SADX*, OhGod> transform_map;
+	std::unordered_map<void*, OhGod> transform_map;
 
-	static void store_transform(NJS_MODEL_SADX* ptr)
+	static void store_transform(void* ptr)
 	{
 		if (!ptr || !enable_blur)
 		{
 			return;
 		}
 
-		D3DXMATRIX m;
-		njGetMatrix(&m[0]);
+		auto m = *reinterpret_cast<D3DXMATRIX *>(_nj_current_matrix_ptr_) * _view_matrix_inv;
+		m = m * _view_matrix * _proj_matrix;
 
 		param::CurrentTransform = m;
 
@@ -1089,17 +1146,23 @@ namespace local
 			{
 				param::LastTransform = m;
 				it = transform_map.erase(it);
+				PrintDebug("discarding old transform!\n");
 			}
 		}
 		else
 		{
 			transform_map[ptr] = { static_cast<uint32_t>(FrameCounter), m };
 			param::LastTransform = m;
+			PrintDebug("storing new transform\n");
 		}
+
+		param::CurrentTransform.commit(d3d::device);
+		param::LastTransform.commit(d3d::device);
 	}
 
 	static void __cdecl njDrawModel_SADX_r(NJS_MODEL_SADX* a1)
 	{
+		//enable_blur = true;
 		begin();
 		store_transform(a1);
 
@@ -1123,10 +1186,12 @@ namespace local
 		}
 
 		end();
+		//enable_blur = false;
 	}
 
 	static void __cdecl njDrawModel_SADX_Dynamic_r(NJS_MODEL_SADX* a1)
 	{
+		//enable_blur = true;
 		begin();
 		store_transform(a1);
 
@@ -1150,20 +1215,27 @@ namespace local
 		}
 
 		end();
+		//enable_blur = false;
 	}
 
 	static void __fastcall PolyBuff_DrawTriangleStrip_r(PolyBuff* _this)
 	{
+		//enable_blur = true;
 		begin();
+		store_transform(_this);
 		run_trampoline(TARGET_DYNAMIC(PolyBuff_DrawTriangleStrip), _this);
 		end();
+		//enable_blur = false;
 	}
 
 	static void __fastcall PolyBuff_DrawTriangleList_r(PolyBuff* _this)
 	{
+		//enable_blur = true;
 		begin();
+		store_transform(_this);
 		run_trampoline(TARGET_DYNAMIC(PolyBuff_DrawTriangleList), _this);
 		end();
+		//enable_blur = false;
 	}
 
 	static void check_format()
@@ -1242,7 +1314,7 @@ namespace local
 	{
 		TARGET_DYNAMIC(Direct3D_SetWorldTransform)();
 
-		if (!LanternInstance::use_palette())
+		if (true || !LanternInstance::use_palette())
 		{
 			return;
 		}
@@ -1263,7 +1335,11 @@ namespace local
 		TARGET_DYNAMIC(Direct3D_SetProjectionMatrix)(hfov, nearPlane, farPlane);
 
 		// The view matrix can also be set here if necessary.
-		param::ProjectionMatrix = D3DXMATRIX(ProjectionMatrix) * D3DXMATRIX(TransformationMatrix);
+		_proj_matrix = D3DXMATRIX(ProjectionMatrix) * D3DXMATRIX(TransformationMatrix);
+		_view_matrix = ViewMatrix;
+		_view_matrix_inv = InverseViewMatrix;
+
+		param::ProjectionMatrix = _proj_matrix;
 	}
 
 	static void __cdecl Direct3D_SetViewportAndTransform_r()
@@ -1274,7 +1350,8 @@ namespace local
 
 		if (invalid)
 		{
-			param::ProjectionMatrix = D3DXMATRIX(ProjectionMatrix) * D3DXMATRIX(TransformationMatrix);
+			_proj_matrix = D3DXMATRIX(ProjectionMatrix) * D3DXMATRIX(TransformationMatrix);
+			param::ProjectionMatrix = _proj_matrix;
 		}
 	}
 
@@ -1323,24 +1400,20 @@ namespace local
 
 		if (SUCCEEDED(result) && enable_blur)
 		{
-		#define STORE_RS(RS) \
-			DWORD RS; \
-			d3d::device->GetRenderState(D3DRS_ ## RS, &RS)
-
-		#define RESTORE_RS(RS) \
-			d3d::device->SetRenderState(D3DRS_ ## RS, RS);
-
-			STORE_RS(ALPHABLENDENABLE);
+			STORE_RS(ZWRITEENABLE);
 			STORE_RS(ZENABLE);
-			STORE_RS(ZFUNC);
 
-			if (ALPHABLENDENABLE && !ZENABLE)
+			if (!ZWRITEENABLE || !ZENABLE)
 			{
 				return result;
 			}
 
+			STORE_RS(ALPHABLENDENABLE);
+			STORE_RS(ZFUNC);
+
+			device->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
 			device->SetRenderState(D3DRS_ZENABLE, TRUE);
-			device->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
+			device->SetRenderState(D3DRS_ZFUNC, D3DCMP_EQUAL);
 			device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
 
 			Surface surface;
@@ -1366,6 +1439,7 @@ namespace local
 			device->SetRenderTarget(0, surface);
 
 			RESTORE_RS(ALPHABLENDENABLE);
+			RESTORE_RS(ZWRITEENABLE);
 			RESTORE_RS(ZENABLE);
 			RESTORE_RS(ZFUNC);
 		}
@@ -1480,9 +1554,12 @@ namespace local
 
 		auto original = reinterpret_cast<decltype(Direct3D_Present_r)*>(Direct3D_Present_t.Target());
 
+		HRESULT hr = 0;
+
 		device->SetRenderTarget(0, og_render_target);
 
-		auto hr = device->SetTexture(1, velocity_buffer);
+		hr = device->SetTexture(1, color_buffer);
+		hr = device->SetTexture(2, velocity_buffer);
 
 		VertexShader vs;
 		device->GetVertexShader(&vs);
@@ -1491,33 +1568,43 @@ namespace local
 		device->GetPixelShader(&ps);
 
 		device->SetVertexShader(quad_vs);
-		device->SetPixelShader(quad_ps);
+		device->SetPixelShader(blur_ps);
 
-		DWORD ALPHABLENDENABLE, ZENABLE;
-		device->GetRenderState(D3DRS_ALPHABLENDENABLE, &ALPHABLENDENABLE);
-		device->GetRenderState(D3DRS_ZENABLE, &ZENABLE);
+		STORE_RS(ALPHABLENDENABLE);
+		STORE_RS(SRCBLEND);
+		STORE_RS(DESTBLEND);
+		STORE_RS(ZENABLE);
+		STORE_RS(ZWRITEENABLE);
 
 		device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+		device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
+		device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
 		device->SetRenderState(D3DRS_ZENABLE, FALSE);
+		device->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
 
 		draw_quad();
 
-		device->SetRenderState(D3DRS_ALPHABLENDENABLE, ALPHABLENDENABLE);
-		device->SetRenderState(D3DRS_ZENABLE, ZENABLE);
+		RESTORE_RS(ALPHABLENDENABLE);
+		RESTORE_RS(SRCBLEND);
+		RESTORE_RS(DESTBLEND);
+		RESTORE_RS(ZENABLE);
+		RESTORE_RS(ZWRITEENABLE);
 
 		device->SetTexture(1, nullptr);
+		device->SetTexture(2, nullptr);
 
 		Surface surface;
 		velocity_buffer->GetSurfaceLevel(0, &surface);
 		device->SetRenderTarget(0, surface);
 		device->Clear(1, nullptr, D3DCLEAR_TARGET, 0, 0.0f, 0);
 
-		device->SetVertexShader(vs);
-		device->SetPixelShader(ps);
-
 		surface = nullptr;
 		color_buffer->GetSurfaceLevel(0, &surface);
 		device->SetRenderTarget(0, surface);
+		device->Clear(1, nullptr, D3DCLEAR_TARGET, 0, 0.0f, 0);
+
+		device->SetVertexShader(vs);
+		device->SetPixelShader(ps);
 
 		original();
 	}
