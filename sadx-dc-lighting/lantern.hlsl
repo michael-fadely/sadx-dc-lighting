@@ -49,9 +49,10 @@ SamplerState atlasSamplerB : register(s2) = sampler_state
 
 // Parameters
 
-float4x4 WorldMatrix      : register(c0);
+float4x4 WorldMatrix      : register(c40);
+float4x4 ViewMatrix       : register(c44);
+float4x4 ProjectionMatrix : register(c48);
 float4x4 wvMatrix         : register(c4);
-float4x4 ProjectionMatrix : register(c8);
 float4x4 wvMatrixInvT     : register(c12); // Inverse transpose world view - used for environment mapping.
 
 // Used primarily for environment mapping.
@@ -151,9 +152,12 @@ PS_IN vs_main(VS_IN input)
 {
 	PS_IN output;
 
-	output.position = mul(float4(input.position, 1), wvMatrix);
+	precise matrix wv = mul(WorldMatrix, ViewMatrix);
+	precise matrix wvp = mul(wv, ProjectionMatrix);
+
+	output.position = mul(float4(input.position, 1), wv);
 	output.fogDist = output.position.z;
-	output.position = mul(output.position, ProjectionMatrix);
+	output.position = mul(float4(input.position, 1), wvp);
 
 #if defined(USE_TEXTURE) && defined(USE_ENVMAP)
 	output.tex = (float2)mul(float4(input.normal, 1), wvMatrixInvT);

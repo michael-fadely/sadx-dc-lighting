@@ -56,7 +56,7 @@ float4 MotionBlur(float2 vTexCoord, float2 vPixelVelocity, int iNumSamples)
 	}
 
 	// Return the average color of all the samples
-	return vSum / (float)iNumSamples;
+	return float4((vSum / (float)iNumSamples).rgb, 1);
 }
 
 float4 ps_main(in float2 uv_in : TEXCOORD) : COLOR

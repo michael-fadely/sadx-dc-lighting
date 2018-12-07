@@ -20,6 +20,7 @@
 #include <iomanip>
 #include <sstream>
 #include <vector>
+#include <functional>
 
 // Local
 #include "d3d.h"
@@ -36,14 +37,62 @@
 #define RESTORE_RS(RS) \
 	d3d::device->SetRenderState(D3DRS_ ## RS, RS);
 
+template <class T>
+inline void hash_combine(std::size_t& seed, const T& v)
+{
+	std::hash<T> hasher;
+	seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+
+struct OhKey
+{
+	int i;
+	void* ptr;
+
+	bool operator==(const OhKey& rhs) const
+	{
+		return i == rhs.i && ptr == rhs.ptr;
+	}
+};
+
+namespace std
+{
+	template <>
+	struct hash<OhKey>
+	{
+		size_t operator()(const OhKey& x) const noexcept
+		{
+			auto h = std::hash<int>()(x.i);
+			hash_combine(h, x.ptr);
+			return h;
+		}
+	};
+}
+
+static bool blur_enabled = false;
+static int blur_i = 0;
+
+static bool blur_begin()
+{
+	if (!blur_enabled)
+	{
+		return false;
+	}
+
+	return blur_i++ == 0;
+}
+
+static void blur_end()
+{
+	blur_i = 0;
+}
+
 namespace param
 {
 	ShaderParameter<Texture>     PaletteA(1, nullptr, IShaderParameter::Type::vertex);
 	ShaderParameter<Texture>     PaletteB(2, nullptr, IShaderParameter::Type::vertex);
 
-	ShaderParameter<D3DXMATRIX>  WorldMatrix(0, {}, IShaderParameter::Type::vertex);
 	ShaderParameter<D3DXMATRIX>  wvMatrix(4, {}, IShaderParameter::Type::vertex);
-	ShaderParameter<D3DXMATRIX>  ProjectionMatrix(8, {}, IShaderParameter::Type::vertex);
 	ShaderParameter<D3DXMATRIX>  wvMatrixInvT(12, {}, IShaderParameter::Type::vertex);
 	ShaderParameter<D3DXMATRIX>  TextureTransform(16, {}, IShaderParameter::Type::vertex);
 
@@ -65,15 +114,19 @@ namespace param
 	ShaderParameter<D3DXCOLOR>   FogColor(32, {}, IShaderParameter::Type::pixel);
 	ShaderParameter<float>       AlphaRef(33, 16.0f / 255.0f, IShaderParameter::Type::pixel);
 
-	ShaderParameter<D3DXMATRIX>  CurrentTransform(50, {}, IShaderParameter::Type::vertex);
-	ShaderParameter<D3DXMATRIX>  LastTransform(54, {}, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXMATRIX>  WorldMatrix(40, {}, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXMATRIX>  ViewMatrix(44, {}, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXMATRIX>  ProjectionMatrix(48, {}, IShaderParameter::Type::vertex);
+
+	ShaderParameter<D3DXMATRIX>  l_WorldMatrix(60, {}, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXMATRIX>  l_ViewMatrix(64, {}, IShaderParameter::Type::vertex);
+	ShaderParameter<D3DXMATRIX>  l_ProjectionMatrix(68, {}, IShaderParameter::Type::vertex);
 
 	IShaderParameter* const parameters[] = {
 		&PaletteA,
 		&PaletteB,
 
-		&WorldMatrix,
-		&ProjectionMatrix,
+		&wvMatrix,
 		&wvMatrixInvT,
 		&TextureTransform,
 
@@ -95,8 +148,13 @@ namespace param
 		&FogColor,
 		&AlphaRef,
 
-		&CurrentTransform,
-		&LastTransform,
+		&WorldMatrix,
+		&ViewMatrix,
+		&ProjectionMatrix,
+
+		&l_WorldMatrix,
+		&l_ViewMatrix,
+		&l_ProjectionMatrix,
 	};
 
 	static void release_parameters()
@@ -121,6 +179,8 @@ namespace local
 	static Trampoline* CreateDirect3DDevice_t             = nullptr;
 	static Trampoline* PolyBuff_DrawTriangleStrip_t       = nullptr;
 	static Trampoline* PolyBuff_DrawTriangleList_t        = nullptr;
+
+	static HRESULT __stdcall SetTransform_r(IDirect3DDevice9*, D3DTRANSFORMSTATETYPE State, CONST D3DMATRIX* pMatrix);
 
 	static HRESULT __stdcall DrawPrimitive_r(IDirect3DDevice9* _this,
 		D3DPRIMITIVETYPE PrimitiveType,
@@ -148,6 +208,7 @@ namespace local
 		CONST void* pVertexStreamZeroData,
 		UINT VertexStreamZeroStride);
 
+	static decltype(SetTransform_r)*           SetTransform_t           = nullptr;
 	static decltype(DrawPrimitive_r)*          DrawPrimitive_t          = nullptr;
 	static decltype(DrawIndexedPrimitive_r)*   DrawIndexedPrimitive_t   = nullptr;
 	static decltype(DrawPrimitiveUP_r)*        DrawPrimitiveUP_t        = nullptr;
@@ -1067,6 +1128,7 @@ namespace local
 	{
 		enum
 		{
+			IndexOf_SetTransform = 44,
 			IndexOf_SetTexture = 65,
 			IndexOf_DrawPrimitive = 81,
 			IndexOf_DrawIndexedPrimitive,
@@ -1076,6 +1138,7 @@ namespace local
 
 		auto vtbl = (void**)(*(void**)d3d::device);
 
+		MHOOK(SetTransform);
 		MHOOK(DrawPrimitive);
 		MHOOK(DrawIndexedPrimitive);
 		MHOOK(DrawPrimitiveUP);
@@ -1113,58 +1176,67 @@ namespace local
 	struct OhGod
 	{
 		uint32_t time;
-		D3DXMATRIX transform;
+		D3DXMATRIX world, view, proj;
 	};
 
-	static bool enable_blur = false;
-	std::unordered_map<void*, OhGod> transform_map;
+	std::unordered_map<OhKey, OhGod> transform_map;
 
 	static void store_transform(void* ptr)
 	{
-		if (!ptr || !enable_blur)
+		if (!ptr || blur_enabled)
 		{
 			return;
 		}
 
 		auto m = *reinterpret_cast<D3DXMATRIX *>(_nj_current_matrix_ptr_) * _view_matrix_inv;
-		m = m * _view_matrix * _proj_matrix;
 
-		param::CurrentTransform = m;
-
-		auto it = transform_map.find(ptr);
+		auto it = transform_map.find({ 0, ptr });
 
 		if (it != transform_map.end())
 		{
 			if (FrameCounter - it->second.time < age_threshold)
 			{
-				param::LastTransform = it->second.transform;
+				param::l_WorldMatrix      = it->second.world;
+				param::l_ViewMatrix       = it->second.view;
+				param::l_ProjectionMatrix = it->second.proj;
 
 				it->second.time = static_cast<uint32_t>(FrameCounter);
-				it->second.transform = m;
+				it->second.world = m;
+				it->second.view = _view_matrix;
+				it->second.proj = _proj_matrix;
 			}
 			else
 			{
-				param::LastTransform = m;
+				param::l_WorldMatrix = m;
+				param::l_ViewMatrix = _view_matrix;
+				param::l_ProjectionMatrix = _proj_matrix;
 				it = transform_map.erase(it);
 				PrintDebug("discarding old transform!\n");
 			}
 		}
 		else
 		{
-			transform_map[ptr] = { static_cast<uint32_t>(FrameCounter), m };
-			param::LastTransform = m;
+			transform_map[{ 0, ptr }] = { static_cast<uint32_t>(FrameCounter), m, _view_matrix, _proj_matrix };
+			param::l_WorldMatrix = m;
+			param::l_ViewMatrix = _view_matrix;
+			param::l_ProjectionMatrix = _proj_matrix;
 			PrintDebug("storing new transform\n");
 		}
 
-		param::CurrentTransform.commit(d3d::device);
-		param::LastTransform.commit(d3d::device);
+		param::l_WorldMatrix.commit(d3d::device);
+		param::l_ViewMatrix.commit(d3d::device);
+		param::l_ProjectionMatrix.commit(d3d::device);
 	}
 
 	static void __cdecl njDrawModel_SADX_r(NJS_MODEL_SADX* a1)
 	{
-		//enable_blur = true;
 		begin();
-		store_transform(a1);
+		blur_begin();
+
+		if (blur_enabled)
+		{
+			store_transform(a1);
+		}
 
 		if (a1 && a1->nbMat && a1->mats)
 		{
@@ -1186,14 +1258,11 @@ namespace local
 		}
 
 		end();
-		//enable_blur = false;
 	}
 
 	static void __cdecl njDrawModel_SADX_Dynamic_r(NJS_MODEL_SADX* a1)
 	{
-		//enable_blur = true;
 		begin();
-		store_transform(a1);
 
 		if (a1 && a1->nbMat && a1->mats)
 		{
@@ -1215,27 +1284,20 @@ namespace local
 		}
 
 		end();
-		//enable_blur = false;
 	}
 
 	static void __fastcall PolyBuff_DrawTriangleStrip_r(PolyBuff* _this)
 	{
-		//enable_blur = true;
 		begin();
-		store_transform(_this);
 		run_trampoline(TARGET_DYNAMIC(PolyBuff_DrawTriangleStrip), _this);
 		end();
-		//enable_blur = false;
 	}
 
 	static void __fastcall PolyBuff_DrawTriangleList_r(PolyBuff* _this)
 	{
-		//enable_blur = true;
 		begin();
-		store_transform(_this);
 		run_trampoline(TARGET_DYNAMIC(PolyBuff_DrawTriangleList), _this);
 		end();
-		//enable_blur = false;
 	}
 
 	static void check_format()
@@ -1398,7 +1460,7 @@ namespace local
 		shader_start();
 		auto result = original(args...);
 
-		if (SUCCEEDED(result) && enable_blur)
+		if (SUCCEEDED(result) && blur_enabled)
 		{
 			STORE_RS(ZWRITEENABLE);
 			STORE_RS(ZENABLE);
@@ -1446,6 +1508,32 @@ namespace local
 
 		shader_end();
 		return result;
+	}
+
+	HRESULT __stdcall SetTransform_r(IDirect3DDevice9* _this, D3DTRANSFORMSTATETYPE State, const D3DMATRIX* pMatrix)
+	{
+		if (pMatrix)
+		{
+			switch (State)
+			{
+				default:
+					break;
+
+				case D3DTS_VIEW:
+					param::ViewMatrix = *pMatrix;
+					break;
+
+				case D3DTS_PROJECTION:
+					param::ProjectionMatrix = *pMatrix;
+					break;
+
+				case D3DTS_WORLD:
+					param::WorldMatrix = *pMatrix;
+					break;
+			}
+		}
+
+		return run_d3d_trampoline(D3D_ORIG(SetTransform), _this, State, pMatrix);
 	}
 
 	static HRESULT __stdcall DrawPrimitive_r(IDirect3DDevice9* _this,
@@ -1563,6 +1651,9 @@ namespace local
 
 		device->SetSamplerState(1, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
 		device->SetSamplerState(1, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
+		device->SetSamplerState(1, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+		device->SetSamplerState(1, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+
 		device->SetSamplerState(2, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
 		device->SetSamplerState(2, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
 
@@ -1615,16 +1706,28 @@ namespace local
 	}
 #pragma endregion
 
-	NJS_VECTOR sonic_positions[8] {};
-
 	static void __cdecl Sonic_Display_r(ObjectMaster* o);
 	static Trampoline Sonic_Display_t(0x004948C0, 0x004948C7, Sonic_Display_r);
 	static void __cdecl Sonic_Display_r(ObjectMaster* o)
 	{
 		auto original = reinterpret_cast<decltype(Sonic_Display_r)*>(Sonic_Display_t.Target());
-		enable_blur = true;
+
+		blur_enabled = true;
+		blur_begin();
+
 		original(o);
-		enable_blur = false;
+
+		blur_end();
+		//blur_enabled = false;
+	}
+
+	static void __cdecl DrawModelThing_r(NJS_MODEL_SADX* a1);
+	static Trampoline DrawModelThing_t(0x00403470, 0x00403479, DrawModelThing_r);
+	static void __cdecl DrawModelThing_r(NJS_MODEL_SADX* a1)
+	{
+		auto original = reinterpret_cast<decltype(DrawModelThing_r)*>(DrawModelThing_t.Target());
+		//blur_begin();
+		original(a1);
 	}
 }
 

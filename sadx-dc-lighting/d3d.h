@@ -30,8 +30,6 @@ namespace param
 	extern ShaderParameter<Texture> PaletteA;
 	extern ShaderParameter<Texture> PaletteB;
 
-	extern ShaderParameter<D3DXMATRIX> WorldMatrix;
-	extern ShaderParameter<D3DXMATRIX> ProjectionMatrix;
 	extern ShaderParameter<D3DXMATRIX> wvMatrixInvT;
 	extern ShaderParameter<D3DXMATRIX> TextureTransform;
 
@@ -53,8 +51,13 @@ namespace param
 	extern ShaderParameter<D3DXCOLOR> FogColor;
 	extern ShaderParameter<float> AlphaRef;
 
-	extern ShaderParameter<D3DXMATRIX> CurrentTransform;
-	extern ShaderParameter<D3DXMATRIX> LastTransform;
+	extern ShaderParameter<D3DXMATRIX>  WorldMatrix;
+	extern ShaderParameter<D3DXMATRIX>  ViewMatrix;
+	extern ShaderParameter<D3DXMATRIX>  ProjectionMatrix;
+
+	extern ShaderParameter<D3DXMATRIX>  l_WorldMatrix;
+	extern ShaderParameter<D3DXMATRIX>  l_ViewMatrix;
+	extern ShaderParameter<D3DXMATRIX>  l_ProjectionMatrix;
 }
 
 // Same as in the mod loader except with d3d8to9 types.
