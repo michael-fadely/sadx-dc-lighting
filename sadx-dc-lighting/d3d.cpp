@@ -1561,6 +1561,11 @@ namespace local
 		hr = device->SetTexture(1, color_buffer);
 		hr = device->SetTexture(2, velocity_buffer);
 
+		device->SetSamplerState(1, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
+		device->SetSamplerState(1, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
+		device->SetSamplerState(2, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
+		device->SetSamplerState(2, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
+
 		VertexShader vs;
 		device->GetVertexShader(&vs);
 
