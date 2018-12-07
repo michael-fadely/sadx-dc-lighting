@@ -1314,7 +1314,7 @@ namespace local
 	{
 		TARGET_DYNAMIC(Direct3D_SetWorldTransform)();
 
-		if (true || !LanternInstance::use_palette())
+		if (false && !LanternInstance::use_palette())
 		{
 			return;
 		}

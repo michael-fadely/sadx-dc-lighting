@@ -148,11 +148,11 @@
     <None Include="velocity.hlsl">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="quad.hlsl" />
-  </ItemGroup>
-  <ItemGroup>
-    <FxCompile Include="blur.hlsl">
+    <None Include="quad.hlsl">
       <Filter>Resource Files</Filter>
-    </FxCompile>
+    </None>
+    <None Include="blur.hlsl">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
