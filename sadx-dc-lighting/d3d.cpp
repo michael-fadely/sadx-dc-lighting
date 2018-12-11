@@ -1190,7 +1190,7 @@ namespace local
 
 		auto m = *reinterpret_cast<D3DXMATRIX *>(_nj_current_matrix_ptr_) * _view_matrix_inv;
 
-		auto it = transform_map.find({ 0, ptr });
+		auto it = transform_map.find({ blur_i, ptr });
 
 		if (it != transform_map.end())
 		{
@@ -1216,7 +1216,7 @@ namespace local
 		}
 		else
 		{
-			transform_map[{ 0, ptr }] = { static_cast<uint32_t>(FrameCounter), m, _view_matrix, _proj_matrix };
+			transform_map[{ blur_i, ptr }] = { static_cast<uint32_t>(FrameCounter), m, _view_matrix, _proj_matrix };
 			param::l_WorldMatrix = m;
 			param::l_ViewMatrix = _view_matrix;
 			param::l_ProjectionMatrix = _proj_matrix;
@@ -1642,12 +1642,10 @@ namespace local
 
 		auto original = reinterpret_cast<decltype(Direct3D_Present_r)*>(Direct3D_Present_t.Target());
 
-		HRESULT hr = 0;
-
 		device->SetRenderTarget(0, og_render_target);
 
-		hr = device->SetTexture(1, color_buffer);
-		hr = device->SetTexture(2, velocity_buffer);
+		device->SetTexture(1, color_buffer);
+		device->SetTexture(2, velocity_buffer);
 
 		device->SetSamplerState(1, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
 		device->SetSamplerState(1, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
@@ -1656,6 +1654,8 @@ namespace local
 
 		device->SetSamplerState(2, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
 		device->SetSamplerState(2, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
+		device->SetSamplerState(2, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+		device->SetSamplerState(2, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
 
 		VertexShader vs;
 		device->GetVertexShader(&vs);
@@ -1679,6 +1679,7 @@ namespace local
 		device->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
 
 		draw_quad();
+		original();
 
 		RESTORE_RS(ALPHABLENDENABLE);
 		RESTORE_RS(SRCBLEND);
@@ -1701,8 +1702,6 @@ namespace local
 
 		device->SetVertexShader(vs);
 		device->SetPixelShader(ps);
-
-		original();
 	}
 #pragma endregion
 

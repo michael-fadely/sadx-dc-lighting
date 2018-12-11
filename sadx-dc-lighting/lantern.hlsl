@@ -152,11 +152,10 @@ PS_IN vs_main(VS_IN input)
 {
 	PS_IN output;
 
-	precise matrix wv = mul(WorldMatrix, ViewMatrix);
-	precise matrix wvp = mul(wv, ProjectionMatrix);
+	float4x4 wv = mul(WorldMatrix, ViewMatrix);
+	float4x4 wvp = mul(wv, ProjectionMatrix);
 
-	output.position = mul(float4(input.position, 1), wv);
-	output.fogDist = output.position.z;
+	output.fogDist = mul(float4(input.position, 1), wv).z;
 	output.position = mul(float4(input.position, 1), wvp);
 
 #if defined(USE_TEXTURE) && defined(USE_ENVMAP)

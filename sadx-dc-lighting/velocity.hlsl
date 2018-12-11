@@ -8,17 +8,20 @@ float4x4 l_ProjectionMatrix : register(c68);
 
 //float2   Viewport         : register(c58);
 
-void vs_main(in  float4 pos_in   : POSITION,
+void vs_main(in  float3 pos_in   : POSITION,
              out float4 pos_out  : POSITION,
              out float4 pos1     : TEXCOORD0,
              out float4 pos2     : TEXCOORD1)
 {
-	matrix m = mul(mul(WorldMatrix, ViewMatrix), ProjectionMatrix);
-	matrix l_m = mul(mul(l_WorldMatrix, l_ViewMatrix), l_ProjectionMatrix);
-	pos_out = mul(pos_in, m);
+	pos_out = mul(float4(pos_in, 1), WorldMatrix);
+	pos_out = mul(pos_out, ViewMatrix);
+	pos_out = mul(pos_out, ProjectionMatrix);
 
 	pos1 = pos_out;
-	pos2 = mul(pos_in, l_m);
+
+	pos2 = mul(float4(pos_in, 1), l_WorldMatrix);
+	pos2 = mul(pos2, l_ViewMatrix);
+	pos2 = mul(pos2, l_ProjectionMatrix);
 }
 
 float4 ps_main(float4 curr_pos : TEXCOORD0, float4 last_pos : TEXCOORD1) : COLOR
@@ -28,5 +31,5 @@ float4 ps_main(float4 curr_pos : TEXCOORD0, float4 last_pos : TEXCOORD1) : COLOR
 	velocity *= 0.5;
 	velocity.y *= -1.0;
 
-	return float4(velocity, 0.0f, 0.0f);
+	return float4(velocity, 0, 0);
 }
