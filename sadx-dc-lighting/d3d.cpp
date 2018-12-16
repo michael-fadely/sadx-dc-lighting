@@ -1263,6 +1263,7 @@ namespace local
 	static void __cdecl njDrawModel_SADX_Dynamic_r(NJS_MODEL_SADX* a1)
 	{
 		begin();
+		blur_begin();
 
 		if (a1 && a1->nbMat && a1->mats)
 		{
@@ -1638,14 +1639,25 @@ namespace local
 	static Trampoline Direct3D_Present_t(0x0078BA30, 0x0078BA35, Direct3D_Present_r);
 	static void __cdecl Direct3D_Present_r()
 	{
+	#define SHOW_VELOCITY
+
 		using namespace d3d;
 
 		auto original = reinterpret_cast<decltype(Direct3D_Present_r)*>(Direct3D_Present_t.Target());
 
 		device->SetRenderTarget(0, og_render_target);
 
+		if (ControllerPointers[0] && ControllerPointers[0]->PressedButtons & Buttons_B)
+		{
+			D3DXSaveTextureToFileA("velocity.png", D3DXIFF_PNG, velocity_buffer, nullptr);
+		}
+
+	#ifdef SHOW_VELOCITY
+		device->SetTexture(1, velocity_buffer);
+	#else
 		device->SetTexture(1, color_buffer);
 		device->SetTexture(2, velocity_buffer);
+	#endif
 
 		device->SetSamplerState(1, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
 		device->SetSamplerState(1, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
@@ -1664,7 +1676,12 @@ namespace local
 		device->GetPixelShader(&ps);
 
 		device->SetVertexShader(quad_vs);
+
+	#ifdef SHOW_VELOCITY
+		device->SetPixelShader(quad_ps);
+	#else
 		device->SetPixelShader(blur_ps);
+	#endif
 
 		STORE_RS(ALPHABLENDENABLE);
 		STORE_RS(SRCBLEND);
@@ -1717,7 +1734,7 @@ namespace local
 		original(o);
 
 		blur_end();
-		//blur_enabled = false;
+		blur_enabled = false;
 	}
 
 	static void __cdecl DrawModelThing_r(NJS_MODEL_SADX* a1);
@@ -1725,7 +1742,7 @@ namespace local
 	static void __cdecl DrawModelThing_r(NJS_MODEL_SADX* a1)
 	{
 		auto original = reinterpret_cast<decltype(DrawModelThing_r)*>(DrawModelThing_t.Target());
-		//blur_begin();
+		blur_begin();
 		original(a1);
 	}
 }
