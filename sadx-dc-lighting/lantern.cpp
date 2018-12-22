@@ -440,7 +440,7 @@ bool LanternInstance::load_source(Sint32 level, Sint32 act)
 /// <summary>
 /// Loads palette data from the specified path.
 /// </summary>
-/// <param name="level">Path to the file.</param>
+/// <param name="path">Path to the file.</param>
 /// <returns><c>true</c> on success.</returns>
 bool LanternInstance::load_palette(const std::string& path)
 {
