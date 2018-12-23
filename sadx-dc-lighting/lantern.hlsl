@@ -239,7 +239,7 @@ float4 ps_main(PS_IN input) : COLOR
 #ifdef USE_FOG
 	float distance;
 
-#ifdef RADIAL_FOG
+#ifdef RANGE_FOG
 	distance = length(input.worldPos - ViewPosition);
 #else
 	distance = input.fogDist;

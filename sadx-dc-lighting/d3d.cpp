@@ -145,8 +145,8 @@ namespace local
 	constexpr auto COMPILER_FLAGS = D3DXSHADER_PACKMATRIX_ROWMAJOR | D3DXSHADER_OPTIMIZATION_LEVEL3;
 
 	constexpr auto DEFAULT_FLAGS = ShaderFlags_Alpha | ShaderFlags_Fog | ShaderFlags_Light | ShaderFlags_Texture;
-	constexpr auto VS_FLAGS      = ShaderFlags_Texture | ShaderFlags_EnvMap | ShaderFlags_Light | ShaderFlags_Blend;
-	constexpr auto PS_FLAGS      = ShaderFlags_Texture | ShaderFlags_Alpha | ShaderFlags_Fog | ShaderFlags_RangeFog;
+	constexpr auto VS_MASK       = ShaderFlags_Texture | ShaderFlags_EnvMap | ShaderFlags_Light | ShaderFlags_Blend;
+	constexpr auto PS_MASK       = ShaderFlags_Texture | ShaderFlags_Alpha | ShaderFlags_Fog | ShaderFlags_RangeFog;
 
 	static Uint32 shader_flags = DEFAULT_FLAGS;
 	static Uint32 last_flags   = DEFAULT_FLAGS;
@@ -164,7 +164,7 @@ namespace local
 	DataPointer(Direct3DDevice8*, Direct3D_Device, 0x03D128B0);
 	DataPointer(Direct3D8*, Direct3D_Object, 0x03D11F60);
 
-	static auto sanitize(Uint32& flags)
+	static auto sanitize(Uint32 flags)
 	{
 		flags &= ShaderFlags_Mask;
 
@@ -216,13 +216,13 @@ namespace local
 				auto flags = i;
 				local::sanitize(flags);
 
-				auto vs = static_cast<ShaderFlags>(flags & VS_FLAGS);
+				auto vs = static_cast<ShaderFlags>(flags & VS_MASK);
 				if (vertex_shaders.find(vs) == vertex_shaders.end())
 				{
 					get_vertex_shader(flags);
 				}
 
-				auto ps = static_cast<ShaderFlags>(flags & PS_FLAGS);
+				auto ps = static_cast<ShaderFlags>(flags & PS_MASK);
 				if (pixel_shaders.find(ps) == pixel_shaders.end())
 				{
 					get_pixel_shader(flags);
@@ -447,61 +447,43 @@ namespace local
 
 	static void populate_macros(Uint32 flags)
 	{
-		// TODO: unroll
-		while (flags != 0)
+		using namespace d3d;
+
+		flags = sanitize(flags);
+
+		if (flags & ShaderFlags_Texture)
 		{
-			using namespace d3d;
+			macros.push_back({ "USE_TEXTURE", "1" });
+		}
 
-			if (flags & ShaderFlags_Texture)
-			{
-				flags &= ~ShaderFlags_Texture;
-				macros.push_back({ "USE_TEXTURE", "1" });
-				continue;
-			}
+		if (flags & ShaderFlags_EnvMap)
+		{
+			macros.push_back({ "USE_ENVMAP", "1" });
+		}
 
-			if (flags & ShaderFlags_EnvMap)
-			{
-				flags &= ~ShaderFlags_EnvMap;
-				macros.push_back({ "USE_ENVMAP", "1" });
-				continue;
-			}
+		if (flags & ShaderFlags_Light)
+		{
+			macros.push_back({ "USE_LIGHT", "1" });
+		}
 
-			if (flags & ShaderFlags_Light)
-			{
-				flags &= ~ShaderFlags_Light;
-				macros.push_back({ "USE_LIGHT", "1" });
-				continue;
-			}
+		if (flags & ShaderFlags_Blend)
+		{
+			macros.push_back({ "USE_BLEND", "1" });
+		}
 
-			if (flags & ShaderFlags_Blend)
-			{
-				flags &= ~ShaderFlags_Blend;
-				macros.push_back({ "USE_BLEND", "1" });
-				continue;
-			}
+		if (flags & ShaderFlags_Alpha)
+		{
+			macros.push_back({ "USE_ALPHA", "1" });
+		}
 
-			if (flags & ShaderFlags_Alpha)
-			{
-				flags &= ~ShaderFlags_Alpha;
-				macros.push_back({ "USE_ALPHA", "1" });
-				continue;
-			}
+		if (flags & ShaderFlags_Fog)
+		{
+			macros.push_back({ "USE_FOG", "1" });
+		}
 
-			if (flags & ShaderFlags_Fog)
-			{
-				flags &= ~ShaderFlags_Fog;
-				macros.push_back({ "USE_FOG", "1" });
-				continue;
-			}
-
-			if (flags & ShaderFlags_RangeFog)
-			{
-				flags &= ~ShaderFlags_RangeFog;
-				macros.push_back({ "RANGE_FOG", "1" });
-				continue;
-			}
-
-			break;
+		if (flags & ShaderFlags_RangeFog)
+		{
+			macros.push_back({ "RANGE_FOG", "1" });
 		}
 
 		macros.push_back({});
@@ -593,8 +575,7 @@ namespace local
 	{
 		using namespace std;
 
-		sanitize(flags);
-		flags &= VS_FLAGS;
+		flags = sanitize(flags & VS_MASK);
 
 		if (shader_file.empty())
 		{
@@ -672,7 +653,7 @@ namespace local
 		}
 		else
 		{
-			const auto it = pixel_shaders.find(static_cast<ShaderFlags>(flags & PS_FLAGS));
+			const auto it = pixel_shaders.find(static_cast<ShaderFlags>(flags & PS_MASK));
 			if (it != pixel_shaders.end())
 			{
 				return it->second;
@@ -681,8 +662,7 @@ namespace local
 
 		macros.clear();
 
-		sanitize(flags);
-		flags &= PS_FLAGS;
+		flags = sanitize(flags & PS_MASK);
 
 		const string sid_path = filesystem::combine_path(globals::cache_path, shader_id(flags) + ".ps");
 		bool is_cached = filesystem::exists(sid_path);
@@ -731,7 +711,7 @@ namespace local
 			save_cached_shader(sid_path, data);
 		}
 
-		pixel_shaders[static_cast<ShaderFlags>(flags & PS_FLAGS)] = shader;
+		pixel_shaders[static_cast<ShaderFlags>(flags & PS_MASK)] = shader;
 		return shader;
 	}
 
@@ -772,11 +752,7 @@ namespace local
 
 		bool changes = false;
 
-		// The value here is copied so that UseBlend can be safely removed
-		// when possible without permanently removing it. It's required by
-		// Sky Deck, and it's only added to the flags once on stage load.
-		auto flags = shader_flags;
-		sanitize(flags);
+		const auto flags = sanitize(shader_flags);
 
 		if (flags != last_flags)
 		{

@@ -78,9 +78,9 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;LANTERN_API;_DEBUG;_WINDOWS;_USRDLL;SADXDCLIGHTING_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;LANTERN_API;_DEBUG;_WINDOWS;_USRDLL;SADXDCLIGHTING_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\sadx-mod-loader\SADXModLoader\include;..\minhook\include;..\sadx-mod-loader\libmodutils;..\d3d8to9\source</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\sadx-mod-loader\SADXModLoader\include;..\sadx-mod-loader\mod-loader-common\ModLoaderCommon;..\minhook\include;..\sadx-mod-loader\libmodutils;..\d3d8to9\source</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -92,6 +92,7 @@
     </Link>
     <PostBuildEvent>
       <Command>xcopy /C /Y /D "$(ProjectDir)mod.ini" "$(OutDir)"
+xcopy /Y /D "$(ProjectDir)configschema.xml" "$(OutDir)"
 xcopy /C /Y /D "$(ProjectDir)lantern.hlsl" "$(OutDir)system\"
 xcopy /C /Y /D "$(OutDir)$(TargetName).lib" "$(OutDir)api\"
 xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Command>
@@ -102,9 +103,9 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;LANTERN_API;_DEBUG;_WINDOWS;_USRDLL;SADXDCLIGHTING_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;LANTERN_API;_DEBUG;_WINDOWS;_USRDLL;SADXDCLIGHTING_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\sadx-mod-loader\SADXModLoader\include;..\minhook\include;..\sadx-mod-loader\libmodutils;..\d3d8to9\source</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\sadx-mod-loader\SADXModLoader\include;..\sadx-mod-loader\mod-loader-common\ModLoaderCommon;..\minhook\include;..\sadx-mod-loader\libmodutils;..\d3d8to9\source</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
@@ -119,6 +120,7 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
     </Link>
     <PostBuildEvent>
       <Command>xcopy /C /Y /D "$(ProjectDir)mod.ini" "$(OutDir)"
+xcopy /Y /D "$(ProjectDir)configschema.xml" "$(OutDir)"
 xcopy /C /Y /D "$(ProjectDir)lantern.hlsl" "$(OutDir)system\"
 xcopy /C /Y /D "$(OutDir)$(TargetName).lib" "$(OutDir)api\"
 xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Command>
@@ -131,9 +133,9 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;LANTERN_API;NDEBUG;_WINDOWS;_USRDLL;SADXDCLIGHTING_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;LANTERN_API;NDEBUG;_WINDOWS;_USRDLL;SADXDCLIGHTING_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\sadx-mod-loader\SADXModLoader\include;..\minhook\include;..\sadx-mod-loader\libmodutils;..\d3d8to9\source</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\sadx-mod-loader\SADXModLoader\include;..\sadx-mod-loader\mod-loader-common\ModLoaderCommon;..\minhook\include;..\sadx-mod-loader\libmodutils;..\d3d8to9\source</AdditionalIncludeDirectories>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
     </ClCompile>
     <Link>
@@ -148,6 +150,7 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
     </Link>
     <PostBuildEvent>
       <Command>xcopy /C /Y /D "$(ProjectDir)mod.ini" "$(OutDir)"
+xcopy /Y /D "$(ProjectDir)configschema.xml" "$(OutDir)"
 xcopy /C /Y /D "$(ProjectDir)lantern.hlsl" "$(OutDir)system\"
 xcopy /C /Y /D "$(OutDir)$(TargetName).lib" "$(OutDir)api\"
 xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Command>
@@ -156,6 +159,8 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
   <ItemGroup>
     <ClInclude Include="..\include\lanternapi.h" />
     <ClInclude Include="..\sadx-mod-loader\libmodutils\Trampoline.h" />
+    <ClInclude Include="..\sadx-mod-loader\mod-loader-common\ModLoaderCommon\IniFile.hpp" />
+    <ClInclude Include="..\sadx-mod-loader\mod-loader-common\ModLoaderCommon\TextConv.hpp" />
     <ClInclude Include="d3d.h" />
     <ClInclude Include="datapointers.h" />
     <ClInclude Include="ecgarden.h" />
@@ -175,6 +180,8 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\sadx-mod-loader\libmodutils\Trampoline.cpp" />
+    <ClCompile Include="..\sadx-mod-loader\mod-loader-common\ModLoaderCommon\IniFile.cpp" />
+    <ClCompile Include="..\sadx-mod-loader\mod-loader-common\ModLoaderCommon\TextConv.cpp" />
     <ClCompile Include="d3d.cpp" />
     <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="ShaderParameter.cpp" />
@@ -201,6 +208,9 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
     <None Include="lantern.hlsl">
       <FileType>Document</FileType>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="configschema.xml" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

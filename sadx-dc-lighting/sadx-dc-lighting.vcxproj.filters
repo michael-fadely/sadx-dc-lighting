@@ -90,6 +90,12 @@
     <ClInclude Include="FileSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\sadx-mod-loader\mod-loader-common\ModLoaderCommon\IniFile.hpp">
+      <Filter>Header Files\external</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sadx-mod-loader\mod-loader-common\ModLoaderCommon\TextConv.hpp">
+      <Filter>Header Files\external</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -137,6 +143,12 @@
     <ClCompile Include="FileSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\sadx-mod-loader\mod-loader-common\ModLoaderCommon\IniFile.cpp">
+      <Filter>Source Files\external</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sadx-mod-loader\mod-loader-common\ModLoaderCommon\TextConv.cpp">
+      <Filter>Source Files\external</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="mod.ini">
@@ -145,5 +157,10 @@
     <None Include="lantern.hlsl">
       <Filter>Resource Files</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="configschema.xml">
+      <Filter>Resource Files</Filter>
+    </Xml>
   </ItemGroup>
 </Project>
