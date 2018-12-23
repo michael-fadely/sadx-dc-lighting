@@ -87,7 +87,7 @@ float3 FogConfig : register(c31);
 float4 FogColor  : register(c32);
 float  AlphaRef  : register(c33) = 16.0f / 255.0f;
 
-float3 ViewPosition  : register(c34);
+float3 ViewPosition : register(c34);
 
 // Helpers
 
@@ -239,10 +239,10 @@ float4 ps_main(PS_IN input) : COLOR
 #ifdef USE_FOG
 	float distance;
 
-#if 0
-	distance = input.fogDist;
-#else
+#ifdef RADIAL_FOG
 	distance = length(input.worldPos - ViewPosition);
+#else
+	distance = input.fogDist;
 #endif
 
 	float factor = CalcFogFactor(distance);

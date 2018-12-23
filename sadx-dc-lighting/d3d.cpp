@@ -145,11 +145,11 @@ namespace local
 	constexpr auto COMPILER_FLAGS = D3DXSHADER_PACKMATRIX_ROWMAJOR | D3DXSHADER_OPTIMIZATION_LEVEL3;
 
 	constexpr auto DEFAULT_FLAGS = ShaderFlags_Alpha | ShaderFlags_Fog | ShaderFlags_Light | ShaderFlags_Texture;
-	constexpr auto VS_FLAGS = ShaderFlags_Texture | ShaderFlags_EnvMap | ShaderFlags_Light | ShaderFlags_Blend;
-	constexpr auto PS_FLAGS = ShaderFlags_Texture | ShaderFlags_Alpha | ShaderFlags_Fog;
+	constexpr auto VS_FLAGS      = ShaderFlags_Texture | ShaderFlags_EnvMap | ShaderFlags_Light | ShaderFlags_Blend;
+	constexpr auto PS_FLAGS      = ShaderFlags_Texture | ShaderFlags_Alpha | ShaderFlags_Fog | ShaderFlags_RangeFog;
 
 	static Uint32 shader_flags = DEFAULT_FLAGS;
-	static Uint32 last_flags = DEFAULT_FLAGS;
+	static Uint32 last_flags   = DEFAULT_FLAGS;
 
 	static std::vector<uint8_t> shader_file;
 	static std::unordered_map<ShaderFlags, VertexShader> vertex_shaders;
@@ -176,6 +176,11 @@ namespace local
 		if (flags & ShaderFlags_EnvMap && !(flags & ShaderFlags_Texture))
 		{
 			flags &= ~ShaderFlags_EnvMap;
+		}
+
+		if (flags & ShaderFlags_RangeFog && !(flags & ShaderFlags_Fog))
+		{
+			flags &= ~ShaderFlags_RangeFog;
 		}
 
 		return flags;
@@ -442,6 +447,7 @@ namespace local
 
 	static void populate_macros(Uint32 flags)
 	{
+		// TODO: unroll
 		while (flags != 0)
 		{
 			using namespace d3d;
@@ -485,6 +491,13 @@ namespace local
 			{
 				flags &= ~ShaderFlags_Fog;
 				macros.push_back({ "USE_FOG", "1" });
+				continue;
+			}
+
+			if (flags & ShaderFlags_RangeFog)
+			{
+				flags &= ~ShaderFlags_RangeFog;
+				macros.push_back({ "RANGE_FOG", "1" });
 				continue;
 			}
 
