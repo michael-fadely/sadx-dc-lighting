@@ -1,10 +1,11 @@
 #include "stdafx.h"
+
+#include <Windows.h>
 #include <d3d9.h>
 
 // Mod loader
 #include <SADXModLoader.h>
 #include <Trampoline.h>
-#include <IniFile.hpp>
 
 // MinHook
 #include <MinHook.h>
@@ -500,9 +501,12 @@ extern "C"
 		globals::cache_path  = globals::mod_path + "\\cache\\";
 		globals::shader_path = globals::get_system_path("lantern.hlsl");
 
-		IniFile config(globals::mod_path + "\\config.ini");
+		const std::string config_path = globals::mod_path + "\\config.ini";
+		std::array<char, 255> str {};
 
-		if (config.getBool("Enhancements", "RangeFog"))
+		GetPrivateProfileStringA("Enhancements", "RangeFog", "False", str.data(), str.size(), config_path.c_str());
+
+		if (!strcmp(str.data(), "True"))
 		{
 			d3d::set_flags(ShaderFlags_RangeFog, true);
 		}

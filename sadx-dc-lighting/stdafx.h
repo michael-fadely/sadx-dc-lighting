@@ -39,7 +39,6 @@
 #include <MemAccess.h>
 #include <SADXModLoader.h>
 #include <Trampoline.h>
-#include <IniFile.hpp>
 
 // MinHook
 #include <MinHook.h>
