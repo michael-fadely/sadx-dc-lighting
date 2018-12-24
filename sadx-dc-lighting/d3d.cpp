@@ -265,6 +265,14 @@ namespace local
 				continue;
 			}
 
+			if (flags & ShaderFlags_RangeFog)
+			{
+				flags &= ~ShaderFlags_RangeFog;
+				result << "RANGE_FOG";
+				thing = true;
+				continue;
+			}
+
 			if (flags & ShaderFlags_Blend)
 			{
 				flags &= ~ShaderFlags_Blend;
