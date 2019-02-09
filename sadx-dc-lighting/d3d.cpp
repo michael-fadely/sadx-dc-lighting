@@ -71,6 +71,7 @@ namespace std
 
 static bool blur_enabled = false;
 static int blur_i = 0;
+static NJS_MODEL_SADX* curr_model = nullptr;
 
 static bool blur_begin()
 {
@@ -1183,7 +1184,7 @@ namespace local
 
 	static void store_transform(void* ptr)
 	{
-		if (!ptr || blur_enabled)
+		if (!ptr || !blur_enabled)
 		{
 			return;
 		}
@@ -1233,10 +1234,7 @@ namespace local
 		begin();
 		blur_begin();
 
-		if (blur_enabled)
-		{
-			store_transform(a1);
-		}
+		curr_model = a1;
 
 		if (a1 && a1->nbMat && a1->mats)
 		{
@@ -1264,6 +1262,8 @@ namespace local
 	{
 		begin();
 		blur_begin();
+
+		curr_model = a1;
 
 		if (a1 && a1->nbMat && a1->mats)
 		{
@@ -1376,6 +1376,8 @@ namespace local
 	static void __cdecl Direct3D_SetWorldTransform_r()
 	{
 		TARGET_DYNAMIC(Direct3D_SetWorldTransform)();
+
+		store_transform(curr_model);
 
 		if (false && !LanternInstance::use_palette())
 		{
@@ -1491,6 +1493,11 @@ namespace local
 
 			device->SetVertexShader(velocity_vs);
 			device->SetPixelShader(velocity_ps);
+
+			for (auto& i : param::parameters)
+			{
+				i->commit_now(d3d::device);
+			}
 
 			result = original(args...);
 
@@ -1639,7 +1646,7 @@ namespace local
 	static Trampoline Direct3D_Present_t(0x0078BA30, 0x0078BA35, Direct3D_Present_r);
 	static void __cdecl Direct3D_Present_r()
 	{
-	#define SHOW_VELOCITY
+	//#define SHOW_VELOCITY
 
 		using namespace d3d;
 
@@ -1742,8 +1749,15 @@ namespace local
 	static void __cdecl DrawModelThing_r(NJS_MODEL_SADX* a1)
 	{
 		auto original = reinterpret_cast<decltype(DrawModelThing_r)*>(DrawModelThing_t.Target());
+
+		blur_enabled = true;
 		blur_begin();
+
+		curr_model = a1;
 		original(a1);
+
+		blur_end();
+		blur_enabled = false;
 	}
 }
 

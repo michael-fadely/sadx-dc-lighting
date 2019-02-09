@@ -26,10 +26,10 @@ void vs_main(in  float3 pos_in   : POSITION,
 
 float4 ps_main(float4 curr_pos : TEXCOORD0, float4 last_pos : TEXCOORD1) : COLOR
 {
+	//float2 velocity = /*(curr_pos.xy / curr_pos.w) -*/ (last_pos.xy / last_pos.w);
 	float2 velocity = (curr_pos.xy / curr_pos.w) - (last_pos.xy / last_pos.w);
 
-	velocity *= 0.5;
-	velocity.y *= -1.0;
+	velocity = (velocity + 1) / 2.0;
 
 	return float4(velocity, 0, 0);
 }

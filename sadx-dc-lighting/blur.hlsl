@@ -61,6 +61,6 @@ float4 MotionBlur(float2 vTexCoord, float2 vPixelVelocity, int iNumSamples)
 
 float4 ps_main(in float2 uv_in : TEXCOORD) : COLOR
 {
-	float2 v = tex2D(velocitybuff, uv_in).rg;
-	return MotionBlur(uv_in, v, MAX_SAMPLES);
+	float2 velocity = tex2D(velocitybuff, uv_in).rg;
+	return MotionBlur(uv_in, velocity, MAX_SAMPLES);
 }
