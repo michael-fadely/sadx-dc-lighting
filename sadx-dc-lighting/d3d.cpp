@@ -1195,7 +1195,7 @@ namespace local
 
 		if (it != transform_map.end())
 		{
-			if (FrameCounter - it->second.time < age_threshold)
+			if (true || FrameCounter - it->second.time < age_threshold)
 			{
 				param::l_WorldMatrix      = it->second.world;
 				param::l_ViewMatrix       = it->second.view;
@@ -1642,29 +1642,32 @@ namespace local
 		return _device->SetTransform(type, matrix);
 	}
 
+	static bool show_velocity = false;
+
 	static void __cdecl Direct3D_Present_r();
 	static Trampoline Direct3D_Present_t(0x0078BA30, 0x0078BA35, Direct3D_Present_r);
 	static void __cdecl Direct3D_Present_r()
 	{
-	//#define SHOW_VELOCITY
-
 		using namespace d3d;
 
 		auto original = reinterpret_cast<decltype(Direct3D_Present_r)*>(Direct3D_Present_t.Target());
 
 		device->SetRenderTarget(0, og_render_target);
 
-		if (ControllerPointers[0] && ControllerPointers[0]->PressedButtons & Buttons_B)
+		if (ControllerPointers[0] && ControllerPointers[0]->PressedButtons & Buttons_Up)
 		{
-			D3DXSaveTextureToFileA("velocity.png", D3DXIFF_PNG, velocity_buffer, nullptr);
+			show_velocity = !show_velocity;
 		}
 
-	#ifdef SHOW_VELOCITY
-		device->SetTexture(1, velocity_buffer);
-	#else
-		device->SetTexture(1, color_buffer);
-		device->SetTexture(2, velocity_buffer);
-	#endif
+		if (show_velocity)
+		{
+			device->SetTexture(1, velocity_buffer);
+		}
+		else
+		{
+			device->SetTexture(1, color_buffer);
+			device->SetTexture(2, velocity_buffer);
+		}
 
 		device->SetSamplerState(1, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
 		device->SetSamplerState(1, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
@@ -1684,11 +1687,14 @@ namespace local
 
 		device->SetVertexShader(quad_vs);
 
-	#ifdef SHOW_VELOCITY
-		device->SetPixelShader(quad_ps);
-	#else
-		device->SetPixelShader(blur_ps);
-	#endif
+		if (show_velocity)
+		{
+			device->SetPixelShader(quad_ps);
+		}
+		else
+		{
+			device->SetPixelShader(blur_ps);
+		}
 
 		STORE_RS(ALPHABLENDENABLE);
 		STORE_RS(SRCBLEND);
@@ -1717,7 +1723,7 @@ namespace local
 		Surface surface;
 		velocity_buffer->GetSurfaceLevel(0, &surface);
 		device->SetRenderTarget(0, surface);
-		device->Clear(1, nullptr, D3DCLEAR_TARGET, 0, 0.0f, 0);
+		device->Clear(1, nullptr, D3DCLEAR_TARGET, D3DCOLOR_ARGB(255, 127, 127, 127), 0.0f, 0);
 
 		surface = nullptr;
 		color_buffer->GetSurfaceLevel(0, &surface);

@@ -25,7 +25,7 @@ SamplerState velocitybuff : register(s2) = sampler_state
 	SAMPLER_DEFAULT;
 };
 
-#define MAX_SAMPLES 16
+#define MAX_SAMPLES 32
 
 // d3d9 fucking sucks god fuckgin dasrjhfbaw4lktjh423fj,hwdv
 #define g_vSourceDimensions float2(1280, 720);
@@ -61,6 +61,13 @@ float4 MotionBlur(float2 vTexCoord, float2 vPixelVelocity, int iNumSamples)
 
 float4 ps_main(in float2 uv_in : TEXCOORD) : COLOR
 {
-	float2 velocity = tex2D(velocitybuff, uv_in).rg;
+	float4 texels = tex2D(velocitybuff, uv_in);
+	float2 velocity = (texels.rg * 2.0) - 1.0;
+
+	if (abs(velocity.x) < 0.01 && abs(velocity.y) < 0.01)
+	{
+		return tex2D(backbuffer, uv_in);
+	}
+
 	return MotionBlur(uv_in, velocity, MAX_SAMPLES);
 }

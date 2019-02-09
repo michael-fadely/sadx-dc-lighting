@@ -29,7 +29,7 @@ float4 ps_main(float4 curr_pos : TEXCOORD0, float4 last_pos : TEXCOORD1) : COLOR
 	//float2 velocity = /*(curr_pos.xy / curr_pos.w) -*/ (last_pos.xy / last_pos.w);
 	float2 velocity = (curr_pos.xy / curr_pos.w) - (last_pos.xy / last_pos.w);
 
-	velocity = (velocity + 1) / 2.0;
+	velocity = (velocity + 1.0) / 2.0;
 
 	return float4(velocity, 0, 0);
 }
