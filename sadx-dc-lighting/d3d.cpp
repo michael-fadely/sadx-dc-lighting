@@ -47,11 +47,18 @@ inline void hash_combine(std::size_t& seed, const T& v)
 struct OhKey
 {
 	int i;
-	void* ptr;
+	void* master;
+	void* owner;
+	void* model;
+
+	OhKey(int i, void* master, void* owner, void* model)
+		: i(i), master(master), owner(owner), model(model)
+	{
+	}
 
 	bool operator==(const OhKey& rhs) const
 	{
-		return i == rhs.i && ptr == rhs.ptr;
+		return i == rhs.i && master == rhs.master && owner == rhs.owner && model == rhs.model;
 	}
 };
 
@@ -63,7 +70,9 @@ namespace std
 		size_t operator()(const OhKey& x) const noexcept
 		{
 			auto h = std::hash<int>()(x.i);
-			hash_combine(h, x.ptr);
+			hash_combine(h, x.master);
+			hash_combine(h, x.owner);
+			hash_combine(h, x.model);
 			return h;
 		}
 	};
@@ -72,6 +81,8 @@ namespace std
 static bool blur_enabled = false;
 static int blur_i = 0;
 static NJS_MODEL_SADX* curr_model = nullptr;
+static ObjectMaster* curr_master = nullptr;
+static NJS_OBJECT* curr_model_root = nullptr;
 
 static bool blur_begin()
 {
@@ -181,9 +192,18 @@ namespace local
 	static Trampoline* Direct3D_SetProjectionMatrix_t     = nullptr;
 	static Trampoline* Direct3D_SetViewportAndTransform_t = nullptr;
 	static Trampoline* Direct3D_SetWorldTransform_t       = nullptr;
-	static Trampoline* CreateDirect3DDevice_t             = nullptr;
-	static Trampoline* PolyBuff_DrawTriangleStrip_t       = nullptr;
-	static Trampoline* PolyBuff_DrawTriangleList_t        = nullptr;
+	static Trampoline* CreateDirect3DDevice_t       = nullptr;
+	static Trampoline* PolyBuff_DrawTriangleStrip_t = nullptr;
+	static Trampoline* PolyBuff_DrawTriangleList_t  = nullptr;
+	static Trampoline* RunObjectIndex_t             = nullptr;
+	static Trampoline* RunObjectChildren_t          = nullptr;
+	static Trampoline* DrawLandTableObject_t        = nullptr;
+	static Trampoline* DisplayObjectIndex_t         = nullptr;
+	static Trampoline* DisplayObject_t              = nullptr;
+	static Trampoline* ProcessModelNode_t           = nullptr;
+	static Trampoline* ProcessModelNode_B_t         = nullptr;
+	static Trampoline* ProcessModelNode_C_t         = nullptr;
+	static Trampoline* ProcessModelNode_D_t         = nullptr;
 
 	static HRESULT __stdcall SetTransform_r(IDirect3DDevice9*, D3DTRANSFORMSTATETYPE State, CONST D3DMATRIX* pMatrix);
 
@@ -1179,7 +1199,7 @@ namespace local
 		end();
 	}
 
-	static constexpr auto age_threshold = 4;
+	static constexpr auto age_threshold = 15;
 
 	struct OhGod
 	{
@@ -1189,20 +1209,20 @@ namespace local
 
 	std::unordered_map<OhKey, OhGod> transform_map;
 
-	static void store_transform(void* ptr)
+	static void store_transform(void* master, void* owner, void* model)
 	{
-		if (!ptr || !blur_enabled)
+		if ((!master && !owner) || !model || !blur_enabled)
 		{
 			return;
 		}
 
 		auto m = *reinterpret_cast<D3DXMATRIX *>(_nj_current_matrix_ptr_) * _view_matrix_inv;
 
-		auto it = transform_map.find({ /*blur_i*/ 0, ptr });
+		auto it = transform_map.find({ 0, master, owner, model });
 
 		if (it != transform_map.end())
 		{
-			if (true || FrameCounter - it->second.time < age_threshold)
+			//if (FrameCounter - it->second.time < age_threshold)
 			{
 				param::l_WorldMatrix      = it->second.world;
 				param::l_ViewMatrix       = it->second.view;
@@ -1213,22 +1233,22 @@ namespace local
 				it->second.view = _view_matrix;
 				it->second.proj = _proj_matrix;
 			}
-			else
+			/*else
 			{
 				param::l_WorldMatrix = m;
 				param::l_ViewMatrix = _view_matrix;
 				param::l_ProjectionMatrix = _proj_matrix;
 				it = transform_map.erase(it);
 				PrintDebug("discarding old transform!\n");
-			}
+			}*/
 		}
 		else
 		{
-			transform_map[{ /*blur_i*/ 0, ptr }] = { static_cast<uint32_t>(FrameCounter), m, _view_matrix, _proj_matrix };
+			transform_map[{ 0, master, owner, model }] = { static_cast<uint32_t>(FrameCounter), m, _view_matrix, _proj_matrix };
 			param::l_WorldMatrix = m;
 			param::l_ViewMatrix = _view_matrix;
 			param::l_ProjectionMatrix = _proj_matrix;
-			PrintDebug("storing new transform\n");
+			PrintDebug("[%u] storing new transform\n", FrameCounter);
 		}
 
 		param::l_WorldMatrix.commit(d3d::device);
@@ -1238,6 +1258,7 @@ namespace local
 
 	static void __cdecl njDrawModel_SADX_r(NJS_MODEL_SADX* a1)
 	{
+		blur_enabled = true;
 		begin();
 		blur_begin();
 
@@ -1263,6 +1284,7 @@ namespace local
 		}
 
 		end();
+		blur_enabled = false;
 	}
 
 	static void __cdecl njDrawModel_SADX_Dynamic_r(NJS_MODEL_SADX* a1)
@@ -1306,6 +1328,196 @@ namespace local
 		begin();
 		run_trampoline(TARGET_DYNAMIC(PolyBuff_DrawTriangleList), _this);
 		end();
+	}
+
+	static void __cdecl RunObjectIndex_r(int index)
+	{
+		int v1; // eax
+		ObjectMaster *v2; // esi
+		ObjectMaster *previous; // ebx
+		void(__cdecl *mainsub)(ObjectMaster *); // edi
+
+		v1 = index;
+		if (index == 8)
+		{
+			v1 = 7;
+		}
+		v2 = ObjectListThing[v1];
+		if (v2)
+		{
+			do
+			{
+				curr_master = v2;
+
+				previous = v2->Next;
+				mainsub = v2->MainSub;
+				if (v2->Next == v2)
+				{
+					//PrintDebug("nanjya korya!!!");
+				}
+				*(void**)0x3ABDBF4 = mainsub;
+				if (mainsub)
+				{
+					CurrentObject = v2->field_30;
+					mainsub(v2);
+					CurrentObject = 0;
+				}
+
+				curr_master = nullptr;
+
+				*(void**)0x3ABDBF4 = nullptr;
+				v2 = previous;
+			} while (previous);
+		}
+	}
+
+	void __cdecl RunObjectChildren_r(ObjectMaster *a1)
+	{
+		ObjectMaster *previous; // esi
+
+		ObjectMaster* child = a1->Child;
+
+		if (child)
+		{
+			do
+			{
+				curr_master = child;
+				previous = child->Next;
+
+				CurrentObject = child->field_30;
+				child->MainSub(child);
+				CurrentObject = 0;
+
+				curr_master = nullptr;
+				child = previous;
+			} while (previous);
+		}
+	}
+
+	static void DrawLandTableObject_o(NJS_OBJECT* a1, COL* a2)
+	{
+		auto orig = DrawLandTableObject_t->Target();
+
+		__asm
+		{
+			push a2
+			mov edi, a1
+			call orig
+			add esp, 4
+		}
+	}
+
+	static void DrawLandTableObject_c(NJS_OBJECT* a1, COL* a2)
+	{
+		curr_model_root = a1;
+		DrawLandTableObject_o(a1, a2);
+		curr_model_root = nullptr;
+	}
+
+	static void __declspec(naked) DrawLandTableObject_r()
+	{
+		__asm
+		{
+			push[esp + 04h] // a2
+			push edi // a1
+
+			call DrawLandTableObject_c
+
+			pop edi // a1
+			add esp, 4 // a2
+			retn
+		}
+	}
+
+	void __cdecl DisplayObject_r(ObjectMaster *this_)
+	{
+		ObjectMaster *v1; // esi
+		void(__cdecl *v2)(ObjectMaster *); // eax
+		ObjectMaster *v3; // edi
+
+		v1 = this_->Child;
+		if (v1)
+		{
+			do
+			{
+				curr_master = v1;
+
+				v2 = v1->DisplaySub;
+				v3 = v1->Next;
+				if (v2)
+				{
+					v2(v1);
+				}
+				if (v1->Child)
+				{
+					DisplayObject(v1);
+				}
+				v1 = v3;
+				curr_master = nullptr;
+			} while (v3);
+		}
+	}
+
+	void __cdecl DisplayObjectIndex_r(int index)
+	{
+		int v1; // eax
+		ObjectMaster *v2; // esi
+		void(__cdecl *v3)(ObjectMaster *); // eax
+		ObjectMaster *v4; // edi
+
+		v1 = index;
+		if (index == 8)
+		{
+			v1 = 7;
+		}
+		v2 = ObjectListThing[v1];
+		if (v2)
+		{
+			do
+			{
+				curr_master = v2;
+				v3 = v2->DisplaySub;
+				v4 = v2->Next;
+				if (v3)
+				{
+					v3(v2);
+				}
+				if (v2->Child)
+				{
+					DisplayObject(v2);
+				}
+				v2 = v4;
+				curr_master = nullptr;
+			} while (v4);
+		}
+	}
+
+	void __cdecl ProcessModelNode_r(NJS_OBJECT *obj, QueuedModelFlagsB blend_mode, float scale)
+	{
+		curr_model_root = obj;
+		run_trampoline(TARGET_DYNAMIC(ProcessModelNode), obj, blend_mode, scale);
+		curr_model_root = nullptr;
+	}
+
+	void __cdecl ProcessModelNode_B_r(NJS_OBJECT *obj, float scale)
+	{
+		curr_model_root = obj;
+		run_trampoline(TARGET_DYNAMIC(ProcessModelNode_B), obj, scale);
+		curr_model_root = nullptr;
+	}
+
+	void __cdecl ProcessModelNode_C_r(NJS_OBJECT *obj, QueuedModelFlagsB blend_mode, float scale)
+	{
+		curr_model_root = obj;
+		run_trampoline(TARGET_DYNAMIC(ProcessModelNode_C), obj, blend_mode, scale);
+		curr_model_root = nullptr;
+	}
+
+	void __cdecl ProcessModelNode_D_r(NJS_OBJECT *obj, int blend_mode, float scale)
+	{
+		curr_model_root = obj;
+		run_trampoline(TARGET_DYNAMIC(ProcessModelNode_D), obj, blend_mode, scale);
+		curr_model_root = nullptr;
 	}
 
 	static void check_format()
@@ -1384,7 +1596,7 @@ namespace local
 	{
 		TARGET_DYNAMIC(Direct3D_SetWorldTransform)();
 
-		store_transform(curr_model);
+		store_transform(curr_master, curr_model_root, curr_model);
 
 		if (false && !LanternInstance::use_palette())
 		{
@@ -1763,14 +1975,14 @@ namespace local
 	{
 		auto original = reinterpret_cast<decltype(DrawModelThing_r)*>(DrawModelThing_t.Target());
 
-		//blur_enabled = true;
+		blur_enabled = true;
 		blur_begin();
 
 		curr_model = a1;
 		original(a1);
 
 		blur_end();
-		//blur_enabled = false;
+		blur_enabled = false;
 	}
 }
 
@@ -1855,6 +2067,15 @@ namespace d3d
 		CreateDirect3DDevice_t             = new Trampoline(0x00794000, 0x00794007, CreateDirect3DDevice_r);
 		PolyBuff_DrawTriangleStrip_t       = new Trampoline(0x00794760, 0x00794767, PolyBuff_DrawTriangleStrip_r);
 		PolyBuff_DrawTriangleList_t        = new Trampoline(0x007947B0, 0x007947B7, PolyBuff_DrawTriangleList_r);
+		RunObjectIndex_t                   = new Trampoline(0x0040B0C0, 0x0040B0C7, RunObjectIndex_r);
+		RunObjectChildren_t                = new Trampoline(0x0040B420, 0x0040B427, RunObjectChildren_r);
+		DrawLandTableObject_t              = new Trampoline(0x0043A570, 0x0043A577, DrawLandTableObject_r);
+		DisplayObjectIndex_t               = new Trampoline(0x0040B4F0, 0x0040B4F7, DisplayObjectIndex_r);
+		DisplayObject_t                    = new Trampoline(0x0040B130, 0x0040B135, DisplayObject_r);
+		ProcessModelNode_t                 = new Trampoline(0x004074A0, 0x004074A5, ProcessModelNode_r);
+		ProcessModelNode_B_t               = new Trampoline(0x004037F0, 0x004037F5, ProcessModelNode_B_r);
+		ProcessModelNode_C_t               = new Trampoline(0x00409080, 0x00409085, ProcessModelNode_C_r);
+		ProcessModelNode_D_t               = new Trampoline(0x00409A20, 0x00409A25, ProcessModelNode_D_r);
 
 		WriteJump(reinterpret_cast<void*>(0x0077EE45), DrawMeshSetBuffer_asm);
 

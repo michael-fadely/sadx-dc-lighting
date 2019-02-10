@@ -26,6 +26,7 @@ SamplerState velocitybuff : register(s2) = sampler_state
 };
 
 #define MAX_SAMPLES 32
+#define BLUR_AMOUNT 0.5
 
 float2 Viewport : register(c52);
 
@@ -41,8 +42,8 @@ float4 blur(float2 coordinates, float2 velocity, int sample_count)
 
 	for (int i = 1; i < sample_count; ++i)
 	{
-		float4 offset = float4(velocity * ((float)i / (float)(sample_count - 1) - 0.5), 0, 0);
-		result += tex2Dlod(backbuffer, coord + offset);
+		float2 offset = velocity * ((float)i / (float)(sample_count - 1) - 0.5);
+		result += tex2Dlod(backbuffer, coord + float4(offset * BLUR_AMOUNT, 0, 0));
 	}
 
 	result /= sample_count;
