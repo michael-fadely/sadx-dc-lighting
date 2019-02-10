@@ -55,6 +55,8 @@ namespace param
 	extern ShaderParameter<D3DXMATRIX>  ViewMatrix;
 	extern ShaderParameter<D3DXMATRIX>  ProjectionMatrix;
 
+	extern ShaderParameter<D3DXVECTOR2> Viewport;
+
 	extern ShaderParameter<D3DXMATRIX>  l_WorldMatrix;
 	extern ShaderParameter<D3DXMATRIX>  l_ViewMatrix;
 	extern ShaderParameter<D3DXMATRIX>  l_ProjectionMatrix;

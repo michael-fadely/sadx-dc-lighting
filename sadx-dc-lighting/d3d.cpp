@@ -119,6 +119,8 @@ namespace param
 	ShaderParameter<D3DXMATRIX>  ViewMatrix(44, {}, IShaderParameter::Type::vertex);
 	ShaderParameter<D3DXMATRIX>  ProjectionMatrix(48, {}, IShaderParameter::Type::vertex);
 
+	ShaderParameter<D3DXVECTOR2> Viewport(52, {}, IShaderParameter::Type::pixel);
+
 	ShaderParameter<D3DXMATRIX>  l_WorldMatrix(60, {}, IShaderParameter::Type::vertex);
 	ShaderParameter<D3DXMATRIX>  l_ViewMatrix(64, {}, IShaderParameter::Type::vertex);
 	ShaderParameter<D3DXMATRIX>  l_ProjectionMatrix(68, {}, IShaderParameter::Type::vertex);
@@ -152,6 +154,8 @@ namespace param
 		&WorldMatrix,
 		&ViewMatrix,
 		&ProjectionMatrix,
+
+		&Viewport,
 
 		&l_WorldMatrix,
 		&l_ViewMatrix,
@@ -339,6 +343,9 @@ namespace local
 	static void create_render_targets()
 	{
 		using namespace d3d;
+
+		param::Viewport = { static_cast<float>(HorizontalResolution), static_cast<float>(VerticalResolution) };
+		param::Viewport.commit_now(device);
 
 		HRESULT hr = 0;
 		color_buffer = nullptr;
@@ -1191,7 +1198,7 @@ namespace local
 
 		auto m = *reinterpret_cast<D3DXMATRIX *>(_nj_current_matrix_ptr_) * _view_matrix_inv;
 
-		auto it = transform_map.find({ blur_i, ptr });
+		auto it = transform_map.find({ /*blur_i*/ 0, ptr });
 
 		if (it != transform_map.end())
 		{
@@ -1217,7 +1224,7 @@ namespace local
 		}
 		else
 		{
-			transform_map[{ blur_i, ptr }] = { static_cast<uint32_t>(FrameCounter), m, _view_matrix, _proj_matrix };
+			transform_map[{ /*blur_i*/ 0, ptr }] = { static_cast<uint32_t>(FrameCounter), m, _view_matrix, _proj_matrix };
 			param::l_WorldMatrix = m;
 			param::l_ViewMatrix = _view_matrix;
 			param::l_ProjectionMatrix = _proj_matrix;
@@ -1756,14 +1763,14 @@ namespace local
 	{
 		auto original = reinterpret_cast<decltype(DrawModelThing_r)*>(DrawModelThing_t.Target());
 
-		blur_enabled = true;
+		//blur_enabled = true;
 		blur_begin();
 
 		curr_model = a1;
 		original(a1);
 
 		blur_end();
-		blur_enabled = false;
+		//blur_enabled = false;
 	}
 }
 

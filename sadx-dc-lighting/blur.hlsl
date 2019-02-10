@@ -27,47 +27,43 @@ SamplerState velocitybuff : register(s2) = sampler_state
 
 #define MAX_SAMPLES 32
 
-// d3d9 fucking sucks god fuckgin dasrjhfbaw4lktjh423fj,hwdv
-#define g_vSourceDimensions float2(1280, 720);
+float2 Viewport : register(c52);
 
-float4 MotionBlur(float2 vTexCoord, float2 vPixelVelocity, int iNumSamples)
+float4 blur(float2 coordinates, float2 velocity, int sample_count)
 {
-	// Clamp to a max velocity.  The max we can go without artifacts os
-	// is 1.4f * iNumSamples...but we can fudge things a little.
-	float2 maxVelocity = (2.0f * iNumSamples) / g_vSourceDimensions;
-	vPixelVelocity = clamp(vPixelVelocity, -maxVelocity, maxVelocity);
+	const float4 coord = float4(coordinates.xy, 0, 1);
+	float4 result = tex2D(backbuffer, coordinates);
 
-	float2 vFinalSamplePos = vTexCoord + vPixelVelocity;
-
-	// For each sample, sum up each sample's color in "vSum" and then divide
-	// to average the color after all the samples are added.
-	float4 vSum = 0;
-	for (int i = 0; i < iNumSamples; i++)
+	if (sample_count == 1)
 	{
-		// Sample texture in a new spot based on vPixelVelocity vector 
-		// and average it with the other samples
-		float2 vSampleCoord = vTexCoord + (vPixelVelocity * (i / (float)iNumSamples));
-
-		// Lookup the color at this new spot
-		float4 vSample = tex2D(backbuffer, vSampleCoord);
-
-		// Add it with the other samples
-		vSum += vSample;
+		return result;
 	}
 
-	// Return the average color of all the samples
-	return float4((vSum / (float)iNumSamples).rgb, 1);
+	for (int i = 1; i < sample_count; ++i)
+	{
+		float4 offset = float4(velocity * ((float)i / (float)(sample_count - 1) - 0.5), 0, 0);
+		result += tex2Dlod(backbuffer, coord + offset);
+	}
+
+	result /= sample_count;
+
+	return float4(result.rgb, 1);
 }
 
 float4 ps_main(in float2 uv_in : TEXCOORD) : COLOR
 {
 	float4 texels = tex2D(velocitybuff, uv_in);
-	float2 velocity = (texels.rg * 2.0) - 1.0;
 
-	if (abs(velocity.x) < 0.01 && abs(velocity.y) < 0.01)
+	if ((int)(texels.r * 255) == 127 && (int)(texels.g * 255) == 127)
 	{
 		return tex2D(backbuffer, uv_in);
 	}
 
-	return MotionBlur(uv_in, velocity, MAX_SAMPLES);
+	float2 velocity = ((texels.rg * 2.0) - 1.0);
+	velocity.x = -velocity.x;
+
+	float speed = length(velocity * Viewport);
+	int sample_count = clamp((int)speed, 1, MAX_SAMPLES);
+
+	return blur(uv_in, velocity, sample_count);
 }
