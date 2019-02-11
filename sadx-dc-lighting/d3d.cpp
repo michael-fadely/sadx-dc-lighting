@@ -82,25 +82,10 @@ namespace std
 }
 
 static bool blur_enabled = false;
-static int blur_i = 0;
+static bool blur_occlude = false;
 static NJS_MODEL_SADX* curr_model = nullptr;
 static ObjectMaster* curr_master = nullptr;
 static NJS_OBJECT* curr_model_root = nullptr;
-
-static bool blur_begin()
-{
-	if (!blur_enabled)
-	{
-		return false;
-	}
-
-	return blur_i++ == 0;
-}
-
-static void blur_end()
-{
-	blur_i = 0;
-}
 
 namespace param
 {
@@ -268,8 +253,8 @@ namespace local
 	static Texture velocity_buffer  = nullptr;
 	static Surface og_render_target = nullptr;
 
-	VertexShader velocity_vs, quad_vs;
-	PixelShader velocity_ps, quad_ps, blur_ps;
+	VertexShader null_velocity_vs, velocity_vs, quad_vs;
+	PixelShader null_velocity_ps, velocity_ps, quad_ps, blur_ps;
 	D3DXMATRIX _proj_matrix {};
 	D3DXMATRIX _view_matrix {};
 	D3DXMATRIX _view_matrix_inv {};
@@ -412,6 +397,17 @@ namespace local
 		catch (const std::exception& ex)
 		{
 			MessageBoxA(WindowHandle, ex.what(), "VELOCITY Shader creation failed", MB_OK | MB_ICONERROR);
+		}
+
+		try
+		{
+			null_velocity_vs = nullptr;
+			null_velocity_ps = nullptr;
+			load_generic_shader("null_velocity.hlsl", null_velocity_vs, null_velocity_ps);
+		}
+		catch (const std::exception& ex)
+		{
+			MessageBoxA(WindowHandle, ex.what(), "NULL VELOCITY Shader creation failed", MB_OK | MB_ICONERROR);
 		}
 
 		try
@@ -1264,9 +1260,9 @@ namespace local
 
 	static void __cdecl njDrawModel_SADX_r(NJS_MODEL_SADX* a1)
 	{
-		blur_enabled = true;
+		//blur_enabled = true;
+		blur_occlude = true;
 		begin();
-		blur_begin();
 
 		curr_model = a1;
 
@@ -1290,13 +1286,13 @@ namespace local
 		}
 
 		end();
-		blur_enabled = false;
+		blur_occlude = false;
+		//blur_enabled = false;
 	}
 
 	static void __cdecl njDrawModel_SADX_Dynamic_r(NJS_MODEL_SADX* a1)
 	{
 		begin();
-		blur_begin();
 
 		curr_model = a1;
 
@@ -1680,6 +1676,8 @@ namespace local
 #define D3D_ORIG(NAME) \
 	NAME ## _t
 
+	static bool presenting = false;
+
 	template<typename T, typename... Args>
 	static HRESULT run_d3d_trampoline(const T& original, Args... args)
 	{
@@ -1688,7 +1686,7 @@ namespace local
 		shader_start();
 		auto result = original(args...);
 
-		if (SUCCEEDED(result) && blur_enabled)
+		if (SUCCEEDED(result) && !presenting && (blur_enabled || blur_occlude))
 		{
 			STORE_RS(ZWRITEENABLE);
 			STORE_RS(ZENABLE);
@@ -1716,8 +1714,16 @@ namespace local
 			PixelShader ps;
 			device->GetPixelShader(&ps);
 
-			device->SetVertexShader(velocity_vs);
-			device->SetPixelShader(velocity_ps);
+			if (!blur_enabled)
+			{
+				//device->SetVertexShader(null_velocity_vs);
+				device->SetPixelShader(null_velocity_ps);
+			}
+			else
+			{
+				device->SetVertexShader(velocity_vs);
+				device->SetPixelShader(velocity_ps);
+			}
 
 			for (auto& i : param::parameters)
 			{
@@ -1878,11 +1884,9 @@ namespace local
 		auto original = reinterpret_cast<decltype(Sonic_Display_r)*>(Sonic_Display_t.Target());
 
 		blur_enabled = true;
-		blur_begin();
 
 		original(o);
 
-		blur_end();
 		blur_enabled = false;
 	}
 
@@ -1892,14 +1896,12 @@ namespace local
 	{
 		auto original = reinterpret_cast<decltype(DrawModelThing_r)*>(DrawModelThing_t.Target());
 
-		blur_enabled = true;
-		blur_begin();
+		blur_occlude = true;
 
 		curr_model = a1;
 		original(a1);
 
-		blur_end();
-		blur_enabled = false;
+		blur_occlude = false;
 	}
 }
 
@@ -2030,6 +2032,7 @@ extern "C"
 	{
 		using namespace d3d;
 		do_effect = false;
+		presenting = true;
 
 		device->SetTexture(0, nullptr);
 
@@ -2109,6 +2112,8 @@ extern "C"
 	EXPORT void __cdecl OnRenderSceneStart()
 	{
 		using namespace d3d;
+
+		presenting = false;
 
 		Surface surface;
 		velocity_buffer->GetSurfaceLevel(0, &surface);
