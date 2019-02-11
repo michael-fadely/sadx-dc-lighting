@@ -34,6 +34,9 @@
 	DWORD RS; \
 	d3d::device->GetRenderState(D3DRS_ ## RS, &RS)
 
+#define STORE_RS_STATIC(RS) \
+	d3d::device->GetRenderState(D3DRS_ ## RS, &RS)
+
 #define RESTORE_RS(RS) \
 	d3d::device->SetRenderState(D3DRS_ ## RS, RS);
 
@@ -303,8 +306,11 @@ namespace local
 		quad[3].position = D3DXVECTOR4(width_half_pixel, height_half_pixel, 0.5f, 1.0f);
 		quad[3].uv       = D3DXVECTOR2(right, bottom);
 
+		DWORD fvf;
+		d3d::device->GetFVF(&fvf);
 		d3d::device->SetFVF(QuadVertex::format);
 		d3d::device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, &quad, sizeof(QuadVertex));
+		d3d::device->SetFVF(fvf);
 	}
 
 	static auto sanitize(Uint32& flags)
@@ -1715,7 +1721,7 @@ namespace local
 
 			for (auto& i : param::parameters)
 			{
-				i->commit_now(d3d::device);
+				i->commit(d3d::device);
 			}
 
 			result = original(args...);
@@ -1863,95 +1869,6 @@ namespace local
 
 	static bool show_velocity = false;
 
-	static void __cdecl Direct3D_Present_r();
-	static Trampoline Direct3D_Present_t(0x0078BA30, 0x0078BA35, Direct3D_Present_r);
-	static void __cdecl Direct3D_Present_r()
-	{
-		using namespace d3d;
-
-		auto original = reinterpret_cast<decltype(Direct3D_Present_r)*>(Direct3D_Present_t.Target());
-
-		device->SetRenderTarget(0, og_render_target);
-
-		if (ControllerPointers[0] && ControllerPointers[0]->PressedButtons & Buttons_Up)
-		{
-			show_velocity = !show_velocity;
-		}
-
-		if (show_velocity)
-		{
-			device->SetTexture(1, velocity_buffer);
-		}
-		else
-		{
-			device->SetTexture(1, color_buffer);
-			device->SetTexture(2, velocity_buffer);
-		}
-
-		device->SetSamplerState(1, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
-		device->SetSamplerState(1, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
-		device->SetSamplerState(1, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-		device->SetSamplerState(1, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-
-		device->SetSamplerState(2, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
-		device->SetSamplerState(2, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
-		device->SetSamplerState(2, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-		device->SetSamplerState(2, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-
-		VertexShader vs;
-		device->GetVertexShader(&vs);
-
-		PixelShader ps;
-		device->GetPixelShader(&ps);
-
-		device->SetVertexShader(quad_vs);
-
-		if (show_velocity)
-		{
-			device->SetPixelShader(quad_ps);
-		}
-		else
-		{
-			device->SetPixelShader(blur_ps);
-		}
-
-		STORE_RS(ALPHABLENDENABLE);
-		STORE_RS(SRCBLEND);
-		STORE_RS(DESTBLEND);
-		STORE_RS(ZENABLE);
-		STORE_RS(ZWRITEENABLE);
-
-		device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-		device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
-		device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
-		device->SetRenderState(D3DRS_ZENABLE, FALSE);
-		device->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
-
-		draw_quad();
-		original();
-
-		RESTORE_RS(ALPHABLENDENABLE);
-		RESTORE_RS(SRCBLEND);
-		RESTORE_RS(DESTBLEND);
-		RESTORE_RS(ZENABLE);
-		RESTORE_RS(ZWRITEENABLE);
-
-		device->SetTexture(1, nullptr);
-		device->SetTexture(2, nullptr);
-
-		Surface surface;
-		velocity_buffer->GetSurfaceLevel(0, &surface);
-		device->SetRenderTarget(0, surface);
-		device->Clear(1, nullptr, D3DCLEAR_TARGET, D3DCOLOR_ARGB(255, 127, 127, 127), 0.0f, 0);
-
-		surface = nullptr;
-		color_buffer->GetSurfaceLevel(0, &surface);
-		device->SetRenderTarget(0, surface);
-		device->Clear(1, nullptr, D3DCLEAR_TARGET, 0, 0.0f, 0);
-
-		device->SetVertexShader(vs);
-		device->SetPixelShader(ps);
-	}
 #pragma endregion
 
 	static void __cdecl Sonic_Display_r(ObjectMaster* o);
@@ -2104,6 +2021,105 @@ extern "C"
 	{
 		create_render_targets();
 		create_shaders();
+	}
+
+	VertexShader vs;
+	PixelShader ps;
+
+	EXPORT void __cdecl OnRenderSceneEnd()
+	{
+		using namespace d3d;
+		do_effect = false;
+
+		device->SetTexture(0, nullptr);
+
+		device->SetRenderTarget(0, og_render_target);
+
+		if (ControllerPointers[0] && ControllerPointers[0]->PressedButtons & Buttons_Up)
+		{
+			show_velocity = !show_velocity;
+		}
+
+		if (show_velocity)
+		{
+			device->SetTexture(1, velocity_buffer);
+		}
+		else
+		{
+			device->SetTexture(1, color_buffer);
+			device->SetTexture(2, velocity_buffer);
+		}
+
+		device->SetSamplerState(1, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
+		device->SetSamplerState(1, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
+		device->SetSamplerState(1, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+		device->SetSamplerState(1, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+
+		device->SetSamplerState(2, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
+		device->SetSamplerState(2, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
+		device->SetSamplerState(2, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+		device->SetSamplerState(2, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+
+		device->GetVertexShader(&vs);
+		device->GetPixelShader(&ps);
+
+		device->SetVertexShader(quad_vs);
+
+		if (show_velocity)
+		{
+			device->SetPixelShader(quad_ps);
+		}
+		else
+		{
+			device->SetPixelShader(blur_ps);
+		}
+
+		STORE_RS(ALPHABLENDENABLE);
+		STORE_RS(SRCBLEND);
+		STORE_RS(DESTBLEND);
+		STORE_RS(ZENABLE);
+		STORE_RS(ZWRITEENABLE);
+
+		device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+		device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
+		device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
+		device->SetRenderState(D3DRS_ZENABLE, FALSE);
+		device->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+
+		draw_quad();
+
+		RESTORE_RS(ALPHABLENDENABLE);
+		RESTORE_RS(SRCBLEND);
+		RESTORE_RS(DESTBLEND);
+		RESTORE_RS(ZENABLE);
+		RESTORE_RS(ZWRITEENABLE);
+
+		device->SetTexture(1, nullptr);
+		device->SetTexture(2, nullptr);
+
+		device->SetVertexShader(vs);
+		device->SetPixelShader(ps);
+
+		vs = nullptr;
+		ps = nullptr;
+
+		shader_end();
+	}
+
+	EXPORT void __cdecl OnRenderSceneStart()
+	{
+		using namespace d3d;
+
+		Surface surface;
+		velocity_buffer->GetSurfaceLevel(0, &surface);
+		device->SetRenderTarget(0, surface);
+		device->Clear(1, nullptr, D3DCLEAR_TARGET, D3DCOLOR_ARGB(255, 127, 127, 127), 0.0f, 0);
+
+		surface = nullptr;
+		color_buffer->GetSurfaceLevel(0, &surface);
+		device->SetRenderTarget(0, surface);
+		device->Clear(1, nullptr, D3DCLEAR_TARGET, 0, 0.0f, 0);
+		surface = nullptr;
 	}
 
 	EXPORT void __cdecl OnExit()

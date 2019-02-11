@@ -25,7 +25,7 @@ SamplerState velocitybuff : register(s2) = sampler_state
 	SAMPLER_DEFAULT;
 };
 
-#define MAX_SAMPLES 16
+#define MAX_SAMPLES 32
 #define BLUR_AMOUNT 0.5
 
 float2 Viewport : register(c52);
