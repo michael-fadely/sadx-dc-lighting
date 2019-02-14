@@ -259,12 +259,14 @@ namespace local
 	D3DXMATRIX _view_matrix {};
 	D3DXMATRIX _view_matrix_inv {};
 
+#pragma pack(push, 1)
 	struct QuadVertex
 	{
 		static const UINT format = D3DFVF_XYZRHW | D3DFVF_TEX1;
 		D3DXVECTOR4 position;
 		D3DXVECTOR2 uv;
 	};
+#pragma pack(pop)
 
 	static void draw_quad()
 	{
@@ -1690,13 +1692,14 @@ namespace local
 		{
 			STORE_RS(ZWRITEENABLE);
 			STORE_RS(ZENABLE);
+			STORE_RS(ALPHABLENDENABLE);
 
-			if (!ZWRITEENABLE || !ZENABLE)
+			if (!!ALPHABLENDENABLE || !ZWRITEENABLE || !ZENABLE)
 			{
+				shader_end();
 				return result;
 			}
 
-			STORE_RS(ALPHABLENDENABLE);
 			STORE_RS(ZFUNC);
 
 			device->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
@@ -2035,6 +2038,8 @@ extern "C"
 		presenting = true;
 
 		device->SetTexture(0, nullptr);
+		device->SetTexture(1, nullptr);
+		device->SetTexture(2, nullptr);
 
 		device->SetRenderTarget(0, og_render_target);
 
