@@ -44,7 +44,7 @@ namespace param
 	ShaderParameter<D3DXVECTOR3> LightDirection(21, { 0.0f, -1.0f, 0.0f }, IShaderParameter::Type::vertex);
 	ShaderParameter<int>         DiffuseSource(22, 0, IShaderParameter::Type::vertex);
 	ShaderParameter<D3DXCOLOR>   MaterialDiffuse(23, { 0.0f, 0.0f, 0.0f, 0.0f }, IShaderParameter::Type::vertex);
-	
+
 	ShaderParameter<D3DXVECTOR4> Indices(24, { 0.0f, 0.0f, 0.0f, 0.0f }, IShaderParameter::Type::vertex);
 	ShaderParameter<D3DXVECTOR2> BlendFactor(25, { 0.0f, 0.0f }, IShaderParameter::Type::vertex);
 
@@ -110,52 +110,52 @@ namespace local
 	static Trampoline* PolyBuff_DrawTriangleList_t        = nullptr;
 
 	static HRESULT __stdcall DrawPrimitive_r(IDirect3DDevice9* _this,
-		D3DPRIMITIVETYPE PrimitiveType,
-		UINT StartVertex,
-		UINT PrimitiveCount);
+	                                         D3DPRIMITIVETYPE PrimitiveType,
+	                                         UINT StartVertex,
+	                                         UINT PrimitiveCount);
 	static HRESULT __stdcall DrawIndexedPrimitive_r(IDirect3DDevice9* _this,
-		D3DPRIMITIVETYPE PrimitiveType,
-		INT BaseVertexIndex,
-		UINT MinVertexIndex,
-		UINT NumVertices,
-		UINT startIndex,
-		UINT primCount);
+	                                                D3DPRIMITIVETYPE PrimitiveType,
+	                                                INT BaseVertexIndex,
+	                                                UINT MinVertexIndex,
+	                                                UINT NumVertices,
+	                                                UINT startIndex,
+	                                                UINT primCount);
 	static HRESULT __stdcall DrawPrimitiveUP_r(IDirect3DDevice9* _this,
-		D3DPRIMITIVETYPE PrimitiveType,
-		UINT PrimitiveCount,
-		CONST void* pVertexStreamZeroData,
-		UINT VertexStreamZeroStride);
+	                                           D3DPRIMITIVETYPE PrimitiveType,
+	                                           UINT PrimitiveCount,
+	                                           CONST void* pVertexStreamZeroData,
+	                                           UINT VertexStreamZeroStride);
 	static HRESULT __stdcall DrawIndexedPrimitiveUP_r(IDirect3DDevice9* _this,
-		D3DPRIMITIVETYPE PrimitiveType,
-		UINT MinVertexIndex,
-		UINT NumVertices,
-		UINT PrimitiveCount,
-		CONST void* pIndexData,
-		D3DFORMAT IndexDataFormat,
-		CONST void* pVertexStreamZeroData,
-		UINT VertexStreamZeroStride);
+	                                                  D3DPRIMITIVETYPE PrimitiveType,
+	                                                  UINT MinVertexIndex,
+	                                                  UINT NumVertices,
+	                                                  UINT PrimitiveCount,
+	                                                  CONST void* pIndexData,
+	                                                  D3DFORMAT IndexDataFormat,
+	                                                  CONST void* pVertexStreamZeroData,
+	                                                  UINT VertexStreamZeroStride);
 
-	static decltype(DrawPrimitive_r)*          DrawPrimitive_t          = nullptr;
-	static decltype(DrawIndexedPrimitive_r)*   DrawIndexedPrimitive_t   = nullptr;
-	static decltype(DrawPrimitiveUP_r)*        DrawPrimitiveUP_t        = nullptr;
+	static decltype(DrawPrimitive_r)* DrawPrimitive_t                   = nullptr;
+	static decltype(DrawIndexedPrimitive_r)* DrawIndexedPrimitive_t     = nullptr;
+	static decltype(DrawPrimitiveUP_r)* DrawPrimitiveUP_t               = nullptr;
 	static decltype(DrawIndexedPrimitiveUP_r)* DrawIndexedPrimitiveUP_t = nullptr;
 
 	constexpr auto COMPILER_FLAGS = D3DXSHADER_PACKMATRIX_ROWMAJOR | D3DXSHADER_OPTIMIZATION_LEVEL3;
 
 	constexpr auto DEFAULT_FLAGS = ShaderFlags_Alpha | ShaderFlags_Fog | ShaderFlags_Light | ShaderFlags_Texture;
-	constexpr auto VS_FLAGS = ShaderFlags_Texture | ShaderFlags_EnvMap | ShaderFlags_Light | ShaderFlags_Blend;
-	constexpr auto PS_FLAGS = ShaderFlags_Texture | ShaderFlags_Alpha | ShaderFlags_Fog;
+	constexpr auto VS_FLAGS      = ShaderFlags_Texture | ShaderFlags_EnvMap | ShaderFlags_Light | ShaderFlags_Blend;
+	constexpr auto PS_FLAGS      = ShaderFlags_Texture | ShaderFlags_Alpha | ShaderFlags_Fog;
 
 	static Uint32 shader_flags = DEFAULT_FLAGS;
-	static Uint32 last_flags = DEFAULT_FLAGS;
+	static Uint32 last_flags   = DEFAULT_FLAGS;
 
 	static std::vector<uint8_t> shader_file;
 	static std::unordered_map<ShaderFlags, VertexShader> vertex_shaders;
 	static std::unordered_map<ShaderFlags, PixelShader> pixel_shaders;
 
-	static bool initialized = false;
-	static Uint32 drawing = 0;
-	static bool using_shader = false;
+	static bool initialized   = false;
+	static Uint32 drawing     = 0;
+	static bool using_shader  = false;
 	static bool supports_xrgb = false;
 	static std::vector<D3DXMACRO> macros;
 
@@ -184,7 +184,7 @@ namespace local
 		vertex_shaders.clear();
 		pixel_shaders.clear();
 		d3d::vertex_shader = nullptr;
-		d3d::pixel_shader = nullptr;
+		d3d::pixel_shader  = nullptr;
 	}
 
 	static void clear_shaders()
@@ -201,7 +201,7 @@ namespace local
 		try
 		{
 			d3d::vertex_shader = get_vertex_shader(DEFAULT_FLAGS);
-			d3d::pixel_shader = get_pixel_shader(DEFAULT_FLAGS);
+			d3d::pixel_shader  = get_pixel_shader(DEFAULT_FLAGS);
 
 		#ifdef PRECOMPILE_SHADERS
 			for (Uint32 i = 0; i < ShaderFlags_Count; i++)
@@ -231,7 +231,7 @@ namespace local
 		catch (std::exception& ex)
 		{
 			d3d::vertex_shader = nullptr;
-			d3d::pixel_shader = nullptr;
+			d3d::pixel_shader  = nullptr;
 			MessageBoxA(WindowHandle, ex.what(), "Shader creation failed", MB_OK | MB_ICONERROR);
 		}
 	}
@@ -343,7 +343,7 @@ namespace local
 		try
 		{
 			if (!CryptHashData(hHash, shader_file.data(), shader_file.size(), 0)
-				|| !CryptHashData(hHash, reinterpret_cast<const BYTE*>(&COMPILER_FLAGS), sizeof(COMPILER_FLAGS), 0))
+			    || !CryptHashData(hHash, reinterpret_cast<const BYTE*>(&COMPILER_FLAGS), sizeof(COMPILER_FLAGS), 0))
 			{
 				throw std::runtime_error("CryptHashData failed.");
 			}
@@ -522,7 +522,7 @@ namespace local
 	{
 		load_shader_file(globals::shader_path);
 
-		const std::string checksum_path = filesystem::combine_path(globals::cache_path, "checksum.bin");
+		const std::string checksum_path         = filesystem::combine_path(globals::cache_path, "checksum.bin");
 		const std::vector<uint8_t> current_hash = shader_hash();
 
 		if (filesystem::exists(globals::cache_path))
@@ -597,21 +597,21 @@ namespace local
 		macros.clear();
 
 		const string sid_path = filesystem::combine_path(globals::cache_path, shader_id(flags) + ".vs");
-		bool is_cached = filesystem::exists(sid_path);
+		bool is_cached        = filesystem::exists(sid_path);
 
 		vector<uint8_t> data;
 
 		if (is_cached)
 		{
 			PrintDebug("[lantern] Loading cached vertex shader #%02d: %08X (%s)\n",
-				vertex_shaders.size(), flags, to_string(flags).c_str());
+			           vertex_shaders.size(), flags, to_string(flags).c_str());
 
 			load_cached_shader(sid_path, data);
 		}
 		else
 		{
 			PrintDebug("[lantern] Compiling vertex shader #%02d: %08X (%s)\n",
-				vertex_shaders.size(), flags, to_string(flags).c_str());
+			           vertex_shaders.size(), flags, to_string(flags).c_str());
 
 			populate_macros(flags);
 
@@ -619,7 +619,7 @@ namespace local
 			Buffer buffer;
 
 			auto result = D3DXCompileShader(reinterpret_cast<char*>(shader_file.data()), shader_file.size(), macros.data(), nullptr,
-				"vs_main", "vs_3_0", COMPILER_FLAGS, &buffer, &errors, nullptr);
+			                                "vs_main", "vs_3_0", COMPILER_FLAGS, &buffer, &errors, nullptr);
 
 			if (FAILED(result) || errors != nullptr)
 			{
@@ -670,21 +670,21 @@ namespace local
 		flags &= PS_FLAGS;
 
 		const string sid_path = filesystem::combine_path(globals::cache_path, shader_id(flags) + ".ps");
-		bool is_cached = filesystem::exists(sid_path);
+		bool is_cached        = filesystem::exists(sid_path);
 
 		vector<uint8_t> data;
 
 		if (is_cached)
 		{
 			PrintDebug("[lantern] Loading cached pixel shader #%02d: %08X (%s)\n",
-				pixel_shaders.size(), flags, to_string(flags).c_str());
+			           pixel_shaders.size(), flags, to_string(flags).c_str());
 
 			load_cached_shader(sid_path, data);
 		}
 		else
 		{
 			PrintDebug("[lantern] Compiling pixel shader #%02d: %08X (%s)\n",
-				pixel_shaders.size(), flags, to_string(flags).c_str());
+			           pixel_shaders.size(), flags, to_string(flags).c_str());
 
 			populate_macros(flags);
 
@@ -692,7 +692,7 @@ namespace local
 			Buffer buffer;
 
 			auto result = D3DXCompileShader(reinterpret_cast<char*>(shader_file.data()), shader_file.size(), macros.data(), nullptr,
-				"ps_main", "ps_3_0", COMPILER_FLAGS, &buffer, &errors, nullptr);
+			                                "ps_main", "ps_3_0", COMPILER_FLAGS, &buffer, &errors, nullptr);
 
 			if (FAILED(result) || errors != nullptr)
 			{
@@ -851,8 +851,8 @@ namespace local
 
 #pragma region Trampolines
 
-	template<typename T, typename... Args>
-	static void run_trampoline(const T& original, Args... args)
+	template <typename T, typename... Args>
+	static void run_trampoline(const T& original, Args ... args)
 	{
 		begin();
 		original(args...);
@@ -882,14 +882,14 @@ namespace local
 			globals::first_material = true;
 
 			const auto _control_3d = _nj_control_3d_flag_;
-			const auto _attr_or = _nj_constant_attr_or_;
-			const auto _attr_and = _nj_constant_attr_and_;
+			const auto _attr_or    = _nj_constant_attr_or_;
+			const auto _attr_and   = _nj_constant_attr_and_;
 
 			run_trampoline(TARGET_DYNAMIC(njDrawModel_SADX), a1);
 
-			_nj_control_3d_flag_ = _control_3d;
+			_nj_control_3d_flag_   = _control_3d;
 			_nj_constant_attr_and_ = _attr_and;
-			_nj_constant_attr_or_ = _attr_or;
+			_nj_constant_attr_or_  = _attr_or;
 		}
 		else
 		{
@@ -908,14 +908,14 @@ namespace local
 			globals::first_material = true;
 
 			const auto _control_3d = _nj_control_3d_flag_;
-			const auto _attr_or = _nj_constant_attr_or_;
-			const auto _attr_and = _nj_constant_attr_and_;
+			const auto _attr_or    = _nj_constant_attr_or_;
+			const auto _attr_and   = _nj_constant_attr_and_;
 
 			run_trampoline(TARGET_DYNAMIC(njDrawModel_SADX_Dynamic), a1);
 
-			_nj_control_3d_flag_ = _control_3d;
+			_nj_control_3d_flag_   = _control_3d;
 			_nj_constant_attr_and_ = _attr_and;
-			_nj_constant_attr_or_ = _attr_or;
+			_nj_constant_attr_or_  = _attr_or;
 		}
 		else
 		{
@@ -944,7 +944,7 @@ namespace local
 		const auto fmt = *reinterpret_cast<D3DFORMAT*>(reinterpret_cast<char*>(0x03D0FDC0) + 0x08);
 
 		auto result = Direct3D_Object->CheckDeviceFormat(DisplayAdapter, D3DDEVTYPE_HAL, fmt,
-			D3DUSAGE_QUERY_VERTEXTEXTURE, D3DRTYPE_TEXTURE, D3DFMT_X8R8G8B8);
+		                                                 D3DUSAGE_QUERY_VERTEXTEXTURE, D3DRTYPE_TEXTURE, D3DFMT_X8R8G8B8);
 
 		if (result == D3D_OK)
 		{
@@ -953,12 +953,12 @@ namespace local
 		}
 
 		result = Direct3D_Object->CheckDeviceFormat(DisplayAdapter, D3DDEVTYPE_HAL, fmt,
-			D3DUSAGE_QUERY_VERTEXTEXTURE, D3DRTYPE_TEXTURE, D3DFMT_A32B32G32R32F);
+		                                            D3DUSAGE_QUERY_VERTEXTEXTURE, D3DRTYPE_TEXTURE, D3DFMT_A32B32G32R32F);
 
 		if (result != D3D_OK)
 		{
 			MessageBoxA(WindowHandle, "Your GPU does not support any (reasonable) vertex texture sample formats.",
-				"Insufficient GPU support", MB_OK | MB_ICONERROR);
+			            "Insufficient GPU support", MB_OK | MB_ICONERROR);
 
 			Exit();
 		}
@@ -972,7 +972,7 @@ namespace local
 			check_format();
 		}
 
-		auto orig = CreateDirect3DDevice_t->Target();
+		auto orig  = CreateDirect3DDevice_t->Target();
 		auto _type = type;
 
 		(void)orig;
@@ -1022,7 +1022,7 @@ namespace local
 
 		param::WorldMatrix = WorldMatrix;
 
-		auto wvMatrix = D3DXMATRIX(WorldMatrix) * D3DXMATRIX(ViewMatrix);
+		auto wvMatrix   = D3DXMATRIX(WorldMatrix) * D3DXMATRIX(ViewMatrix);
 		param::wvMatrix = wvMatrix;
 
 		D3DXMatrixInverse(&wvMatrix, nullptr, &wvMatrix);
@@ -1042,6 +1042,7 @@ namespace local
 	static void __cdecl Direct3D_SetViewportAndTransform_r()
 	{
 		const auto original = TARGET_DYNAMIC(Direct3D_SetViewportAndTransform);
+
 		bool invalid = TransformAndViewportInvalid != 0;
 		original();
 
@@ -1087,48 +1088,51 @@ namespace local
 	NAME ## _t
 
 	static HRESULT __stdcall DrawPrimitive_r(IDirect3DDevice9* _this,
-		D3DPRIMITIVETYPE PrimitiveType,
-		UINT StartVertex,
-		UINT PrimitiveCount)
+	                                         D3DPRIMITIVETYPE PrimitiveType,
+	                                         UINT StartVertex,
+	                                         UINT PrimitiveCount)
 	{
 		shader_start();
 		auto result = D3D_ORIG(DrawPrimitive)(_this, PrimitiveType, StartVertex, PrimitiveCount);
 		shader_end();
 		return result;
 	}
+
 	static HRESULT __stdcall DrawIndexedPrimitive_r(IDirect3DDevice9* _this,
-		D3DPRIMITIVETYPE PrimitiveType,
-		INT BaseVertexIndex,
-		UINT MinVertexIndex,
-		UINT NumVertices,
-		UINT startIndex,
-		UINT primCount)
+	                                                D3DPRIMITIVETYPE PrimitiveType,
+	                                                INT BaseVertexIndex,
+	                                                UINT MinVertexIndex,
+	                                                UINT NumVertices,
+	                                                UINT startIndex,
+	                                                UINT primCount)
 	{
 		shader_start();
 		auto result = D3D_ORIG(DrawIndexedPrimitive)(_this, PrimitiveType, BaseVertexIndex, MinVertexIndex, NumVertices, startIndex, primCount);
 		shader_end();
 		return result;
 	}
+
 	static HRESULT __stdcall DrawPrimitiveUP_r(IDirect3DDevice9* _this,
-		D3DPRIMITIVETYPE PrimitiveType,
-		UINT PrimitiveCount,
-		CONST void* pVertexStreamZeroData,
-		UINT VertexStreamZeroStride)
+	                                           D3DPRIMITIVETYPE PrimitiveType,
+	                                           UINT PrimitiveCount,
+	                                           CONST void* pVertexStreamZeroData,
+	                                           UINT VertexStreamZeroStride)
 	{
 		shader_start();
 		auto result = D3D_ORIG(DrawPrimitiveUP)(_this, PrimitiveType, PrimitiveCount, pVertexStreamZeroData, VertexStreamZeroStride);
 		shader_end();
 		return result;
 	}
+
 	static HRESULT __stdcall DrawIndexedPrimitiveUP_r(IDirect3DDevice9* _this,
-		D3DPRIMITIVETYPE PrimitiveType,
-		UINT MinVertexIndex,
-		UINT NumVertices,
-		UINT PrimitiveCount,
-		CONST void* pIndexData,
-		D3DFORMAT IndexDataFormat,
-		CONST void* pVertexStreamZeroData,
-		UINT VertexStreamZeroStride)
+	                                                  D3DPRIMITIVETYPE PrimitiveType,
+	                                                  UINT MinVertexIndex,
+	                                                  UINT NumVertices,
+	                                                  UINT PrimitiveCount,
+	                                                  CONST void* pIndexData,
+	                                                  D3DFORMAT IndexDataFormat,
+	                                                  CONST void* pVertexStreamZeroData,
+	                                                  UINT VertexStreamZeroStride)
 	{
 		shader_start();
 		auto result = D3D_ORIG(DrawIndexedPrimitiveUP)(_this, PrimitiveType, MinVertexIndex, NumVertices, PrimitiveCount, pIndexData, IndexDataFormat, pVertexStreamZeroData, VertexStreamZeroStride);
@@ -1155,20 +1159,20 @@ namespace local
 			begin();
 
 			Direct3D_Device->DrawIndexedPrimitive(
-				buffer->PrimitiveType,
-				buffer->MinIndex,
-				buffer->NumVertecies,
-				buffer->StartIndex,
-				buffer->PrimitiveCount);
+			                                      buffer->PrimitiveType,
+			                                      buffer->MinIndex,
+			                                      buffer->NumVertecies,
+			                                      buffer->StartIndex,
+			                                      buffer->PrimitiveCount);
 		}
 		else
 		{
 			begin();
 
 			Direct3D_Device->DrawPrimitive(
-				buffer->PrimitiveType,
-				buffer->StartIndex,
-				buffer->PrimitiveCount);
+			                               buffer->PrimitiveType,
+			                               buffer->StartIndex,
+			                               buffer->PrimitiveCount);
 		}
 
 		end();
@@ -1176,6 +1180,7 @@ namespace local
 
 	// ReSharper disable once CppDeclaratorNeverUsed
 	static const auto loc_77EF09 = reinterpret_cast<void*>(0x0077EF09);
+
 	static void __declspec(naked) DrawMeshSetBuffer_asm()
 	{
 		__asm
@@ -1202,7 +1207,7 @@ namespace d3d
 	bool do_effect = false;
 
 	float alpha_ref_value = 16.0f / 255.0f;
-	bool alpha_ref_temp = false;
+	bool alpha_ref_temp   = false;
 
 	bool supports_xrgb()
 	{
@@ -1214,7 +1219,7 @@ namespace d3d
 		if (LanternInstance::diffuse_override_temp)
 		{
 			LanternInstance::diffuse_override = false;
-			param::DiffuseOverride = false;
+			param::DiffuseOverride            = false;
 		}
 
 		if (LanternInstance::specular_override_temp)
@@ -1225,7 +1230,7 @@ namespace d3d
 		if (alpha_ref_temp)
 		{
 			param::AlphaRef = alpha_ref_value;
-			alpha_ref_temp = false;
+			alpha_ref_temp  = false;
 		}
 
 		param::ForceDefaultDiffuse = false;
