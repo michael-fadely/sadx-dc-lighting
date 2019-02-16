@@ -1158,8 +1158,7 @@ namespace local
 
 			begin();
 
-			Direct3D_Device->DrawIndexedPrimitive(
-			                                      buffer->PrimitiveType,
+			Direct3D_Device->DrawIndexedPrimitive(buffer->PrimitiveType,
 			                                      buffer->MinIndex,
 			                                      buffer->NumVertecies,
 			                                      buffer->StartIndex,
@@ -1169,8 +1168,7 @@ namespace local
 		{
 			begin();
 
-			Direct3D_Device->DrawPrimitive(
-			                               buffer->PrimitiveType,
+			Direct3D_Device->DrawPrimitive(buffer->PrimitiveType,
 			                               buffer->StartIndex,
 			                               buffer->PrimitiveCount);
 		}
