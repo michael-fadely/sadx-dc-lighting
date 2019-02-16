@@ -64,7 +64,7 @@ float4 ps_main(in float2 uv_in : TEXCOORD) : COLOR
 	velocity.x = -velocity.x;
 
 	float speed = length(velocity * Viewport);
-	int sample_count = clamp((int)speed, 1, MAX_SAMPLES);
+	int sample_count = clamp((int)speed, 1, min(MAX_SAMPLES, min(Viewport.x, Viewport.y)));
 
 	return blur(uv_in, velocity, sample_count);
 }
