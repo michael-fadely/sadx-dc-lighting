@@ -10,11 +10,11 @@
  * specifically for meshes with vertex color, vanilla SADX
  * deliberately ignores the mesh-provided vertex color,
  * and instead uses a global vertex color.
- * 
+ *
  * It uses that global vertex color EVEN AFTER IT CHECKS
  * WHETHER OR NOT IT SHOULD. As in, the code in the "if"
  * and the "else" ARE 100% IDENTICAL IN FUNCTIONALITY.
- * 
+ *
  * The code below re-implements the functions to handle the
  * secondary case CORRECTLY and use the mesh-provided vcolors.
  */
