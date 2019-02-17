@@ -92,6 +92,7 @@
     </Link>
     <PostBuildEvent>
       <Command>xcopy /C /Y /D "$(ProjectDir)mod.ini" "$(OutDir)"
+xcopy /Y /D "$(ProjectDir)configschema.xml" "$(OutDir)"
 xcopy /C /Y /D "$(ProjectDir)lantern.hlsl" "$(OutDir)system\"
 xcopy /C /Y /D "$(OutDir)$(TargetName).lib" "$(OutDir)api\"
 xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Command>
@@ -119,6 +120,7 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
     </Link>
     <PostBuildEvent>
       <Command>xcopy /C /Y /D "$(ProjectDir)mod.ini" "$(OutDir)"
+xcopy /Y /D "$(ProjectDir)configschema.xml" "$(OutDir)"
 xcopy /C /Y /D "$(ProjectDir)lantern.hlsl" "$(OutDir)system\"
 xcopy /C /Y /D "$(OutDir)$(TargetName).lib" "$(OutDir)api\"
 xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Command>
@@ -148,6 +150,7 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
     </Link>
     <PostBuildEvent>
       <Command>xcopy /C /Y /D "$(ProjectDir)mod.ini" "$(OutDir)"
+xcopy /Y /D "$(ProjectDir)configschema.xml" "$(OutDir)"
 xcopy /C /Y /D "$(ProjectDir)lantern.hlsl" "$(OutDir)system\"
 xcopy /C /Y /D "$(OutDir)$(TargetName).lib" "$(OutDir)api\"
 xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Command>
@@ -203,6 +206,9 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
     <None Include="lantern.hlsl">
       <FileType>Document</FileType>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="configschema.xml" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

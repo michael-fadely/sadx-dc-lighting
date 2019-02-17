@@ -57,6 +57,7 @@ namespace param
 	ShaderParameter<D3DXVECTOR3> FogConfig(31, {}, IShaderParameter::Type::pixel);
 	ShaderParameter<D3DXCOLOR>   FogColor(32, {}, IShaderParameter::Type::pixel);
 	ShaderParameter<float>       AlphaRef(33, 16.0f / 255.0f, IShaderParameter::Type::pixel);
+	ShaderParameter<D3DXVECTOR3> ViewPosition(34, {}, IShaderParameter::Type::pixel);
 
 	IShaderParameter* const parameters[] = {
 		&PaletteA,
@@ -84,6 +85,7 @@ namespace param
 		&FogConfig,
 		&FogColor,
 		&AlphaRef,
+		&ViewPosition,
 	};
 
 	static void release_parameters()
@@ -143,8 +145,8 @@ namespace local
 	constexpr auto COMPILER_FLAGS = D3DXSHADER_PACKMATRIX_ROWMAJOR | D3DXSHADER_OPTIMIZATION_LEVEL3;
 
 	constexpr auto DEFAULT_FLAGS = ShaderFlags_Alpha | ShaderFlags_Fog | ShaderFlags_Light | ShaderFlags_Texture;
-	constexpr auto VS_FLAGS      = ShaderFlags_Texture | ShaderFlags_EnvMap | ShaderFlags_Light | ShaderFlags_Blend;
-	constexpr auto PS_FLAGS      = ShaderFlags_Texture | ShaderFlags_Alpha | ShaderFlags_Fog;
+	constexpr auto VS_MASK       = ShaderFlags_Texture | ShaderFlags_EnvMap | ShaderFlags_Light | ShaderFlags_Blend;
+	constexpr auto PS_MASK       = ShaderFlags_Texture | ShaderFlags_Alpha | ShaderFlags_Fog | ShaderFlags_RangeFog;
 
 	static Uint32 shader_flags = DEFAULT_FLAGS;
 	static Uint32 last_flags   = DEFAULT_FLAGS;
@@ -162,7 +164,7 @@ namespace local
 	DataPointer(Direct3DDevice8*, Direct3D_Device, 0x03D128B0);
 	DataPointer(Direct3D8*, Direct3D_Object, 0x03D11F60);
 
-	static auto sanitize(Uint32& flags)
+	static auto sanitize(Uint32 flags)
 	{
 		flags &= ShaderFlags_Mask;
 
@@ -174,6 +176,11 @@ namespace local
 		if (flags & ShaderFlags_EnvMap && !(flags & ShaderFlags_Texture))
 		{
 			flags &= ~ShaderFlags_EnvMap;
+		}
+
+		if (flags & ShaderFlags_RangeFog && !(flags & ShaderFlags_Fog))
+		{
+			flags &= ~ShaderFlags_RangeFog;
 		}
 
 		return flags;
@@ -209,13 +216,13 @@ namespace local
 				auto flags = i;
 				local::sanitize(flags);
 
-				auto vs = static_cast<ShaderFlags>(flags & VS_FLAGS);
+				auto vs = static_cast<ShaderFlags>(flags & VS_MASK);
 				if (vertex_shaders.find(vs) == vertex_shaders.end())
 				{
 					get_vertex_shader(flags);
 				}
 
-				auto ps = static_cast<ShaderFlags>(flags & PS_FLAGS);
+				auto ps = static_cast<ShaderFlags>(flags & PS_MASK);
 				if (pixel_shaders.find(ps) == pixel_shaders.end())
 				{
 					get_pixel_shader(flags);
@@ -254,6 +261,14 @@ namespace local
 			{
 				flags &= ~ShaderFlags_Fog;
 				result << "USE_FOG";
+				thing = true;
+				continue;
+			}
+
+			if (flags & ShaderFlags_RangeFog)
+			{
+				flags &= ~ShaderFlags_RangeFog;
+				result << "RANGE_FOG";
 				thing = true;
 				continue;
 			}
@@ -440,53 +455,43 @@ namespace local
 
 	static void populate_macros(Uint32 flags)
 	{
-		while (flags != 0)
+		using namespace d3d;
+
+		flags = sanitize(flags);
+
+		if (flags & ShaderFlags_Texture)
 		{
-			using namespace d3d;
+			macros.push_back({ "USE_TEXTURE", "1" });
+		}
 
-			if (flags & ShaderFlags_Texture)
-			{
-				flags &= ~ShaderFlags_Texture;
-				macros.push_back({ "USE_TEXTURE", "1" });
-				continue;
-			}
+		if (flags & ShaderFlags_EnvMap)
+		{
+			macros.push_back({ "USE_ENVMAP", "1" });
+		}
 
-			if (flags & ShaderFlags_EnvMap)
-			{
-				flags &= ~ShaderFlags_EnvMap;
-				macros.push_back({ "USE_ENVMAP", "1" });
-				continue;
-			}
+		if (flags & ShaderFlags_Light)
+		{
+			macros.push_back({ "USE_LIGHT", "1" });
+		}
 
-			if (flags & ShaderFlags_Light)
-			{
-				flags &= ~ShaderFlags_Light;
-				macros.push_back({ "USE_LIGHT", "1" });
-				continue;
-			}
+		if (flags & ShaderFlags_Blend)
+		{
+			macros.push_back({ "USE_BLEND", "1" });
+		}
 
-			if (flags & ShaderFlags_Blend)
-			{
-				flags &= ~ShaderFlags_Blend;
-				macros.push_back({ "USE_BLEND", "1" });
-				continue;
-			}
+		if (flags & ShaderFlags_Alpha)
+		{
+			macros.push_back({ "USE_ALPHA", "1" });
+		}
 
-			if (flags & ShaderFlags_Alpha)
-			{
-				flags &= ~ShaderFlags_Alpha;
-				macros.push_back({ "USE_ALPHA", "1" });
-				continue;
-			}
+		if (flags & ShaderFlags_Fog)
+		{
+			macros.push_back({ "USE_FOG", "1" });
+		}
 
-			if (flags & ShaderFlags_Fog)
-			{
-				flags &= ~ShaderFlags_Fog;
-				macros.push_back({ "USE_FOG", "1" });
-				continue;
-			}
-
-			break;
+		if (flags & ShaderFlags_RangeFog)
+		{
+			macros.push_back({ "RANGE_FOG", "1" });
 		}
 
 		macros.push_back({});
@@ -522,7 +527,7 @@ namespace local
 	{
 		load_shader_file(globals::shader_path);
 
-		const std::string checksum_path         = filesystem::combine_path(globals::cache_path, "checksum.bin");
+		const std::string checksum_path = filesystem::combine_path(globals::cache_path, "checksum.bin");
 		const std::vector<uint8_t> current_hash = shader_hash();
 
 		if (filesystem::exists(globals::cache_path))
@@ -578,8 +583,7 @@ namespace local
 	{
 		using namespace std;
 
-		sanitize(flags);
-		flags &= VS_FLAGS;
+		flags = sanitize(flags & VS_MASK);
 
 		if (shader_file.empty())
 		{
@@ -597,7 +601,7 @@ namespace local
 		macros.clear();
 
 		const string sid_path = filesystem::combine_path(globals::cache_path, shader_id(flags) + ".vs");
-		bool is_cached        = filesystem::exists(sid_path);
+		bool is_cached = filesystem::exists(sid_path);
 
 		vector<uint8_t> data;
 
@@ -657,7 +661,7 @@ namespace local
 		}
 		else
 		{
-			const auto it = pixel_shaders.find(static_cast<ShaderFlags>(flags & PS_FLAGS));
+			const auto it = pixel_shaders.find(static_cast<ShaderFlags>(flags & PS_MASK));
 			if (it != pixel_shaders.end())
 			{
 				return it->second;
@@ -666,11 +670,10 @@ namespace local
 
 		macros.clear();
 
-		sanitize(flags);
-		flags &= PS_FLAGS;
+		flags = sanitize(flags & PS_MASK);
 
 		const string sid_path = filesystem::combine_path(globals::cache_path, shader_id(flags) + ".ps");
-		bool is_cached        = filesystem::exists(sid_path);
+		bool is_cached = filesystem::exists(sid_path);
 
 		vector<uint8_t> data;
 
@@ -716,7 +719,7 @@ namespace local
 			save_cached_shader(sid_path, data);
 		}
 
-		pixel_shaders[static_cast<ShaderFlags>(flags & PS_FLAGS)] = shader;
+		pixel_shaders[static_cast<ShaderFlags>(flags & PS_MASK)] = shader;
 		return shader;
 	}
 
@@ -757,11 +760,7 @@ namespace local
 
 		bool changes = false;
 
-		// The value here is copied so that UseBlend can be safely removed
-		// when possible without permanently removing it. It's required by
-		// Sky Deck, and it's only added to the flags once on stage load.
-		auto flags = shader_flags;
-		sanitize(flags);
+		const auto flags = sanitize(shader_flags);
 
 		if (flags != last_flags)
 		{
@@ -972,7 +971,7 @@ namespace local
 			check_format();
 		}
 
-		auto orig  = CreateDirect3DDevice_t->Target();
+		auto orig = CreateDirect3DDevice_t->Target();
 		auto _type = type;
 
 		(void)orig;
@@ -1022,7 +1021,7 @@ namespace local
 
 		param::WorldMatrix = WorldMatrix;
 
-		auto wvMatrix   = D3DXMATRIX(WorldMatrix) * D3DXMATRIX(ViewMatrix);
+		auto wvMatrix = D3DXMATRIX(WorldMatrix) * D3DXMATRIX(ViewMatrix);
 		param::wvMatrix = wvMatrix;
 
 		D3DXMatrixInverse(&wvMatrix, nullptr, &wvMatrix);
@@ -1037,6 +1036,7 @@ namespace local
 
 		// The view matrix can also be set here if necessary.
 		param::ProjectionMatrix = D3DXMATRIX(ProjectionMatrix) * D3DXMATRIX(TransformationMatrix);
+		param::ViewPosition = D3DXVECTOR3(InverseViewMatrix._41, InverseViewMatrix._42, InverseViewMatrix._43);
 	}
 
 	static void __cdecl Direct3D_SetViewportAndTransform_r()
@@ -1205,7 +1205,7 @@ namespace d3d
 	bool do_effect = false;
 
 	float alpha_ref_value = 16.0f / 255.0f;
-	bool alpha_ref_temp   = false;
+	bool alpha_ref_temp = false;
 
 	bool supports_xrgb()
 	{
@@ -1217,7 +1217,7 @@ namespace d3d
 		if (LanternInstance::diffuse_override_temp)
 		{
 			LanternInstance::diffuse_override = false;
-			param::DiffuseOverride            = false;
+			param::DiffuseOverride = false;
 		}
 
 		if (LanternInstance::specular_override_temp)
@@ -1228,7 +1228,7 @@ namespace d3d
 		if (alpha_ref_temp)
 		{
 			param::AlphaRef = alpha_ref_value;
-			alpha_ref_temp  = false;
+			alpha_ref_temp = false;
 		}
 
 		param::ForceDefaultDiffuse = false;
