@@ -448,8 +448,7 @@ namespace local
 		#ifdef PRECOMPILE_SHADERS
 			for (Uint32 i = 0; i < ShaderFlags_Count; i++)
 			{
-				auto flags = i;
-				local::sanitize(flags);
+				auto flags = local::sanitize(i);
 
 				auto vs = static_cast<ShaderFlags>(flags & VS_MASK);
 				if (vertex_shaders.find(vs) == vertex_shaders.end())
