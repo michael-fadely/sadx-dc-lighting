@@ -1,4 +1,6 @@
 #include "stdafx.h"
+
+#include <Windows.h>
 #include <d3d9.h>
 
 // Mod loader
@@ -19,6 +21,7 @@
 #include "Obj_Chaos7.h"
 #include "FixChaoGardenMaterials.h"
 #include "FixCharacterMaterials.h"
+#include "polybuff.h"
 
 static Trampoline* CharSel_LoadA_t                 = nullptr;
 static Trampoline* Direct3D_ParseMaterial_t        = nullptr;
@@ -464,16 +467,16 @@ void __cdecl InitLandTableMeshSet_r(NJS_MODEL_SADX* model, NJS_MESHSET_SADX* mes
 extern "C"
 {
 	EXPORT ModInfo SADXModInfo = { ModLoaderVer, nullptr, nullptr, 0, nullptr, 0, nullptr, 0, nullptr, 0 };
-	EXPORT void __cdecl Init(const char *path, const HelperFunctions& helperFunctions)
+	EXPORT void __cdecl Init(const char* path, const HelperFunctions& helperFunctions)
 	{
 		auto handle = GetModuleHandle(L"d3d9.dll");
 
 		if (handle == nullptr)
 		{
 			MessageBoxA(WindowHandle,
-				"SADX Lantern Engine will not function without d3d8to9 saved to your Sonic Adventure DX folder. "
-				"Download d3d8.dll from from https://github.com/crosire/d3d8to9",
-				"Lantern Engine Error: Missing d3d8.dll", MB_OK | MB_ICONERROR);
+			            "SADX Lantern Engine will not function without d3d8to9 saved to your Sonic Adventure DX folder. "
+			            "Download d3d8.dll from from https://github.com/crosire/d3d8to9",
+			            "Lantern Engine Error: Missing d3d8.dll", MB_OK | MB_ICONERROR);
 
 			return;
 		}
@@ -481,7 +484,7 @@ extern "C"
 		if (helperFunctions.Version < 5)
 		{
 			MessageBoxA(WindowHandle, "Mod loader out of date. SADX Lantern Engine requires API version 5 or newer.",
-				"Lantern Engine Error: Mod loader out of date", MB_OK | MB_ICONERROR);
+			            "Lantern Engine Error: Mod loader out of date", MB_OK | MB_ICONERROR);
 
 			return;
 		}
@@ -498,6 +501,16 @@ extern "C"
 		globals::mod_path    = path;
 		globals::cache_path  = globals::mod_path + "\\cache\\";
 		globals::shader_path = globals::get_system_path("lantern.hlsl");
+
+		const std::string config_path = globals::mod_path + "\\config.ini";
+		std::array<char, 255> str {};
+
+		GetPrivateProfileStringA("Enhancements", "RangeFog", "False", str.data(), str.size(), config_path.c_str());
+
+		if (!strcmp(str.data(), "True"))
+		{
+			d3d::set_flags(ShaderFlags_RangeFog, true);
+		}
 
 		d3d::init_trampolines();
 
@@ -531,6 +544,8 @@ extern "C"
 		WriteCall(reinterpret_cast<void*>(0x00412783), NormalScale_r);
 
 		NormalScaleMultiplier = { 1.0f, 1.0f, 1.0f };
+
+		polybuff_rewrite_init();
 	}
 
 #ifdef _DEBUG

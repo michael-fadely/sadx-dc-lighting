@@ -88,6 +88,8 @@ float3 FogConfig : register(c31);
 float4 FogColor  : register(c32);
 float  AlphaRef  : register(c33) = 16.0f / 255.0f;
 
+float3 ViewPosition : register(c34);
+
 // Helpers
 
 // From FixedFuncEMU.fx
@@ -143,7 +145,8 @@ struct PS_IN
 	float4 diffuse  : COLOR0;
 	float4 specular : COLOR1;
 	float2 tex      : TEXCOORD0;
-	float  fogDist  : FOG;
+	float  fogDist  : FOG0;
+	float3 worldPos : FOG1;
 };
 
 // Vertex shaders
@@ -155,7 +158,10 @@ PS_IN vs_main(VS_IN input)
 	output.position = mul(float4(input.position, 1), WorldMatrix);
 	output.position = mul(output.position, ViewMatrix);
 	output.fogDist = output.position.z;
+
 	output.position = mul(output.position, ProjectionMatrix);
+
+	output.worldPos = (float3)mul(float4(input.position, 1), WorldMatrix);
 
 #if defined(USE_TEXTURE) && defined(USE_ENVMAP)
 	output.tex = (float2)mul(float4(input.normal, 1), wvMatrixInvT);
@@ -233,7 +239,15 @@ float4 ps_main(PS_IN input) : COLOR
 #endif
 
 #ifdef USE_FOG
-	float factor = CalcFogFactor(input.fogDist);
+	float distance;
+
+#ifdef RANGE_FOG
+	distance = length(input.worldPos - ViewPosition);
+#else
+	distance = input.fogDist;
+#endif
+
+	float factor = CalcFogFactor(distance);
 	result.rgb = (factor * result + (1.0 - factor) * FogColor).rgb;
 #endif
 

@@ -60,6 +60,7 @@ namespace param
 	extern ShaderParameter<D3DXMATRIX>  l_WorldMatrix;
 	extern ShaderParameter<D3DXMATRIX>  l_ViewMatrix;
 	extern ShaderParameter<D3DXMATRIX>  l_ProjectionMatrix;
+	extern ShaderParameter<D3DXVECTOR3> ViewPosition;
 }
 
 // Same as in the mod loader except with d3d8to9 types.

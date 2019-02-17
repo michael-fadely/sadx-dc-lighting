@@ -70,6 +70,7 @@
 #include "Obj_Chaos7.h"
 #include "Trampoline.h"
 #include "FileSystem.h"
+#include "polybuff.h"
 
 // Materials
 #include "ssgarden.h"

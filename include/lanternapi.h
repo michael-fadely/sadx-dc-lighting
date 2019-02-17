@@ -19,7 +19,8 @@
 #endif
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 	typedef enum
@@ -49,8 +50,11 @@ extern "C" {
 		/** \brief Enables fog in the pixel shader. */
 		ShaderFlags_Fog = 1 << 5,
 
+		/** \brief Enables enhanced range-based (radial) fog. */
+		ShaderFlags_RangeFog = 1 << 6,
+
 		/** \brief Shader flag bitmask. Other bits are ignored. */
-		ShaderFlags_Mask = 0x3F,
+		ShaderFlags_Mask = 0x7F,
 
 		/**
 		 * \brief The number of shader flags.
