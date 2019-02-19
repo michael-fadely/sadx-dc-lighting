@@ -53,15 +53,52 @@ float4 blur(float2 coordinates, float2 velocity, int sample_count)
 
 float4 ps_main(in float2 uv_in : TEXCOORD) : COLOR
 {
-	float4 texels = tex2D(velocitybuff, uv_in);
+	float2 pixel_size = float2(1 / Viewport.x, 1 / Viewport.y);
 
-	if ((int)(texels.r * 255) == 127 && (int)(texels.g * 255) == 127)
+	float4 curr[9];
+
+	curr[0] = tex2D(velocitybuff, uv_in + float2(-pixel_size.x, -pixel_size.y));
+	curr[1] = tex2D(velocitybuff, uv_in + float2(            0, -pixel_size.y));
+	curr[2] = tex2D(velocitybuff, uv_in + float2( pixel_size.x, -pixel_size.y));
+	curr[3] = tex2D(velocitybuff, uv_in + float2(-pixel_size.x,             0));
+	curr[4] = tex2D(velocitybuff, uv_in + float2(            0,             0));
+	curr[5] = tex2D(velocitybuff, uv_in + float2( pixel_size.x,             0));
+	curr[6] = tex2D(velocitybuff, uv_in + float2(-pixel_size.x,  pixel_size.y));
+	curr[7] = tex2D(velocitybuff, uv_in + float2(            0,  pixel_size.y));
+	curr[8] = tex2D(velocitybuff, uv_in + float2( pixel_size.x,  pixel_size.y));
+
+	#define AVERAGE
+
+	float2 velocity = 0;
+	float lengthsq = 0;
+
+	for (int i = 0; i < 9; i++)
+	{
+	#ifndef AVERAGE
+			float2 v = (curr[i].xy * 2.0) - 1.0;
+			float vl = v.x * v.x + v.y * v.y;
+
+			if (vl > lengthsq)
+			{
+				velocity = v;
+				lengthsq = vl;
+			}
+	#else
+			velocity += curr[i].xy;
+	#endif
+	}
+
+	#ifdef AVERAGE
+		velocity /= 9.0;
+		velocity = (velocity * 2.0) - 1.0;
+	#endif
+
+	velocity.x = -velocity.x;
+
+	if ((int)(velocity.x * 127) == 0 && (int)(velocity.y * 127) == 0)
 	{
 		return tex2D(backbuffer, uv_in);
 	}
-
-	float2 velocity = ((texels.rg * 2.0) - 1.0);
-	velocity.x = -velocity.x;
 
 	float speed = length(velocity * Viewport);
 	int sample_count = clamp((int)speed, 1, min(MAX_SAMPLES, min(Viewport.x, Viewport.y)));

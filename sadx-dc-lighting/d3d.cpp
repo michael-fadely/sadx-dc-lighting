@@ -1261,7 +1261,7 @@ namespace local
 	static void __cdecl njDrawModel_SADX_r(NJS_MODEL_SADX* a1)
 	{
 		//blur_enabled = true;
-		blur_occlude = true;
+		blur_enabled = true;
 		begin();
 
 		curr_model = a1;
@@ -1286,7 +1286,7 @@ namespace local
 		}
 
 		end();
-		blur_occlude = false;
+		blur_enabled = false;
 		//blur_enabled = false;
 	}
 
@@ -1901,12 +1901,12 @@ namespace local
 	{
 		auto original = reinterpret_cast<decltype(DrawModelThing_r)*>(DrawModelThing_t.Target());
 
-		blur_occlude = true;
+		blur_enabled = true;
 
 		curr_model = a1;
 		original(a1);
 
-		blur_occlude = false;
+		blur_enabled = false;
 	}
 }
 
@@ -2039,7 +2039,6 @@ extern "C"
 		do_effect = false;
 		presenting = true;
 
-		device->SetTexture(0, nullptr);
 		device->SetTexture(1, nullptr);
 		device->SetTexture(2, nullptr);
 
