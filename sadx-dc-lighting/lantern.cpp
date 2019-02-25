@@ -156,13 +156,13 @@ static bool use_time(Uint32 level, Uint32 act)
 	}
 }
 
-bool LanternInstance::diffuse_override        = false;
-bool LanternInstance::diffuse_override_temp   = false;
-bool LanternInstance::specular_override       = false;
-bool LanternInstance::specular_override_temp  = false;
-bool LanternInstance::use_palette_            = false;
-float LanternInstance::diffuse_blend_factor_  = 0.0f;
-float LanternInstance::specular_blend_factor_ = 0.0f;
+bool LanternInstance::diffuse_override          = false;
+bool LanternInstance::diffuse_override_is_temp  = false;
+bool LanternInstance::specular_override         = false;
+bool LanternInstance::specular_override_is_temp = false;
+bool LanternInstance::use_palette_              = false;
+float LanternInstance::diffuse_blend_factor_    = 0.0f;
+float LanternInstance::specular_blend_factor_   = 0.0f;
 
 bool LanternInstance::use_palette()
 {
@@ -650,9 +650,7 @@ void LanternInstance::set_palettes(Sint32 type, Uint32 flags)
 			diffuse  = 0;
 			specular = ignore_specular ? 0 : 1;
 
-#ifdef _DEBUG
-			globals::light_dir = *reinterpret_cast<NJS_VECTOR*>(&Direct3D_CurrentLight.Direction);
-#endif
+			globals::debug_stage_light_dir = *reinterpret_cast<NJS_VECTOR*>(&Direct3D_CurrentLight.Direction);
 			break;
 
 		case 2:
@@ -1043,7 +1041,7 @@ void LanternCollection::apply_parameters()
 
 	LanternInstance& i = instances[0];
 
-	int d = i.diffuse_index();
+	const int d = i.diffuse_index();
 
 	if (d >= 0)
 	{
@@ -1056,7 +1054,7 @@ void LanternCollection::apply_parameters()
 		}
 	}
 
-	int s = i.specular_index();
+	const int s = i.specular_index();
 
 	if (s >= 0)
 	{

@@ -21,8 +21,10 @@ namespace d3d
 	bool shaders_null();
 	void init_trampolines();
 
+	// TODO: move all the API stuff to some specific namespace or singleton
+
 	extern float alpha_ref_value;
-	extern bool alpha_ref_temp;
+	extern bool alpha_ref_is_temp;
 }
 
 namespace param

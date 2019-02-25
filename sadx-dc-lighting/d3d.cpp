@@ -151,14 +151,17 @@ namespace local
 	static Uint32 shader_flags = DEFAULT_FLAGS;
 	static Uint32 last_flags   = DEFAULT_FLAGS;
 
+	static D3DXVECTOR3 last_light_dir = {};
+
 	static std::vector<uint8_t> shader_file;
 	static std::unordered_map<ShaderFlags, VertexShader> vertex_shaders;
 	static std::unordered_map<ShaderFlags, PixelShader> pixel_shaders;
 
-	static bool initialized   = false;
-	static Uint32 drawing     = 0;
-	static bool using_shader  = false;
-	static bool supports_xrgb = false;
+	static bool   initialized   = false;
+	static Uint32 drawing       = 0;
+	static bool   using_shader  = false;
+	static bool   supports_xrgb = false;
+
 	static std::vector<D3DXMACRO> macros;
 
 	DataPointer(Direct3DDevice8*, Direct3D_Device, 0x03D128B0);
@@ -722,6 +725,21 @@ namespace local
 		return shader;
 	}
 
+	static void set_light_parameters()
+	{
+		if (globals::override_light_dir)
+		{
+			param::LightDirection = *reinterpret_cast<const D3DXVECTOR3*>(&globals::light_dir_override);
+			return;
+		}
+
+		D3DLIGHT9 light;
+		d3d::device->GetLight(0, &light);
+
+		const auto dir = -*reinterpret_cast<const D3DXVECTOR3*>(&light.Direction);
+		param::LightDirection = dir;
+	}
+
 	static void begin()
 	{
 		++drawing;
@@ -755,6 +773,7 @@ namespace local
 			return;
 		}
 
+		set_light_parameters();
 		globals::palettes.apply_parameters();
 
 		bool changes = false;
@@ -810,18 +829,6 @@ namespace local
 		}
 
 		using_shader = true;
-	}
-
-	static void set_light_parameters()
-	{
-		if (!LanternInstance::use_palette())
-		{
-			return;
-		}
-
-		D3DLIGHT9 light;
-		d3d::device->GetLight(0, &light);
-		param::LightDirection = -*static_cast<D3DXVECTOR3*>(&light.Direction);
 	}
 
 #define MHOOK(NAME) MH_CreateHook(vtbl[IndexOf_ ## NAME], NAME ## _r, (LPVOID*)&NAME ## _t)
@@ -1204,7 +1211,7 @@ namespace d3d
 	bool do_effect = false;
 
 	float alpha_ref_value = 16.0f / 255.0f;
-	bool alpha_ref_temp = false;
+	bool alpha_ref_is_temp = false;
 
 	bool supports_xrgb()
 	{
@@ -1213,21 +1220,27 @@ namespace d3d
 
 	void reset_overrides()
 	{
-		if (LanternInstance::diffuse_override_temp)
+		if (LanternInstance::diffuse_override_is_temp)
 		{
 			LanternInstance::diffuse_override = false;
 			param::DiffuseOverride = false;
 		}
 
-		if (LanternInstance::specular_override_temp)
+		if (LanternInstance::specular_override_is_temp)
 		{
 			LanternInstance::specular_override = false;
 		}
 
-		if (alpha_ref_temp)
+		if (globals::override_light_dir)
+		{
+			param::LightDirection = local::last_light_dir;
+			globals::override_light_dir = false;
+		}
+
+		if (alpha_ref_is_temp)
 		{
 			param::AlphaRef = alpha_ref_value;
-			alpha_ref_temp = false;
+			alpha_ref_is_temp = false;
 		}
 
 		param::ForceDefaultDiffuse = false;
