@@ -264,8 +264,8 @@ static void __cdecl GoToNextChaoStage_r()
 {
 	TARGET_DYNAMIC(GoToNextChaoStage)();
 
-	auto level = CurrentLevel;
-	auto act = CurrentAct;
+	const auto level = CurrentLevel;
+	const auto act = CurrentAct;
 
 	switch (GetCurrentChaoStage())
 	{
@@ -340,8 +340,8 @@ static void __cdecl DrawLandTable_r()
 		return;
 	}
 
-	auto flag = _nj_control_3d_flag_;
-	auto or = _nj_constant_attr_or_;
+	const auto flag = _nj_control_3d_flag_;
+	const auto or   = _nj_constant_attr_or_;
 
 	_nj_control_3d_flag_ |= NJD_CONTROL_3D_CONSTANT_ATTR;
 	_nj_constant_attr_or_ |= NJD_FLAG_IGNORE_SPECULAR;
@@ -458,7 +458,8 @@ void __cdecl InitLandTableMeshSet_r(NJS_MODEL_SADX* model, NJS_MESHSET_SADX* mes
 		i += 2;
 	}
 
-	VBufferFuncPtr func = MeshSetInitFunctions[i][static_cast<uint32_t>(meshset->type_matId) >> 14u];
+	const VBufferFuncPtr func = MeshSetInitFunctions[i][static_cast<uint32_t>(meshset->type_matId) >> 14u];
+
 	if (func)
 	{
 		func(meshset, points, normals);

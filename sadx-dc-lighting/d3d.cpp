@@ -398,7 +398,7 @@ namespace local
 	static void load_shader_file(const std::basic_string<char>& shader_path)
 	{
 		std::ifstream file(shader_path, std::ios::ate);
-		auto size = file.tellg();
+		const auto size = file.tellg();
 		file.seekg(0);
 
 		if (file.is_open() && size > 0)
@@ -413,7 +413,7 @@ namespace local
 	static auto read_checksum(const std::basic_string<char>& checksum_path)
 	{
 		std::ifstream file(checksum_path, std::ios::ate | std::ios::binary);
-		auto size = file.tellg();
+		const auto size = file.tellg();
 		file.seekg(0);
 
 		if (size > 256 || size < 1)
@@ -558,7 +558,7 @@ namespace local
 	static void load_cached_shader(const std::string& sid_path, std::vector<uint8_t>& data)
 	{
 		std::ifstream file(sid_path, std::ios_base::ate | std::ios_base::binary);
-		auto size = file.tellg();
+		const auto size = file.tellg();
 		file.seekg(0);
 
 		if (size < 1)
@@ -1074,7 +1074,7 @@ namespace local
 		// the light direction from being overwritten.
 		target(0);
 
-		auto div2 = type / 2;
+		const auto div2 = type / 2;
 
 		if (div2 != CurrentLightType)
 		{

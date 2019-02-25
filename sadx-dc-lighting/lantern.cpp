@@ -328,7 +328,7 @@ std::string LanternInstance::palette_id(Sint32 level, Sint32 act)
 		return result.str();
 	}
 
-	int n = (level - 10) / 26;
+	const int n = (level - 10) / 26;
 
 	if (n > 9)
 	{
@@ -337,7 +337,7 @@ std::string LanternInstance::palette_id(Sint32 level, Sint32 act)
 
 	!n ? result << "_" : result << n;
 
-	auto i = static_cast<char>(level - (10 + 26 * n) + 'A');
+	const auto i = static_cast<char>(level - (10 + 26 * n) + 'A');
 	result << i << act;
 	return result.str();
 }
@@ -783,7 +783,7 @@ bool LanternCollection::run_pl_callbacks(Sint32 level, Sint32 act, Sint8 time)
 
 	for (auto& cb : pl_callbacks)
 	{
-		auto path_ptr = cb(level, act);
+		const auto path_ptr = cb(level, act);
 
 		if (path_ptr == nullptr)
 		{
@@ -875,8 +875,8 @@ bool LanternCollection::load_files()
 		instances.emplace_back(&param::PaletteA);
 	}
 
-	bool pl_handled = run_pl_callbacks(CurrentLevel, CurrentAct, time);
-	bool sl_handled = run_sl_callbacks(CurrentLevel, CurrentAct, time);
+	const bool pl_handled = run_pl_callbacks(CurrentLevel, CurrentAct, time);
+	const bool sl_handled = run_sl_callbacks(CurrentLevel, CurrentAct, time);
 
 	// No need to do automatic detection if a callback has
 	// already provided valid paths to both PL and SL files.
