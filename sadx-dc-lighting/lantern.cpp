@@ -12,11 +12,7 @@
 #include <SADXModLoader.h>
 
 #include "globals.h"
-
-#ifdef _DEBUG
 #include "datapointers.h"
-#endif
-
 #include "lantern.h"
 
 bool SourceLight_t::operator==(const SourceLight_t& rhs) const
