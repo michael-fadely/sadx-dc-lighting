@@ -28,6 +28,7 @@
 #include "../include/lanternapi.h"
 #include "ShaderParameter.h"
 #include "FileSystem.h"
+#include "apiconfig.h"
 
 namespace param
 {
@@ -727,9 +728,9 @@ namespace local
 
 	static void set_light_parameters()
 	{
-		if (globals::override_light_dir)
+		if (apiconfig::override_light_dir)
 		{
-			param::LightDirection = *reinterpret_cast<const D3DXVECTOR3*>(&globals::light_dir_override);
+			param::LightDirection = *reinterpret_cast<const D3DXVECTOR3*>(&apiconfig::light_dir_override);
 			return;
 		}
 
@@ -1210,9 +1211,6 @@ namespace d3d
 	PixelShader pixel_shader;
 	bool do_effect = false;
 
-	float alpha_ref_value = 16.0f / 255.0f;
-	bool alpha_ref_is_temp = false;
-
 	bool supports_xrgb()
 	{
 		return local::supports_xrgb;
@@ -1231,16 +1229,16 @@ namespace d3d
 			LanternInstance::specular_override = false;
 		}
 
-		if (globals::override_light_dir)
+		if (apiconfig::override_light_dir)
 		{
 			param::LightDirection = local::last_light_dir;
-			globals::override_light_dir = false;
+			apiconfig::override_light_dir = false;
 		}
 
-		if (alpha_ref_is_temp)
+		if (apiconfig::alpha_ref_is_temp)
 		{
-			param::AlphaRef = alpha_ref_value;
-			alpha_ref_is_temp = false;
+			param::AlphaRef = apiconfig::alpha_ref_value;
+			apiconfig::alpha_ref_is_temp = false;
 		}
 
 		param::ForceDefaultDiffuse = false;

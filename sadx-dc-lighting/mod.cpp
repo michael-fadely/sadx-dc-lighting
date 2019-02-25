@@ -22,6 +22,7 @@
 #include "FixChaoGardenMaterials.h"
 #include "FixCharacterMaterials.h"
 #include "polybuff.h"
+#include "apiconfig.h"
 
 static Trampoline* CharSel_LoadA_t                 = nullptr;
 static Trampoline* Direct3D_ParseMaterial_t        = nullptr;
@@ -219,13 +220,13 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 
 	do_effect = true;
 
-	if (globals::material_callbacks.empty())
+	if (apiconfig::material_callbacks.empty())
 	{
 		return;
 	}
 
-	auto it = globals::material_callbacks.find(material);
-	if (it == globals::material_callbacks.end())
+	auto it = apiconfig::material_callbacks.find(material);
+	if (it == apiconfig::material_callbacks.end())
 	{
 		return;
 	}
@@ -333,7 +334,7 @@ static void __cdecl LoadLevelFiles_r()
 
 static void __cdecl DrawLandTable_r()
 {
-	if (globals::landtable_specular)
+	if (apiconfig::landtable_specular)
 	{
 		TARGET_DYNAMIC(DrawLandTable)();
 		return;
@@ -362,7 +363,7 @@ static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
 			if (texlist == CommonTextures)
 			{
 				globals::palettes.set_palettes(0, 0);
-				param::AllowVertexColor = globals::object_vcolor;
+				param::AllowVertexColor = apiconfig::object_vcolor;
 			}
 			else
 			{
@@ -374,7 +375,7 @@ static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
 					}
 
 					globals::palettes.set_palettes(0, 0);
-					param::AllowVertexColor = globals::object_vcolor;
+					param::AllowVertexColor = apiconfig::object_vcolor;
 					break;
 				}
 			}

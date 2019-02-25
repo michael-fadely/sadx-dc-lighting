@@ -63,8 +63,6 @@ static_assert(sizeof(SourceLight) == 0x60, "SourceLight size mismatch");
 template<> bool ShaderParameter<SourceLight_t>::commit(IDirect3DDevice9* device);
 template<> bool ShaderParameter<StageLights>::commit(IDirect3DDevice9* device);
 
-class LanternInstance;
-
 class ILantern
 {
 public:

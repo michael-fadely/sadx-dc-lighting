@@ -7,8 +7,7 @@
 #include "d3d.h"
 
 #include "../include/lanternapi.h"
-
-// TODO: consolidate all the API configuration into a specific namespace or something; the variables are really disjointed
+#include "apiconfig.h"
 
 inline void check_blend()
 {
@@ -48,11 +47,11 @@ void material_register(NJS_MATERIAL const* const* materials, size_t length, lant
 	for (size_t i = 0; i < length; i++)
 	{
 		auto material = materials[i];
-		auto it = globals::material_callbacks.find(material);
+		auto it = apiconfig::material_callbacks.find(material);
 
-		if (it == globals::material_callbacks.end())
+		if (it == apiconfig::material_callbacks.end())
 		{
-			globals::material_callbacks[material] = { callback };
+			apiconfig::material_callbacks[material] = { callback };
 		}
 		else
 		{
@@ -70,9 +69,9 @@ void material_unregister(NJS_MATERIAL const* const* materials, size_t length, la
 
 	for (size_t i = 0; i < length; i++)
 	{
-		auto it = globals::material_callbacks.find(materials[i]);
+		auto it = apiconfig::material_callbacks.find(materials[i]);
 
-		if (it == globals::material_callbacks.end())
+		if (it == apiconfig::material_callbacks.end())
 		{
 			continue;
 		}
@@ -81,7 +80,7 @@ void material_unregister(NJS_MATERIAL const* const* materials, size_t length, la
 
 		if (it->second.empty())
 		{
-			globals::material_callbacks.erase(it);
+			apiconfig::material_callbacks.erase(it);
 		}
 	}
 }
@@ -93,7 +92,7 @@ void set_shader_flags(uint32_t flags, bool add)
 
 void allow_landtable_specular(bool allow)
 {
-	globals::landtable_specular = allow;
+	apiconfig::landtable_specular = allow;
 }
 
 void set_diffuse(int32_t n, bool permanent)
@@ -128,7 +127,7 @@ void set_blend_factor(float factor)
 
 void allow_object_vcolor(bool allow)
 {
-	globals::object_vcolor = allow;
+	apiconfig::object_vcolor = allow;
 }
 
 void use_default_diffuse(bool use)
@@ -245,15 +244,15 @@ void set_alpha_reject(float threshold, bool permanent)
 {
 	if (!permanent)
 	{
-		if (!d3d::alpha_ref_is_temp)
+		if (!apiconfig::alpha_ref_is_temp)
 		{
-			d3d::alpha_ref_value = param::AlphaRef.value();
-			d3d::alpha_ref_is_temp = true;
+			apiconfig::alpha_ref_value = param::AlphaRef.value();
+			apiconfig::alpha_ref_is_temp = true;
 		}
 	}
 	else
 	{
-		d3d::alpha_ref_value = threshold;
+		apiconfig::alpha_ref_value = threshold;
 	}
 
 	param::AlphaRef = threshold;
@@ -268,7 +267,7 @@ void set_light_direction(const NJS_VECTOR* v)
 {
 	if (v != nullptr)
 	{
-		globals::override_light_dir = true;
-		globals::light_dir_override = *v;
+		apiconfig::override_light_dir = true;
+		apiconfig::light_dir_override = *v;
 	}
 }

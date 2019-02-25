@@ -159,6 +159,7 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
   <ItemGroup>
     <ClInclude Include="..\include\lanternapi.h" />
     <ClInclude Include="..\sadx-mod-loader\libmodutils\Trampoline.h" />
+    <ClInclude Include="apiconfig.h" />
     <ClInclude Include="d3d.h" />
     <ClInclude Include="datapointers.h" />
     <ClInclude Include="ecgarden.h" />
@@ -179,6 +180,7 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\sadx-mod-loader\libmodutils\Trampoline.cpp" />
+    <ClCompile Include="apiconfig.cpp" />
     <ClCompile Include="d3d.cpp" />
     <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="polybuff.cpp" />
