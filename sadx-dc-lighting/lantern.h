@@ -8,7 +8,39 @@
 #include "ShaderParameter.h"
 #include "../include/lanternapi.h"
 
+#pragma pack(push, 8)
+struct CharacterLightData_
+{
+	char LevelID;
+	char Act;
+	char LightIndex;
+	char UseDirection;
+	NJS_VECTOR LightDirection;
+	float Specular;
+	float Diffuse;
+	float R;
+	float G;
+	float B;
+	float AmbientR;
+	float AmbientG;
+	float AmbientB;
+};
+#pragma pack(pop)
+
 #pragma pack(push, 1)
+
+struct DirLightData
+{
+	char LevelID;
+	char Act;
+	NJS_VECTOR LightDirection;
+	float R;
+	float G;
+	float B;
+	float Specular;
+	float Diffuse;
+	float Ambient;
+};
 
 // RY RZ R G B SP DI AM
 struct SourceLight_t

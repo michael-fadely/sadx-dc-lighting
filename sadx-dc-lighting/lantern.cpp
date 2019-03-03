@@ -4,8 +4,10 @@
 #include <d3d9.h>
 
 #include <algorithm>
-#include <string>
+#include <cmath>
+#include <limits>
 #include <sstream>
+#include <string>
 #include <vector>
 
 #include "d3d.h"
@@ -15,41 +17,85 @@
 #include "datapointers.h"
 #include "lantern.h"
 
+bool near_equal(float a, float b)
+{
+	constexpr auto epsilon = std::numeric_limits<float>::epsilon();
+	return std::abs(a - b) <= epsilon;
+}
+
+bool equal(const NJS_VECTOR& a, const NJS_VECTOR& b)
+{
+	return near_equal(a.x, b.x)
+	    && near_equal(a.y, b.y)
+	    && near_equal(a.z, b.z);
+}
+
+bool not_equal(const NJS_VECTOR& a, const NJS_VECTOR& b)
+{
+	return !near_equal(a.x, b.x)
+	    || !near_equal(a.y, b.y)
+	    || !near_equal(a.z, b.z);
+}
+
 bool SourceLight_t::operator==(const SourceLight_t& rhs) const
 {
-	return !memcmp(this, &rhs, sizeof(SourceLight_t));
+	return y == rhs.y
+	    && z == rhs.z
+	    && near_equal(color[0], rhs.color[0])
+	    && near_equal(color[1], rhs.color[1])
+	    && near_equal(color[2], rhs.color[2])
+	    && near_equal(specular, rhs.specular)
+	    && near_equal(diffuse, rhs.diffuse)
+	    && near_equal(ambient, rhs.ambient)
+	    && std::equal(unknown2, unknown2 + 15, rhs.unknown2, rhs.unknown2 + 15, near_equal);
 }
 
 bool SourceLight_t::operator!=(const SourceLight_t& rhs) const
 {
-	return !operator==(rhs);
+	// normally I would just !operator==, but we can bail out sooner by explicitly comparing for inequality
+	return y != rhs.y
+	    || z != rhs.z
+	    || !near_equal(color[0], rhs.color[0])
+	    || !near_equal(color[1], rhs.color[1])
+	    || !near_equal(color[2], rhs.color[2])
+	    || !near_equal(specular, rhs.specular)
+	    || !near_equal(diffuse, rhs.diffuse)
+	    || !near_equal(ambient, rhs.ambient)
+	    || !std::equal(unknown2, unknown2 + 15, rhs.unknown2, rhs.unknown2 + 15, near_equal);
 }
 
 bool StageLight::operator==(const StageLight& rhs) const
 {
-	return specular == rhs.specular
-	       && multiplier == rhs.multiplier
-	       && !memcmp(&direction, &rhs.direction, sizeof(NJS_VECTOR))
-	       && !memcmp(&diffuse, &rhs.diffuse, sizeof(NJS_VECTOR))
-	       && !memcmp(&ambient, &rhs.ambient, sizeof(NJS_VECTOR));
+	return near_equal(specular, rhs.specular)
+	    && near_equal(multiplier, rhs.multiplier)
+	    && equal(direction, rhs.direction)
+	    && equal(diffuse, rhs.diffuse)
+	    && equal(ambient, rhs.ambient);
 }
 
 bool StageLight::operator!=(const StageLight& rhs) const
 {
-	return !(*this == rhs);
+	return !near_equal(specular, rhs.specular)
+	    || !near_equal(multiplier, rhs.multiplier)
+	    || not_equal(direction, rhs.direction)
+	    || not_equal(diffuse, rhs.diffuse)
+	    || not_equal(ambient, rhs.ambient);
 }
 
 bool StageLights::operator==(const StageLights& rhs) const
 {
 	return lights[0] == rhs.lights[0]
-	       && lights[1] == rhs.lights[1]
-	       && lights[2] == rhs.lights[2]
-	       && lights[3] == rhs.lights[3];
+	    && lights[1] == rhs.lights[1]
+	    && lights[2] == rhs.lights[2]
+	    && lights[3] == rhs.lights[3];
 }
 
 bool StageLights::operator!=(const StageLights& rhs) const
 {
-	return !(*this == rhs);
+	return lights[0] != rhs.lights[0]
+	    || lights[1] != rhs.lights[1]
+	    || lights[2] != rhs.lights[2]
+	    || lights[3] != rhs.lights[3];
 }
 
 template <>
@@ -152,13 +198,13 @@ static bool use_time(Uint32 level, Uint32 act)
 	}
 }
 
-bool LanternInstance::diffuse_override          = false;
-bool LanternInstance::diffuse_override_is_temp  = false;
-bool LanternInstance::specular_override         = false;
-bool LanternInstance::specular_override_is_temp = false;
-bool LanternInstance::use_palette_              = false;
-float LanternInstance::diffuse_blend_factor_    = 0.0f;
-float LanternInstance::specular_blend_factor_   = 0.0f;
+bool  LanternInstance::diffuse_override          = false;
+bool  LanternInstance::diffuse_override_is_temp  = false;
+bool  LanternInstance::specular_override         = false;
+bool  LanternInstance::specular_override_is_temp = false;
+bool  LanternInstance::use_palette_              = false;
+float LanternInstance::diffuse_blend_factor_     = 0.0f;
+float LanternInstance::specular_blend_factor_    = 0.0f;
 
 bool LanternInstance::use_palette()
 {
