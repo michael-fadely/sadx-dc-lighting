@@ -177,6 +177,11 @@ namespace local
 			flags &= ~ShaderFlags_Blend;
 		}
 
+		if (flags & ShaderFlags_SourceLighting && !(flags & ShaderFlags_Light))
+		{
+			flags &= ~ShaderFlags_SourceLighting;
+		}
+
 		if (flags & ShaderFlags_EnvMap && !(flags & ShaderFlags_Texture))
 		{
 			flags &= ~ShaderFlags_EnvMap;
@@ -288,6 +293,14 @@ namespace local
 			{
 				flags &= ~ShaderFlags_Light;
 				result << "USE_LIGHT";
+				thing = true;
+				continue;
+			}
+
+			if (flags & ShaderFlags_SourceLighting)
+			{
+				flags &= ~ShaderFlags_SourceLighting;
+				result << "USE_SL";
 				thing = true;
 				continue;
 			}
@@ -475,6 +488,11 @@ namespace local
 		if (flags & ShaderFlags_Light)
 		{
 			macros.push_back({ "USE_LIGHT", "1" });
+		}
+
+		if (flags & ShaderFlags_SourceLighting)
+		{
+			macros.push_back({ "USE_SL", "1" });
 		}
 
 		if (flags & ShaderFlags_Blend)

@@ -17,6 +17,26 @@
 #include "datapointers.h"
 #include "lantern.h"
 
+static const DirLightData DefaultDirLight = { 0, 0, { 0.822f, -0.57f, 0 }, 1, 1, 1, 0.8f, 1, 0.25f };
+
+static const DirLightData DirLightOverrides[] = {
+	{ LevelIDs_TwinklePark, 0, { 0.5f, -0.866, 0 }, 1, 1, 0.95f, 0.8f, 0.9f, 0.2f }, //same for all acts
+	{ LevelIDs_SpeedHighway, 0, { 0.5f, -0.866, 0 }, 1, 1, 1, 0.7f, 0.6f, 0.2f },
+	{ LevelIDs_SpeedHighway, 1, { 1, 0, 0 }, 1, 0.9f, 0.9f, 1, 0.8f, 0.3f },
+	{ LevelIDs_SpeedHighway, 2, { 0.866, -0.5f, 0 }, 1, 0.9f, 0.9f, 0.65f, 0.8f, 0.35f },
+	{ LevelIDs_LostWorld, 0, { 0.6785513163f, -0.7345529795f, 0 }, 1, 1, 1, 0.8f, 0.4f, 0.05f },
+	{ LevelIDs_LostWorld, 1, { 0.866, -0.5f, 0 }, 1, 0.9f, 0.9f, 0.65f, 0.8f, 0.25f }, //act 3 same as act 2
+	{ LevelIDs_IceCap, 0, { 0, -1, 0 }, 1, 1, 1, 1, 1, 0.36f },
+	{ LevelIDs_IceCap, 1, { 0, -1, 0 }, 0.59f, 0.75f, 0.77f, 1, 1, 0.22f },
+	{ LevelIDs_IceCap, 2, { 1, 0, 0 }, 1, 1, 1, 1, 1, 0.68f },
+	{ LevelIDs_IceCap, 3, { 0, -1, 0 }, 0.59f, 0.75f, 0.77f, 1, 1, 0.22f },
+	{ LevelIDs_PerfectChaos, 0, { 0.5f, -0.866f, 0 }, 1, 1, 0.95f, 0.8f, 0.9f, 0.2f }, //act 2 same as act 1
+	{ LevelIDs_SandHill, 0, { 0, -1, 0 }, 1, 1, 1, 1, 1, 0.36f },
+	{ LevelIDs_TwinkleCircuit, 0, { 0.5f, -0.866f, 0 }, 1, 1, 0.95f, 0.8f, 0.9f, 0.2f },
+	{ LevelIDs_StationSquare, 0, { 0.5f, -0.866f, 0 }, 1, 1, 0.95f, 0.8f, 0.9f, 0.5f }, //same for all acts
+	{ LevelIDs_Past, 0, { 0.5f, -0.866f, 0 }, 1, 1, 0.95f, 0.8f, 0.9f, 0.5f }, //same for all acts (I guess)
+};
+
 bool near_equal(float a, float b)
 {
 	constexpr auto epsilon = std::numeric_limits<float>::epsilon();

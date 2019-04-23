@@ -53,8 +53,11 @@ extern "C"
 		/** \brief Enables enhanced range-based (radial) fog. */
 		ShaderFlags_RangeFog = 1 << 6,
 
+		/** \brief Enables Source Lighting (SL). */
+		ShaderFlags_SourceLighting = 1 << 7,
+
 		/** \brief Shader flag bitmask. Other bits are ignored. */
-		ShaderFlags_Mask = 0x7F,
+		ShaderFlags_Mask = 0xFF,
 
 		/**
 		 * \brief The number of shader flags.
