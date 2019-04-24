@@ -102,6 +102,7 @@ namespace local
 	static Trampoline* Direct3D_PerformLighting_t         = nullptr;
 	static Trampoline* sub_77EAD0_t                       = nullptr;
 	static Trampoline* sub_77EBA0_t                       = nullptr;
+	static Trampoline* ParseNjControl3D_t                 = nullptr;
 	static Trampoline* njDrawModel_SADX_t                 = nullptr;
 	static Trampoline* njDrawModel_SADX_Dynamic_t         = nullptr;
 	static Trampoline* Direct3D_SetProjectionMatrix_t     = nullptr;
@@ -871,6 +872,118 @@ namespace local
 		end();
 	}
 
+	struct chunk_d3d8_t
+	{
+		void* ptr;
+		void* ptrs[97] {};
+
+		static uint32_t flags;
+
+		chunk_d3d8_t()
+		{
+			ptr = &ptrs[0];
+
+			ptrs[50] = &chunk_d3d8_t::SetRenderState;
+			ptrs[63] = &chunk_d3d8_t::SetTextureStageState;
+			ptrs[76] = &chunk_d3d8_t::SetVertexShader;
+		}
+
+		static HRESULT __stdcall SetRenderState(Direct3DDevice8* /*This*/, D3DRENDERSTATETYPE State, DWORD Value)
+		{
+			switch (State)
+			{
+				case D3DRS_SPECULARENABLE:
+					if (Value != 0)
+					{
+						flags &= ~NJD_FLAG_IGNORE_SPECULAR;
+					}
+					else
+					{
+						flags |= NJD_FLAG_IGNORE_SPECULAR;
+					}
+					break;
+				case D3DRS_LIGHTING:
+					if (Value != 0)
+					{
+						flags &= ~NJD_FLAG_IGNORE_LIGHT;
+					}
+					else
+					{
+						flags |= NJD_FLAG_IGNORE_LIGHT;
+					}
+					break;
+				case D3DRS_ALPHABLENDENABLE:
+					if (Value != 0)
+					{
+						flags |= NJD_FLAG_USE_ALPHA;
+					}
+					else
+					{
+						flags &= ~NJD_FLAG_USE_ALPHA;
+					}
+					break;
+
+				default:
+					break;
+			}
+
+			const auto flags_backup = flags;
+
+			if (_nj_control_3d_flag_ & NJD_CONTROL_3D_CONSTANT_ATTR)
+			{
+				flags = _nj_constant_attr_or_ | (_nj_constant_attr_and_ & flags);
+			}
+
+			globals::palettes.set_palettes(globals::light_type, flags);
+
+			shader_flags = DEFAULT_FLAGS;
+
+			d3d::set_flags(ShaderFlags_Texture, true);
+			d3d::set_flags(ShaderFlags_Alpha, (flags & NJD_FLAG_USE_ALPHA) != 0);
+			d3d::set_flags(ShaderFlags_EnvMap, (flags & NJD_FLAG_USE_ENV) != 0);
+			d3d::set_flags(ShaderFlags_Light, (flags & NJD_FLAG_IGNORE_LIGHT) == 0);
+
+			flags = flags_backup;
+
+			return Direct3D_Device->SetRenderState(State, Value);
+		}
+
+		static HRESULT __stdcall SetTextureStageState(Direct3DDevice8* /*This*/, DWORD Stage, D3DTEXTURESTAGESTATETYPE Type, DWORD Value)
+		{
+			if (Type == D3DTSS_TEXCOORDINDEX)
+			{
+				if (Value != 0)
+				{
+					flags |= NJD_FLAG_USE_ENV;
+				}
+				else
+				{
+					flags &= ~NJD_FLAG_USE_ENV;
+				}
+
+				d3d::set_flags(ShaderFlags_EnvMap, (flags & NJD_FLAG_USE_ENV) != 0);
+			}
+
+			return Direct3D_Device->SetTextureStageState(Stage, Type, Value);
+		}
+
+		static HRESULT __stdcall SetVertexShader(Direct3DDevice8* /*This*/, DWORD Handle)
+		{
+			return Direct3D_Device->SetVertexShader(Handle);
+		}
+	};
+
+	static chunk_d3d8_t chunk_d3d8 {};
+	static chunk_d3d8_t* chunk_d3d8_ptr = &chunk_d3d8;
+	uint32_t chunk_d3d8_t::flags = 0;
+
+	static void __fastcall ParseNjControl3D_r(Sint16 *this_)
+	{
+		d3d::do_effect = true;
+		run_trampoline(TARGET_DYNAMIC(ParseNjControl3D), this_);
+		chunk_d3d8_t::flags = 0;
+	}
+
 	static void __cdecl njDrawModel_SADX_r(NJS_MODEL_SADX* a1)
 	{
 		begin();
@@ -1268,6 +1381,7 @@ namespace d3d
 		Direct3D_PerformLighting_t         = new Trampoline(0x00412420, 0x00412426, Direct3D_PerformLighting_r);
 		sub_77EAD0_t                       = new Trampoline(0x0077EAD0, 0x0077EAD7, sub_77EAD0_r);
 		sub_77EBA0_t                       = new Trampoline(0x0077EBA0, 0x0077EBA5, sub_77EBA0_r);
+		ParseNjControl3D_t                 = new Trampoline(0x0078EB50, 0x0078EB58, ParseNjControl3D_r);
 		njDrawModel_SADX_t                 = new Trampoline(0x0077EDA0, 0x0077EDAA, njDrawModel_SADX_r);
 		njDrawModel_SADX_Dynamic_t         = new Trampoline(0x00784AE0, 0x00784AE5, njDrawModel_SADX_Dynamic_r);
 		Direct3D_SetProjectionMatrix_t     = new Trampoline(0x00791170, 0x00791175, Direct3D_SetProjectionMatrix_r);
@@ -1276,6 +1390,28 @@ namespace d3d
 		CreateDirect3DDevice_t             = new Trampoline(0x00794000, 0x00794007, CreateDirect3DDevice_r);
 		PolyBuff_DrawTriangleStrip_t       = new Trampoline(0x00794760, 0x00794767, PolyBuff_DrawTriangleStrip_r);
 		PolyBuff_DrawTriangleList_t        = new Trampoline(0x007947B0, 0x007947B7, PolyBuff_DrawTriangleList_r);
+
+		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078DB90 + 1), &chunk_d3d8_ptr);
+		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078DBB4 + 1), &chunk_d3d8_ptr);
+
+		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078EB64 + 1), &chunk_d3d8_ptr);
+		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078EC8B + 1), &chunk_d3d8_ptr);
+		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078ECAE + 1), &chunk_d3d8_ptr);
+		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078ECFE + 1), &chunk_d3d8_ptr);
+		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078ED21 + 1), &chunk_d3d8_ptr);
+		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078ED51 + 1), &chunk_d3d8_ptr);
+		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078ED94 + 1), &chunk_d3d8_ptr);
+		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078EDCB + 1), &chunk_d3d8_ptr);
+		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078EDE7 + 1), &chunk_d3d8_ptr);
+		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078EE0F + 1), &chunk_d3d8_ptr);
+		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078EE26 + 1), &chunk_d3d8_ptr);
+		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078EE3A + 1), &chunk_d3d8_ptr);
+		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078EE5B + 1), &chunk_d3d8_ptr);
+		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078EE6F + 1), &chunk_d3d8_ptr);
+		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078EEAB + 2), &chunk_d3d8_ptr);
+		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078EECD + 1), &chunk_d3d8_ptr);
+		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078BB59 + 1), &chunk_d3d8_ptr);
+		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078BB89 + 1), &chunk_d3d8_ptr);
 
 		WriteJump(reinterpret_cast<void*>(0x0077EE45), DrawMeshSetBuffer_asm);
 
