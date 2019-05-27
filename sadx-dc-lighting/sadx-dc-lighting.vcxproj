@@ -164,6 +164,8 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
     <ClInclude Include="datapointers.h" />
     <ClInclude Include="ecgarden.h" />
     <ClInclude Include="FileSystem.h" />
+    <ClInclude Include="floatmath.h" />
+    <ClInclude Include="lanternlight.h" />
     <ClInclude Include="polybuff.h" />
     <ClInclude Include="ShaderParameter.h" />
     <ClInclude Include="FixChaoGardenMaterials.h" />
@@ -183,6 +185,8 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
     <ClCompile Include="apiconfig.cpp" />
     <ClCompile Include="d3d.cpp" />
     <ClCompile Include="FileSystem.cpp" />
+    <ClCompile Include="floatmath.cpp" />
+    <ClCompile Include="lanternlight.cpp" />
     <ClCompile Include="polybuff.cpp" />
     <ClCompile Include="ShaderParameter.cpp" />
     <ClCompile Include="FixChaoGardenMaterials.cpp" />

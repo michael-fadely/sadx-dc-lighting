@@ -22,6 +22,17 @@
 	AlphaArg1 = Texture;    \
 	AlphaArg2 = Current
 
+struct DirLightData
+{
+	float4 direction;
+	float4 color;
+	float  specular_m;
+	float  diffuse_m;
+	float  ambient_m;
+};
+
+DirLightData DirLight : register(c40);
+
 // Textures
 
 Texture2D BaseTexture : register(t0);

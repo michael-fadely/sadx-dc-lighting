@@ -4,8 +4,6 @@
 #include <d3d9.h>
 
 #include <algorithm>
-#include <cmath>
-#include <limits>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -16,46 +14,28 @@
 #include "globals.h"
 #include "datapointers.h"
 #include "lantern.h"
+#include "lanternlight.h"
+#include "floatmath.h"
 
 static const DirLightData DefaultDirLight = { 0, 0, { 0.822f, -0.57f, 0 }, 1, 1, 1, 0.8f, 1, 0.25f };
 
 static const DirLightData DirLightOverrides[] = {
-	{ LevelIDs_TwinklePark, 0, { 0.5f, -0.866, 0 }, 1, 1, 0.95f, 0.8f, 0.9f, 0.2f }, //same for all acts
-	{ LevelIDs_SpeedHighway, 0, { 0.5f, -0.866, 0 }, 1, 1, 1, 0.7f, 0.6f, 0.2f },
-	{ LevelIDs_SpeedHighway, 1, { 1, 0, 0 }, 1, 0.9f, 0.9f, 1, 0.8f, 0.3f },
-	{ LevelIDs_SpeedHighway, 2, { 0.866, -0.5f, 0 }, 1, 0.9f, 0.9f, 0.65f, 0.8f, 0.35f },
-	{ LevelIDs_LostWorld, 0, { 0.6785513163f, -0.7345529795f, 0 }, 1, 1, 1, 0.8f, 0.4f, 0.05f },
-	{ LevelIDs_LostWorld, 1, { 0.866, -0.5f, 0 }, 1, 0.9f, 0.9f, 0.65f, 0.8f, 0.25f }, //act 3 same as act 2
-	{ LevelIDs_IceCap, 0, { 0, -1, 0 }, 1, 1, 1, 1, 1, 0.36f },
-	{ LevelIDs_IceCap, 1, { 0, -1, 0 }, 0.59f, 0.75f, 0.77f, 1, 1, 0.22f },
-	{ LevelIDs_IceCap, 2, { 1, 0, 0 }, 1, 1, 1, 1, 1, 0.68f },
-	{ LevelIDs_IceCap, 3, { 0, -1, 0 }, 0.59f, 0.75f, 0.77f, 1, 1, 0.22f },
-	{ LevelIDs_PerfectChaos, 0, { 0.5f, -0.866f, 0 }, 1, 1, 0.95f, 0.8f, 0.9f, 0.2f }, //act 2 same as act 1
-	{ LevelIDs_SandHill, 0, { 0, -1, 0 }, 1, 1, 1, 1, 1, 0.36f },
-	{ LevelIDs_TwinkleCircuit, 0, { 0.5f, -0.866f, 0 }, 1, 1, 0.95f, 0.8f, 0.9f, 0.2f },
-	{ LevelIDs_StationSquare, 0, { 0.5f, -0.866f, 0 }, 1, 1, 0.95f, 0.8f, 0.9f, 0.5f }, //same for all acts
-	{ LevelIDs_Past, 0, { 0.5f, -0.866f, 0 }, 1, 1, 0.95f, 0.8f, 0.9f, 0.5f }, //same for all acts (I guess)
+	{ LevelIDs_TwinklePark,    0, { 0.5f, -0.866f, 0.0f },                 1, 1, 0.95f, 0.8f, 0.9f, 0.2f }, //same for all acts
+	{ LevelIDs_SpeedHighway,   0, { 0.5f, -0.866f, 0.0f },                 1, 1, 1, 0.7f, 0.6f, 0.2f },
+	{ LevelIDs_SpeedHighway,   1, { 1.0f, 0.0f, 0.0f },                    1, 0.9f, 0.9f, 1, 0.8f, 0.3f },
+	{ LevelIDs_SpeedHighway,   2, { 0.866f, -0.5f, 0.0f },                 1, 0.9f, 0.9f, 0.65f, 0.8f, 0.35f },
+	{ LevelIDs_LostWorld,      0, { 0.6785513163f, -0.7345529795f, 0.0f }, 1, 1, 1, 0.8f, 0.4f, 0.05f },
+	{ LevelIDs_LostWorld,      1, { 0.866f, -0.5f, 0.0f },                 1, 0.9f, 0.9f, 0.65f, 0.8f, 0.25f }, //act 3 same as act 2
+	{ LevelIDs_IceCap,         0, { 0.0f, -1.0f, 0.0f },                   1, 1, 1, 1, 1, 0.36f },
+	{ LevelIDs_IceCap,         1, { 0.0f, -1.0f, 0.0f },                   0.59f, 0.75f, 0.77f, 1, 1, 0.22f },
+	{ LevelIDs_IceCap,         2, { 1.0f, 0.0f, 0.0f },                    1, 1, 1, 1, 1, 0.68f },
+	{ LevelIDs_IceCap,         3, { 0.0f, -1.0f, 0.0f },                   0.59f, 0.75f, 0.77f, 1, 1, 0.22f },
+	{ LevelIDs_PerfectChaos,   0, { 0.5f, -0.866f, 0.0f },                 1, 1, 0.95f, 0.8f, 0.9f, 0.2f }, //act 2 same as act 1
+	{ LevelIDs_SandHill,       0, { 0.0f, -1.0f, 0.0f },                   1, 1, 1, 1, 1, 0.36f },
+	{ LevelIDs_TwinkleCircuit, 0, { 0.5f, -0.866f, 0.0f },                 1, 1, 0.95f, 0.8f, 0.9f, 0.2f },
+	{ LevelIDs_StationSquare,  0, { 0.5f, -0.866f, 0.0f },                 1, 1, 0.95f, 0.8f, 0.9f, 0.5f }, //same for all acts
+	{ LevelIDs_Past,           0, { 0.5f, -0.866f, 0.0f },                 1, 1, 0.95f, 0.8f, 0.9f, 0.5f }, //same for all acts (I guess)
 };
-
-bool near_equal(float a, float b)
-{
-	constexpr auto epsilon = std::numeric_limits<float>::epsilon();
-	return std::abs(a - b) <= epsilon;
-}
-
-bool equal(const NJS_VECTOR& a, const NJS_VECTOR& b)
-{
-	return near_equal(a.x, b.x)
-	    && near_equal(a.y, b.y)
-	    && near_equal(a.z, b.z);
-}
-
-bool not_equal(const NJS_VECTOR& a, const NJS_VECTOR& b)
-{
-	return !near_equal(a.x, b.x)
-	    || !near_equal(a.y, b.y)
-	    || !near_equal(a.z, b.z);
-}
 
 bool SourceLight_t::operator==(const SourceLight_t& rhs) const
 {
@@ -927,6 +907,19 @@ bool LanternCollection::run_sl_callbacks(Sint32 level, Sint32 act, Sint8 time)
 	return result;
 }
 
+__forceinline void set_sl_light(const DirLightData& light)
+{
+	DirLightData_hlsl hlsl_light {};
+
+	hlsl_light.direction  = light.LightDirection;
+	hlsl_light.color      = { light.R, light.G, light.B };
+	hlsl_light.specular_m = light.Specular;
+	hlsl_light.diffuse_m  = light.Diffuse;
+	hlsl_light.ambient_m  = light.Ambient;
+
+	param::DirLight = hlsl_light;
+}
+
 bool LanternCollection::load_files()
 {
 	const auto time = GetTimeOfDay();
@@ -966,6 +959,18 @@ bool LanternCollection::load_files()
 			if (use_time(level, act))
 			{
 				GetTimeOfDayLevelAndAct(&level, &act);
+			}
+
+			set_sl_light(DefaultDirLight);
+
+			for (const auto& light : DirLightOverrides)
+			{
+				if ((light.Act != act || light.LevelID != level) && light.LevelID != level)
+				{
+					continue;
+				}
+
+				set_sl_light(light);
 			}
 
 			if (!pl_handled && !sl_handled

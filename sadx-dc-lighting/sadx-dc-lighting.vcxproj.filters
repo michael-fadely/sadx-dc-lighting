@@ -96,6 +96,12 @@
     <ClInclude Include="apiconfig.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="lanternlight.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="floatmath.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -147,6 +153,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="apiconfig.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lanternlight.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="floatmath.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

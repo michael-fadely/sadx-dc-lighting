@@ -6,6 +6,8 @@
 #include <ninja.h>
 
 #include "ShaderParameter.h"
+#include "lantern.h"
+#include "lanternlight.h"
 
 namespace d3d
 {
@@ -50,6 +52,8 @@ namespace param
 	extern ShaderParameter<D3DXCOLOR> FogColor;
 	extern ShaderParameter<float> AlphaRef;
 	extern ShaderParameter<D3DXVECTOR3> ViewPosition;
+
+	extern ShaderParameter<DirLightData_hlsl> DirLight;
 }
 
 // Same as in the mod loader except with d3d8to9 types.

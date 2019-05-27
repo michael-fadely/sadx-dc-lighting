@@ -65,12 +65,14 @@
 #include "FixCharacterMaterials.h"
 #include "globals.h"
 #include "lantern.h"
+#include "lanternlight.h"
 #include "Obj_Past.h"
 #include "Obj_SkyDeck.h"
 #include "Obj_Chaos7.h"
 #include "Trampoline.h"
 #include "FileSystem.h"
 #include "polybuff.h"
+#include "floatmath.h"
 
 // Materials
 #include "ssgarden.h"

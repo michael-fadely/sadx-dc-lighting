@@ -60,6 +60,8 @@ namespace param
 	ShaderParameter<float>       AlphaRef(33, 16.0f / 255.0f, IShaderParameter::Type::pixel);
 	ShaderParameter<D3DXVECTOR3> ViewPosition(34, {}, IShaderParameter::Type::pixel);
 
+	ShaderParameter<DirLightData_hlsl> DirLight(40, {}, IShaderParameter::Type::both);
+
 	IShaderParameter* const parameters[] = {
 		&PaletteA,
 		&PaletteB,
@@ -87,6 +89,8 @@ namespace param
 		&FogColor,
 		&AlphaRef,
 		&ViewPosition,
+
+		&DirLight
 	};
 
 	static void release_parameters()

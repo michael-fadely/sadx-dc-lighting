@@ -29,19 +29,6 @@ struct CharacterLightData_
 
 #pragma pack(push, 1)
 
-struct DirLightData
-{
-	char LevelID;
-	char Act;
-	NJS_VECTOR LightDirection;
-	float R;
-	float G;
-	float B;
-	float Specular;
-	float Diffuse;
-	float Ambient;
-};
-
 // RY RZ R G B SP DI AM
 struct SourceLight_t
 {
