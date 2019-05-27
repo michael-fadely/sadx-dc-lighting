@@ -7,6 +7,7 @@
 
 #include "ShaderParameter.h"
 #include "../include/lanternapi.h"
+#include "lanternlight.h"
 
 #pragma pack(push, 8)
 struct CharacterLightData_
