@@ -193,48 +193,50 @@ PS_IN vs_main(VS_IN input)
 		float4 inputDiffuse = GetDiffuse(input.color);
 		float3 worldNormal = mul(input.normal * NormalScale, (float3x3)WorldMatrix);
 
-		float3 srcDir = LightDirection;
-		float3 dirDir = -DirLight.direction;
+		float3 srcDir = normalize(LightDirection);
+		float3 dirDir = normalize(-DirLight.direction);
 
 		float srcD = (dot(srcDir, worldNormal) + 1.0f) / 2.0f;
 		float dirD = (dot(dirDir, worldNormal) + 1.0f) / 2.0f;
 
-		float3 srcDiffuse = (SrcLight.color * SrcLight.diffuse * srcD);
-		float3 dirDiffuse = (DirLight.color * DirLight.diffuse * dirD);
+		// HACK: power is hard coded here
+		float3 srcSpecular = (SrcLight.color * SrcLight.specular * pow(max(0, srcD), 11));
+		float3 dirSpecular = (DirLight.color * DirLight.specular * pow(max(0, dirD), 11));
+
+		float3 srcDiffuse = (SrcLight.color * SrcLight.diffuse);
+		float3 dirDiffuse = (DirLight.color * DirLight.diffuse);
 
 		float3 srcAmbient = SrcLight.color * SrcLight.ambient;
 		float3 dirAmbient = DirLight.color * DirLight.ambient;
 
-		float3 srcSpecular = (SrcLight.color * SrcLight.specular * pow(max(0, srcD), 11));
-		float3 dirSpecular = (DirLight.color * DirLight.specular * pow(max(0, dirD), 11));
+		float3 dirShading = saturate(dirDiffuse * dirD);
+		float3 srcShading = saturate(srcDiffuse * srcD);
 
-		float3 diffuse = lerp(dirAmbient, dirDiffuse, dirD) + lerp(srcAmbient, srcDiffuse, srcD);
+		float3 diffuse  = saturate(lerp(srcShading, dirShading, dirD) + lerp(srcAmbient, dirAmbient, 1 - dirD));
+		float3 specular = lerp(dirSpecular, lerp(srcSpecular, dirSpecular, 1 - srcD), 1 - dirD); // hack
 
 		diffuse *= inputDiffuse.rgb;
-
-		// hack
-		float3 specular = lerp(srcSpecular, dirSpecular, dirD);
 
 		float4 pdiffuse  = float4(diffuse, inputDiffuse.a);
 		float4 pspecular = float4(specular, 0);
 
 	#if defined(USE_BLEND)
 		{
-			float4 bdiffuse = tex2Dlod(atlasSamplerB, float4(i, Indices.y, 0, 0));
+			float4 bdiffuse  = tex2Dlod(atlasSamplerB, float4(i, Indices.y, 0, 0));
 			float4 bspecular = tex2Dlod(atlasSamplerB, float4(i, Indices.w, 0, 0));
 
-			pdiffuse = lerp(pdiffuse, bdiffuse, BlendFactor.x);
+			pdiffuse  = lerp(pdiffuse, bdiffuse, BlendFactor.x);
 			pspecular = lerp(pspecular, bspecular, BlendFactor.y);
 		}
 	#endif
 
-		output.diffuse = float4(pdiffuse.rgb, inputDiffuse.a);
+		output.diffuse  = float4(pdiffuse.rgb, inputDiffuse.a);
 		output.specular = float4(pspecular.rgb, 0.0f);
 	}
 #else
 	{
 		// Just spit out the vertex or material color if lighting is off.
-		output.diffuse = GetDiffuse(input.color);
+		output.diffuse  = GetDiffuse(input.color);
 		output.specular = 0;
 	}
 #endif
