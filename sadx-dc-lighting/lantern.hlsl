@@ -190,44 +190,35 @@ PS_IN vs_main(VS_IN input)
 
 #if defined(USE_LIGHT)
 	{
-		float3 lightDir = normalize(-DirLight.direction.xyz);
-
-		float3 worldNormal = mul(input.normal * NormalScale, (float3x3)WorldMatrix);
 		float4 inputDiffuse = GetDiffuse(input.color);
+		float3 worldNormal = mul(input.normal * NormalScale, (float3x3)WorldMatrix);
 
-		// This is the "brightness index" calculation. Just a dot product
-		// of the vertex normal (in world space) and the light direction.
-		float _dot = dot(lightDir, worldNormal);
-		float d = (_dot + 1.0f) / 2.0f;
+		float3 srcDir = LightDirection;
+		float3 dirDir = -DirLight.direction;
 
-		// The palette's brightest point is 0, and its darkest point is 1,
-		// so we push the dot product (-1 .. 1) into the rage 0 .. 1, and
-		// subtract it from 1. This is the value we use for indexing into
-		// the palette.
-		// HACK: This clamp prevents a visual bug in the Mystic Ruins past (shrine on fire)
-		//float i = floor(clamp(1 - (_dot + 1) / 2, 0, 0.99) * 255) / 255;
+		float srcD = (dot(srcDir, worldNormal) + 1.0f) / 2.0f;
+		float dirD = (dot(dirDir, worldNormal) + 1.0f) / 2.0f;
 
-	#if 1
-		float3 ambient = (SrcLight.color * SrcLight.ambient) * (DirLight.color * DirLight.ambient);
-		float3 diffuse = inputDiffuse.rgb * (SrcLight.color * SrcLight.diffuse) * (DirLight.color * DirLight.diffuse) * d;
-		float3 specular = (SrcLight.color * SrcLight.specular * pow(max(0, d), SrcLight.specular)) *
-		                  (DirLight.color * DirLight.specular * pow(max(0, d), DirLight.specular));
-	#elif 0
-		float3 ambient  = (DirLight.color * DirLight.ambient);
-		float3 diffuse  = inputDiffuse.rgb * (DirLight.color * DirLight.diffuse) * d;
-		float3 specular = (DirLight.color * DirLight.specular * pow(max(0, d), DirLight.specular));
-	#elif 0
-		float3 ambient = (SrcLight.color * SrcLight.ambient);
-		float3 diffuse = inputDiffuse.rgb * (SrcLight.color * SrcLight.diffuse) * d;
-		float3 specular = (SrcLight.color * SrcLight.specular * pow(max(0, d), SrcLight.specular));
-	#endif
+		float3 srcDiffuse = (SrcLight.color * SrcLight.diffuse * srcD);
+		float3 dirDiffuse = (DirLight.color * DirLight.diffuse * dirD);
 
+		float3 srcAmbient = SrcLight.color * SrcLight.ambient;
+		float3 dirAmbient = DirLight.color * DirLight.ambient;
 
-		float4 pdiffuse = float4(saturate(diffuse + ambient), 1);
-		float4 pspecular = float4(saturate(specular), 0);
+		float3 srcSpecular = (SrcLight.color * SrcLight.specular * pow(max(0, srcD), 11));
+		float3 dirSpecular = (DirLight.color * DirLight.specular * pow(max(0, dirD), 11));
 
-		// disabled
-	#if 0 || defined(USE_BLEND)
+		float3 diffuse = lerp(dirAmbient, dirDiffuse, dirD) + lerp(srcAmbient, srcDiffuse, srcD);
+
+		diffuse *= inputDiffuse.rgb;
+
+		// hack
+		float3 specular = lerp(srcSpecular, dirSpecular, dirD);
+
+		float4 pdiffuse  = float4(diffuse, inputDiffuse.a);
+		float4 pspecular = float4(specular, 0);
+
+	#if defined(USE_BLEND)
 		{
 			float4 bdiffuse = tex2Dlod(atlasSamplerB, float4(i, Indices.y, 0, 0));
 			float4 bspecular = tex2Dlod(atlasSamplerB, float4(i, Indices.w, 0, 0));
@@ -237,7 +228,7 @@ PS_IN vs_main(VS_IN input)
 		}
 	#endif
 
-		output.diffuse = float4((inputDiffuse * pdiffuse).rgb, inputDiffuse.a);
+		output.diffuse = float4(pdiffuse.rgb, inputDiffuse.a);
 		output.specular = float4(pspecular.rgb, 0.0f);
 	}
 #else
