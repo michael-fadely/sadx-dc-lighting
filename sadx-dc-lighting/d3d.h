@@ -54,6 +54,7 @@ namespace param
 	extern ShaderParameter<D3DXVECTOR3> ViewPosition;
 
 	extern ShaderParameter<DirLightData_hlsl> DirLight;
+	extern ShaderParameter<SourceLight_hlsl> SrcLight;
 }
 
 // Same as in the mod loader except with d3d8to9 types.

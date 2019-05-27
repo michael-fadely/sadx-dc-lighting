@@ -17,9 +17,11 @@
 #include "lanternlight.h"
 #include "floatmath.h"
 
-static const DirLightData DefaultDirLight = { 0, 0, { 0.822f, -0.57f, 0 }, 1, 1, 1, 0.8f, 1, 0.25f };
+// TODO: pull from game directly
+static const DirLightData default_dir_light = { 0, 0, { 0.822f, -0.57f, 0 }, 1, 1, 1, 0.8f, 1, 0.25f };
 
-static const DirLightData DirLightOverrides[] = {
+// TODO: pull from game directly
+static const DirLightData dir_light_overrides[] = {
 	{ LevelIDs_TwinklePark,    0, { 0.5f, -0.866f, 0.0f },                 1, 1, 0.95f, 0.8f, 0.9f, 0.2f }, //same for all acts
 	{ LevelIDs_SpeedHighway,   0, { 0.5f, -0.866f, 0.0f },                 1, 1, 1, 0.7f, 0.6f, 0.2f },
 	{ LevelIDs_SpeedHighway,   1, { 1.0f, 0.0f, 0.0f },                    1, 0.9f, 0.9f, 1, 0.8f, 0.3f },
@@ -39,6 +41,7 @@ static const DirLightData DirLightOverrides[] = {
 
 bool SourceLight_t::operator==(const SourceLight_t& rhs) const
 {
+	// this is sketchy as fuck
 	return y == rhs.y
 	    && z == rhs.z
 	    && near_equal(color[0], rhs.color[0])
@@ -64,85 +67,115 @@ bool SourceLight_t::operator!=(const SourceLight_t& rhs) const
 	    || !std::equal(unknown2, unknown2 + 15, rhs.unknown2, rhs.unknown2 + 15, near_equal);
 }
 
-bool StageLight::operator==(const StageLight& rhs) const
+bool SourceLight_hlsl::operator==(const SourceLight_hlsl& rhs) const
 {
-	return near_equal(specular, rhs.specular)
-	    && near_equal(multiplier, rhs.multiplier)
-	    && equal(direction, rhs.direction)
-	    && equal(diffuse, rhs.diffuse)
-	    && equal(ambient, rhs.ambient);
+	return near_equal(color[0], rhs.color[0])
+	    && near_equal(color[1], rhs.color[1])
+	    && near_equal(color[2], rhs.color[2])
+	    && near_equal(specular, rhs.specular)
+	    && near_equal(diffuse, rhs.diffuse)
+	    && near_equal(ambient, rhs.ambient);
 }
 
-bool StageLight::operator!=(const StageLight& rhs) const
+bool SourceLight_hlsl::operator!=(const SourceLight_hlsl& rhs) const
 {
-	return !near_equal(specular, rhs.specular)
-	    || !near_equal(multiplier, rhs.multiplier)
-	    || not_equal(direction, rhs.direction)
-	    || not_equal(diffuse, rhs.diffuse)
-	    || not_equal(ambient, rhs.ambient);
-}
-
-bool StageLights::operator==(const StageLights& rhs) const
-{
-	return lights[0] == rhs.lights[0]
-	    && lights[1] == rhs.lights[1]
-	    && lights[2] == rhs.lights[2]
-	    && lights[3] == rhs.lights[3];
-}
-
-bool StageLights::operator!=(const StageLights& rhs) const
-{
-	return lights[0] != rhs.lights[0]
-	    || lights[1] != rhs.lights[1]
-	    || lights[2] != rhs.lights[2]
-	    || lights[3] != rhs.lights[3];
+	return !near_equal(color[0], rhs.color[0])
+	    || !near_equal(color[1], rhs.color[1])
+	    || !near_equal(color[2], rhs.color[2])
+	    || !near_equal(specular, rhs.specular)
+	    || !near_equal(diffuse, rhs.diffuse)
+	    || !near_equal(ambient, rhs.ambient);
 }
 
 template <>
-bool ShaderParameter<SourceLight_t>::commit(IDirect3DDevice9* device)
+bool ShaderParameter<SourceLight_hlsl>::commit(IDirect3DDevice9* device)
 {
-	if (is_modified())
+	if (!is_modified())
 	{
-		float buffer[24] {};
-		memcpy(buffer, &current, sizeof(SourceLight_t));
-
-		if (type & Type::vertex)
-		{
-			device->SetVertexShaderConstantF(index, buffer, 6);
-		}
-
-		if (type & Type::pixel)
-		{
-			device->SetPixelShaderConstantF(index, buffer, 6);
-		}
-
-		clear();
-		return true;
+		return false;
 	}
 
-	return false;
+	static constexpr auto length = 4 * 4;
+	float buffer[length] {};
+
+	size_t i = 0;
+
+	buffer[i++] = current.color[0];
+	buffer[i++] = current.color[1];
+	buffer[i++] = current.color[2];
+
+	// skip the alpha channel of the color
+	buffer[++i] = current.specular;
+	
+	i += 4;
+	buffer[i] = current.diffuse;
+	
+	i += 4;
+	buffer[i] = current.ambient;
+
+	if (type & Type::vertex)
+	{
+		device->SetVertexShaderConstantF(index, buffer, length / 4);
+	}
+
+	if (type & Type::pixel)
+	{
+		device->SetPixelShaderConstantF(index, buffer, length / 4);
+	}
+
+	clear();
+	return true;
 }
 
+
 template <>
-bool ShaderParameter<StageLights>::commit(IDirect3DDevice9* device)
+bool ShaderParameter<DirLightData_hlsl>::commit(IDirect3DDevice9* device)
 {
-	if (is_modified())
+	if (!is_modified())
 	{
-		if (type & Type::vertex)
-		{
-			device->SetVertexShaderConstantF(index, reinterpret_cast<float*>(&current), 16);
-		}
-
-		if (type & Type::pixel)
-		{
-			device->SetPixelShaderConstantF(index, reinterpret_cast<float*>(&current), 16);
-		}
-
-		clear();
-		return true;
+		assigned = false;
+		return false;
 	}
 
-	return false;
+	// this is gonna be gross
+
+	// five vectors
+	static constexpr auto size = 5 * 4;
+
+	float buffer[size] {};
+
+	size_t i = 0;
+
+	buffer[i++] = current.direction.x;
+	buffer[i++] = current.direction.y;
+	buffer[i++] = current.direction.z;
+	++i; // padding
+
+	buffer[i++] = current.color.x;
+	buffer[i++] = current.color.y;
+	buffer[i++] = current.color.z;
+	++i; // padding
+
+	buffer[i] = current.specular_m;
+
+	i += 4;
+	buffer[i] = current.diffuse_m;
+
+	i += 4;
+	buffer[i] = current.ambient_m;
+
+	if (type & Type::vertex)
+	{
+		device->SetVertexShaderConstantF(index, buffer, size / 4);
+	}
+
+	if (type & Type::pixel)
+	{
+		device->SetPixelShaderConstantF(index, buffer, size / 4);
+	}
+
+	clear();
+	return true;
 }
 
 static bool use_time(Uint32 level, Uint32 act)
@@ -463,6 +496,18 @@ bool LanternInstance::load_source(const std::string& path)
 
 	PrintDebug("[lantern] Source light rotation (direction): y: %d, z: %d (x: %f, y: %f, z: %f)\n",
 	           source_lights[15].stage.y, source_lights[15].stage.z, sl_direction.x, sl_direction.y, sl_direction.z);
+
+	SourceLight_hlsl hlsl {};
+	const auto& sl = source_lights[15].stage;
+
+	hlsl.color[0] = sl.color[0];
+	hlsl.color[1] = sl.color[1];
+	hlsl.color[2] = sl.color[2];
+	hlsl.specular = sl.specular;
+	hlsl.diffuse  = sl.diffuse;
+	hlsl.ambient  = sl.ambient;
+
+	param::SrcLight = hlsl;
 
 	return true;
 }
@@ -961,9 +1006,9 @@ bool LanternCollection::load_files()
 				GetTimeOfDayLevelAndAct(&level, &act);
 			}
 
-			set_sl_light(DefaultDirLight);
+			set_sl_light(default_dir_light);
 
-			for (const auto& light : DirLightOverrides)
+			for (const auto& light : dir_light_overrides)
 			{
 				if ((light.Act != act || light.LevelID != level) && light.LevelID != level)
 				{

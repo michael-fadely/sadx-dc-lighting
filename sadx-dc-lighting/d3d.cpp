@@ -61,6 +61,7 @@ namespace param
 	ShaderParameter<D3DXVECTOR3> ViewPosition(34, {}, IShaderParameter::Type::pixel);
 
 	ShaderParameter<DirLightData_hlsl> DirLight(40, {}, IShaderParameter::Type::both);
+	ShaderParameter<SourceLight_hlsl> SrcLight(50, {}, IShaderParameter::Type::both);
 
 	IShaderParameter* const parameters[] = {
 		&PaletteA,
@@ -90,7 +91,8 @@ namespace param
 		&AlphaRef,
 		&ViewPosition,
 
-		&DirLight
+		&DirLight,
+		&SrcLight,
 	};
 
 	static void release_parameters()

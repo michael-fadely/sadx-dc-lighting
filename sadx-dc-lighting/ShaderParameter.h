@@ -4,7 +4,6 @@
 #include <atlbase.h>
 #include <d3d9.h>
 #include <d3dx9effect.h>
-#include "lanternlight.h"
 
 using VertexShader = CComPtr<IDirect3DVertexShader9>;
 using PixelShader  = CComPtr<IDirect3DPixelShader9>;
@@ -126,5 +125,4 @@ template<> bool ShaderParameter<D3DXVECTOR2>::commit(IDirect3DDevice9* device);
 template<> bool ShaderParameter<D3DXCOLOR>::commit(IDirect3DDevice9* device);
 template<> bool ShaderParameter<D3DXMATRIX>::commit(IDirect3DDevice9* device);
 template<> bool ShaderParameter<Texture>::commit(IDirect3DDevice9* device);
-template<> bool ShaderParameter<DirLightData_hlsl>::commit(IDirect3DDevice9* device);
 template<> void ShaderParameter<Texture>::release();

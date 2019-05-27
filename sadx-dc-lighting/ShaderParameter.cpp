@@ -225,53 +225,6 @@ bool ShaderParameter<Texture>::commit(IDirect3DDevice9* device)
 }
 
 template <>
-bool ShaderParameter<DirLightData_hlsl>::commit(IDirect3DDevice9* device)
-{
-	if (!is_modified())
-	{
-		assigned = false;
-		return false;
-	}
-
-	static constexpr auto size = 12;
-
-	float buffer[size] {};
-
-	size_t i = 0;
-
-	buffer[i++] = current.direction.x;
-	buffer[i++] = current.direction.y;
-	buffer[i++] = current.direction.z;
-
-	// padding
-	++i;
-
-	buffer[i++] = current.color.x;
-	buffer[i++] = current.color.y;
-	buffer[i++] = current.color.z;
-
-	// padding
-	++i;
-
-	buffer[i++] = current.specular_m;
-	buffer[i++] = current.diffuse_m;
-	buffer[i++] = current.ambient_m;
-
-	if (type & Type::vertex)
-	{
-		device->SetVertexShaderConstantF(index, buffer, size / 4);
-	}
-
-	if (type & Type::pixel)
-	{
-		device->SetPixelShaderConstantF(index, buffer, size / 4);
-	}
-
-	clear();
-	return true;
-}
-
-template <>
 void ShaderParameter<Texture>::release()
 {
 	clear();

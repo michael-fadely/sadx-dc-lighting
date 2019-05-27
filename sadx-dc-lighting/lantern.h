@@ -50,27 +50,6 @@ union SourceLight
 	PaletteLight source;
 };
 
-struct StageLight
-{
-	NJS_VECTOR direction;
-	float specular;
-	float multiplier;
-	NJS_VECTOR diffuse;
-	NJS_VECTOR ambient;
-	float padding[5];
-
-	bool operator==(const StageLight& rhs) const;
-	bool operator!=(const StageLight& rhs) const;
-};
-
-struct StageLights
-{
-	StageLight lights[4] {};
-
-	bool operator==(const StageLights& rhs) const;
-	bool operator!=(const StageLights& rhs) const;
-};
-
 struct ColorPair
 {
 	NJS_COLOR diffuse, specular;
@@ -78,9 +57,21 @@ struct ColorPair
 
 #pragma pack(pop)
 
+struct SourceLight_hlsl
+{
+	float color[3];
+	float specular;
+	float diffuse;
+	float ambient;
+
+	bool operator==(const SourceLight_hlsl& rhs) const;
+	bool operator!=(const SourceLight_hlsl& rhs) const;
+};
+
 static_assert(sizeof(SourceLight) == 0x60, "SourceLight size mismatch");
-template<> bool ShaderParameter<SourceLight_t>::commit(IDirect3DDevice9* device);
-template<> bool ShaderParameter<StageLights>::commit(IDirect3DDevice9* device);
+
+template<> bool ShaderParameter<DirLightData_hlsl>::commit(IDirect3DDevice9* device);
+template<> bool ShaderParameter<SourceLight_hlsl>::commit(IDirect3DDevice9* device);
 
 class ILantern
 {
