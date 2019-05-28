@@ -220,7 +220,7 @@ PS_IN vs_main(VS_IN input)
 		float4 pdiffuse  = float4(diffuse, inputDiffuse.a);
 		float4 pspecular = float4(specular, 0);
 
-	#if 0 || defined(USE_BLEND)
+	#if 0 && defined(USE_BLEND)
 		{
 			float4 bdiffuse  = tex2Dlod(atlasSamplerB, float4(i, Indices.y, 0, 0));
 			float4 bspecular = tex2Dlod(atlasSamplerB, float4(i, Indices.w, 0, 0));
