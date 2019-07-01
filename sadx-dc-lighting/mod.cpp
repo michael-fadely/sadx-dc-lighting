@@ -12,7 +12,6 @@
 
 // Local
 #include "d3d.h"
-#include "datapointers.h"
 #include "globals.h"
 #include "lantern.h"
 #include "../include/lanternapi.h"
