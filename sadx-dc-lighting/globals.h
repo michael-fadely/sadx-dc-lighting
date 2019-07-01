@@ -11,17 +11,11 @@
 
 namespace globals
 {
-#ifdef _DEBUG
-	extern NJS_VECTOR light_dir;
-#endif
+	extern NJS_VECTOR debug_stage_light_dir;
 
 	extern HelperFunctions helper_functions;
 
-	extern std::unordered_map<NJS_MATERIAL*, std::deque<lantern_material_cb>> material_callbacks;
-
 	extern Sint32 light_type;
-	extern bool landtable_specular;
-	extern bool object_vcolor;
 	extern bool first_material;
 
 	extern std::string mod_path;

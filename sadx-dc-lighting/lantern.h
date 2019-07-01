@@ -63,8 +63,6 @@ static_assert(sizeof(SourceLight) == 0x60, "SourceLight size mismatch");
 template<> bool ShaderParameter<SourceLight_t>::commit(IDirect3DDevice9* device);
 template<> bool ShaderParameter<StageLights>::commit(IDirect3DDevice9* device);
 
-class LanternInstance;
-
 class ILantern
 {
 public:
@@ -104,14 +102,14 @@ public:
 	~LanternInstance();
 
 	static bool diffuse_override;
-	static bool diffuse_override_temp;
+	static bool diffuse_override_is_temp;
 	static bool specular_override;
-	static bool specular_override_temp;
+	static bool specular_override_is_temp;
 	static float diffuse_blend_factor_;
 	static float specular_blend_factor_;
 	static bool use_palette_;
 
-	Sint8 last_time   = -1;
+	Sint8  last_time  = -1;
 	Sint32 last_act   = -1;
 	Sint32 last_level = -1;
 	Sint32 diffuse_   = -1;
@@ -149,7 +147,7 @@ class LanternCollection : ILantern
 	static void callback_add(std::deque<lantern_load_cb>& c, lantern_load_cb callback);
 	static void callback_del(std::deque<lantern_load_cb>& c, lantern_load_cb callback);
 
-	Sint32 diffuse_blend_[8] = { -1, -1, -1, -1, -1, -1, -1, -1 };
+	Sint32 diffuse_blend_[8]  = { -1, -1, -1, -1, -1, -1, -1, -1 };
 	Sint32 specular_blend_[8] = { -1, -1, -1, -1, -1, -1, -1, -1 };
 
 public:

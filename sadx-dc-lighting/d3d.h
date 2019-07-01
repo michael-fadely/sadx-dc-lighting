@@ -50,6 +50,8 @@ namespace param
 	extern ShaderParameter<int> FogMode;
 	extern ShaderParameter<D3DXVECTOR3> FogConfig;
 	extern ShaderParameter<D3DXCOLOR> FogColor;
+	extern ShaderParameter<float> AlphaRef;
+	extern ShaderParameter<D3DXVECTOR3> ViewPosition;
 
 #ifdef USE_OIT
 	extern ShaderParameter<Texture> AlphaDepth;

@@ -24,7 +24,7 @@ static void __cdecl Obj_Past_Delete_r(ObjectMaster* _this)
 	Obj_Past_Delete(_this);
 }
 
-static void __cdecl Obj_Past_r(ObjectMaster *_this)
+static void __cdecl Obj_Past_r(ObjectMaster* _this)
 {
 	auto entity = _this->Data1;
 	switch (entity->Action)

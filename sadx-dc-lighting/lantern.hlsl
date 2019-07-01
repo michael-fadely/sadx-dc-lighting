@@ -22,9 +22,6 @@
 	AlphaArg1 = Texture;    \
 	AlphaArg2 = Current
 
-// This never changes
-static const float AlphaRef = 16.0f / 255.0f;
-
 // Textures
 
 Texture2D BaseTexture : register(t0);
@@ -108,6 +105,9 @@ uint FogMode : register(c30) = (uint)FOGMODE_NONE;
 // x y and z are start, end, and density respectively
 float3 FogConfig : register(c31);
 float4 FogColor  : register(c32);
+float  AlphaRef  : register(c33) = 16.0f / 255.0f;
+
+float3 ViewPosition : register(c34);
 
 // Used for correcting screen-space coordinates to sample the depth buffer.
 float2 ViewPort         : register(c46) = float2(0, 0);
@@ -147,20 +147,9 @@ float CalcFogFactor(float d)
 
 float4 GetDiffuse(in float4 vcolor)
 {
-	if (DiffuseSource == D3DMCS_COLOR1 && !AllowVertexColor)
-	{
-		return float4(1, 1, 1, vcolor.a);
-	}
-
-	if (DiffuseSource == D3DMCS_MATERIAL && ForceDefaultDiffuse)
-	{
-		return float4(178.0 / 255.0, 178.0 / 255.0, 178.0 / 255.0, MaterialDiffuse.a);
-	}
-
 	float4 color = (DiffuseSource == D3DMCS_COLOR1 && any(vcolor)) ? vcolor : MaterialDiffuse;
 
-	int3 icolor = color.rgb * 255.0;
-	if (icolor.r == 178 && icolor.g == 178 && icolor.b == 178)
+	if (!AllowVertexColor || ForceDefaultDiffuse)
 	{
 		return float4(1, 1, 1, color.a);
 	}
@@ -217,7 +206,8 @@ struct PS_IN
 	float4 diffuse  : COLOR0;
 	float4 specular : COLOR1;
 	float2 tex      : TEXCOORD0;
-	float  fogDist  : FOG;
+	float  fogDist  : FOG0;
+	float3 worldPos : FOG1;
 	float2 depth    : TEXCOORD1;
 };
 
@@ -229,7 +219,10 @@ PS_IN vs_main(VS_IN input)
 
 	output.position = mul(float4(input.position, 1), wvMatrix);
 	output.fogDist = output.position.z;
+
 	output.position = mul(output.position, ProjectionMatrix);
+
+	output.worldPos = (float3)mul(float4(input.position, 1), WorldMatrix);
 
 	output.depth = output.position.zw;
 
@@ -340,7 +333,15 @@ float4 ps_main(PS_IN input, float2 vpos : VPOS, out float4 oDepth : COLOR1) : CO
 #endif
 
 #ifdef USE_FOG
-	float factor = CalcFogFactor(input.fogDist);
+	float distance;
+
+#ifdef RANGE_FOG
+	distance = length(input.worldPos - ViewPosition);
+#else
+	distance = input.fogDist;
+#endif
+
+	float factor = CalcFogFactor(distance);
 	result.rgb = (factor * result + (1.0 - factor) * FogColor).rgb;
 #endif
 

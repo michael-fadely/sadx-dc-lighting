@@ -1,4 +1,6 @@
 #include "stdafx.h"
+
+#include <Windows.h>
 #include <d3d9.h>
 
 // Mod loader
@@ -10,7 +12,6 @@
 
 // Local
 #include "d3d.h"
-#include "datapointers.h"
 #include "globals.h"
 #include "lantern.h"
 #include "../include/lanternapi.h"
@@ -19,6 +20,8 @@
 #include "Obj_Chaos7.h"
 #include "FixChaoGardenMaterials.h"
 #include "FixCharacterMaterials.h"
+#include "polybuff.h"
+#include "apiconfig.h"
 
 static Trampoline* CharSel_LoadA_t                 = nullptr;
 static Trampoline* Direct3D_ParseMaterial_t        = nullptr;
@@ -35,7 +38,7 @@ static Trampoline* SetCurrentStageLight_EggViper_t = nullptr;
 
 DataPointer(NJS_VECTOR, NormalScaleMultiplier, 0x03B121F8);
 
-#ifdef _DEBUG
+#ifdef DEBUG
 static void show_light_direction()
 {
 	using namespace globals;
@@ -59,24 +62,24 @@ static void show_light_direction()
 	};
 
 	points[1] = points[0];
-	points[1].x += light_dir.x * 10.0f;
+	points[1].x += debug_stage_light_dir.x * 10.0f;
 	colors[0].color = colors[1].color = 0xFFFF0000;
 	DrawLineList(&info, 1, 0);
 
 	points[1] = points[0];
-	points[1].y += light_dir.y * 10.0f;
+	points[1].y += debug_stage_light_dir.y * 10.0f;
 	colors[0].color = colors[1].color = 0xFF00FF00;
 	DrawLineList(&info, 1, 0);
 
 	points[1] = points[0];
-	points[1].z += light_dir.z * 10.0f;
+	points[1].z += debug_stage_light_dir.z * 10.0f;
 	colors[0].color = colors[1].color = 0xFF0000FF;
 	DrawLineList(&info, 1, 0);
 
 	points[1] = points[0];
-	points[1].x += light_dir.x * 10.0f;
-	points[1].y += light_dir.y * 10.0f;
-	points[1].z += light_dir.z * 10.0f;
+	points[1].x += debug_stage_light_dir.x * 10.0f;
+	points[1].y += debug_stage_light_dir.y * 10.0f;
+	points[1].z += debug_stage_light_dir.z * 10.0f;
 	colors[0].color = colors[1].color = 0xFFFFFF00;
 	DrawLineList(&info, 1, 0);
 }
@@ -125,6 +128,16 @@ static void __cdecl CorrectMaterial_r()
 
 	update_material(material);
 	device->SetMaterial(&material);
+}
+
+inline void fix_default_color(Uint32& color)
+{
+	// HACK: fixes stupid default material color
+	// TODO: toggle? What if someone actually wants this color?
+	if ((color & 0xFFFFFF) == 0xB2B2B2)
+	{
+		color |= 0xFFFFFF;
+	}
 }
 
 static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
@@ -187,6 +200,9 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 		flags = _nj_constant_attr_or_ | (_nj_constant_attr_and_ & flags);
 	}
 
+	fix_default_color(EntityVertexColor.color);
+	fix_default_color(LandTableVertexColor.color);
+
 	globals::palettes.set_palettes(globals::light_type, flags);
 
 	set_flags(ShaderFlags_Texture, (flags & NJD_FLAG_USE_TEXTURE) != 0);
@@ -206,13 +222,13 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 
 	do_effect = true;
 
-	if (globals::material_callbacks.empty())
+	if (apiconfig::material_callbacks.empty())
 	{
 		return;
 	}
 
-	auto it = globals::material_callbacks.find(material);
-	if (it == globals::material_callbacks.end())
+	auto it = apiconfig::material_callbacks.find(material);
+	if (it == apiconfig::material_callbacks.end())
 	{
 		return;
 	}
@@ -250,8 +266,8 @@ static void __cdecl GoToNextChaoStage_r()
 {
 	TARGET_DYNAMIC(GoToNextChaoStage)();
 
-	auto level = CurrentLevel;
-	auto act = CurrentAct;
+	const auto level = CurrentLevel;
+	const auto act = CurrentAct;
 
 	switch (GetCurrentChaoStage())
 	{
@@ -320,14 +336,14 @@ static void __cdecl LoadLevelFiles_r()
 
 static void __cdecl DrawLandTable_r()
 {
-	if (globals::landtable_specular)
+	if (apiconfig::landtable_specular)
 	{
 		TARGET_DYNAMIC(DrawLandTable)();
 		return;
 	}
 
-	auto flag = _nj_control_3d_flag_;
-	auto or = _nj_constant_attr_or_;
+	const auto flag = _nj_control_3d_flag_;
+	const auto or   = _nj_constant_attr_or_;
 
 	_nj_control_3d_flag_ |= NJD_CONTROL_3D_CONSTANT_ATTR;
 	_nj_constant_attr_or_ |= NJD_FLAG_IGNORE_SPECULAR;
@@ -349,7 +365,7 @@ static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
 			if (texlist == CommonTextures)
 			{
 				globals::palettes.set_palettes(0, 0);
-				param::AllowVertexColor = globals::object_vcolor;
+				param::AllowVertexColor = apiconfig::object_vcolor;
 			}
 			else
 			{
@@ -361,7 +377,7 @@ static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
 					}
 
 					globals::palettes.set_palettes(0, 0);
-					param::AllowVertexColor = globals::object_vcolor;
+					param::AllowVertexColor = apiconfig::object_vcolor;
 					break;
 				}
 			}
@@ -407,19 +423,64 @@ static void __cdecl SetCurrentStageLight_EggViper_r(ObjectMaster* a1)
 	set_light_direction();
 }
 
+void __cdecl InitLandTableMeshSet_r(NJS_MODEL_SADX* model, NJS_MESHSET_SADX* meshset)
+{
+	if (meshset->buffer)
+	{
+		return;
+	}
+
+	NJS_VECTOR*   normals   = model->normals;
+	NJS_POINT3*   points    = model->points;
+	NJS_MATERIAL* materials = model->mats;
+
+	MeshSetBuffer_Allocate(meshset);
+
+	if (!meshset->buffer)
+	{
+		return;
+	}
+
+	if ((meshset->type_matId & 0x3FFF) != 0x3FFF)
+	{
+		const auto& material = materials[meshset->type_matId & 0x3FFF];
+		LandTableVertexColor = material.diffuse;
+	}
+
+	fix_default_color(LandTableVertexColor.color);
+
+	int i = 0;
+	if (meshset->vertuv)
+	{
+		i = 1;
+	}
+
+	if (normals)
+	{
+		i += 2;
+	}
+
+	const VBufferFuncPtr func = MeshSetInitFunctions[i][static_cast<uint32_t>(meshset->type_matId) >> 14u];
+
+	if (func)
+	{
+		func(meshset, points, normals);
+	}
+}
+
 extern "C"
 {
-	EXPORT ModInfo SADXModInfo = { ModLoaderVer };
-	EXPORT void __cdecl Init(const char *path, const HelperFunctions& helperFunctions)
+	EXPORT ModInfo SADXModInfo = { ModLoaderVer, nullptr, nullptr, 0, nullptr, 0, nullptr, 0, nullptr, 0 };
+	EXPORT void __cdecl Init(const char* path, const HelperFunctions& helperFunctions)
 	{
 		auto handle = GetModuleHandle(L"d3d9.dll");
 
 		if (handle == nullptr)
 		{
 			MessageBoxA(WindowHandle,
-				"SADX Lantern Engine will not function without d3d8to9 saved to your Sonic Adventure DX folder. "
-				"Download d3d8.dll from from https://github.com/crosire/d3d8to9",
-				"Lantern Engine Error: Missing d3d8.dll", MB_OK | MB_ICONERROR);
+			            "SADX Lantern Engine will not function without d3d8to9 saved to your Sonic Adventure DX folder. "
+			            "Download d3d8.dll from from https://github.com/crosire/d3d8to9",
+			            "Lantern Engine Error: Missing d3d8.dll", MB_OK | MB_ICONERROR);
 
 			return;
 		}
@@ -427,12 +488,14 @@ extern "C"
 		if (helperFunctions.Version < 5)
 		{
 			MessageBoxA(WindowHandle, "Mod loader out of date. SADX Lantern Engine requires API version 5 or newer.",
-				"Lantern Engine Error: Mod loader out of date", MB_OK | MB_ICONERROR);
+			            "Lantern Engine Error: Mod loader out of date", MB_OK | MB_ICONERROR);
 
 			return;
 		}
 
 		MH_Initialize();
+
+		WriteJump(InitLandTableMeshSet, InitLandTableMeshSet_r);
 
 		LanternInstance base(&param::PaletteA);
 		globals::palettes.add(base);
@@ -442,6 +505,16 @@ extern "C"
 		globals::mod_path    = path;
 		globals::cache_path  = globals::mod_path + "\\cache\\";
 		globals::shader_path = globals::get_system_path("lantern.hlsl");
+
+		const std::string config_path = globals::mod_path + "\\config.ini";
+		std::array<char, 255> str {};
+
+		GetPrivateProfileStringA("Enhancements", "RangeFog", "False", str.data(), str.size(), config_path.c_str());
+
+		if (!strcmp(str.data(), "True"))
+		{
+			d3d::set_flags(ShaderFlags_RangeFog, true);
+		}
 
 		d3d::init_trampolines();
 
@@ -475,6 +548,8 @@ extern "C"
 		WriteCall(reinterpret_cast<void*>(0x00412783), NormalScale_r);
 
 		NormalScaleMultiplier = { 1.0f, 1.0f, 1.0f };
+
+		polybuff_rewrite_init();
 	}
 
 #ifdef _DEBUG

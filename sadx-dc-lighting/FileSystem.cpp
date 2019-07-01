@@ -55,7 +55,6 @@ bool filesystem::remove_all(const std::string& path)
 		{
 			remove(file_path);
 		}
-
 	} while (FindNextFileA(find_handle, &find_data) == TRUE);
 
 	FindClose(find_handle);

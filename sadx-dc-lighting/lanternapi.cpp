@@ -7,8 +7,7 @@
 #include "d3d.h"
 
 #include "../include/lanternapi.h"
-
-using namespace globals;
+#include "apiconfig.h"
 
 inline void check_blend()
 {
@@ -20,39 +19,39 @@ inline void check_blend()
 
 void pl_load_register(lantern_load_cb callback)
 {
-	palettes.add_pl_callback(callback);
+	globals::palettes.add_pl_callback(callback);
 }
 
 void pl_load_unregister(lantern_load_cb callback)
 {
-	palettes.remove_pl_callback(callback);
+	globals::palettes.remove_pl_callback(callback);
 }
 
 void sl_load_register(lantern_load_cb callback)
 {
-	palettes.add_sl_callback(callback);
+	globals::palettes.add_sl_callback(callback);
 }
 
 void sl_load_unregister(lantern_load_cb callback)
 {
-	palettes.remove_sl_callback(callback);
+	globals::palettes.remove_sl_callback(callback);
 }
 
-void material_register(NJS_MATERIAL** materials, int length, lantern_material_cb callback)
+void material_register(NJS_MATERIAL const* const* materials, size_t length, lantern_material_cb callback)
 {
-	if (length < 1 || materials == nullptr || callback == nullptr)
+	if (!length || materials == nullptr || callback == nullptr)
 	{
 		return;
 	}
 
-	for (int i = 0; i < length; i++)
+	for (size_t i = 0; i < length; i++)
 	{
 		auto material = materials[i];
-		auto it = material_callbacks.find(material);
+		auto it = apiconfig::material_callbacks.find(material);
 
-		if (it == material_callbacks.end())
+		if (it == apiconfig::material_callbacks.end())
 		{
-			material_callbacks[material] = { callback };
+			apiconfig::material_callbacks[material] = { callback };
 		}
 		else
 		{
@@ -61,18 +60,18 @@ void material_register(NJS_MATERIAL** materials, int length, lantern_material_cb
 	}
 }
 
-void material_unregister(NJS_MATERIAL** materials, int length, lantern_material_cb callback)
+void material_unregister(NJS_MATERIAL const* const* materials, size_t length, lantern_material_cb callback)
 {
-	if (length < 1 || materials == nullptr || callback == nullptr)
+	if (!length || materials == nullptr || callback == nullptr)
 	{
 		return;
 	}
 
-	for (int i = 0; i < length; i++)
+	for (size_t i = 0; i < length; i++)
 	{
-		auto it = material_callbacks.find(materials[i]);
+		auto it = apiconfig::material_callbacks.find(materials[i]);
 
-		if (it == material_callbacks.end())
+		if (it == apiconfig::material_callbacks.end())
 		{
 			continue;
 		}
@@ -81,43 +80,43 @@ void material_unregister(NJS_MATERIAL** materials, int length, lantern_material_
 
 		if (it->second.empty())
 		{
-			material_callbacks.erase(it);
+			apiconfig::material_callbacks.erase(it);
 		}
 	}
 }
 
-void set_shader_flags(unsigned int flags, bool add)
+void set_shader_flags(uint32_t flags, bool add)
 {
 	d3d::set_flags(flags, add);
 }
 
 void allow_landtable_specular(bool allow)
 {
-	landtable_specular = allow;
+	apiconfig::landtable_specular = allow;
 }
 
-void set_diffuse(int n, bool permanent)
+void set_diffuse(int32_t n, bool permanent)
 {
-	palettes.diffuse_index(n);
+	globals::palettes.diffuse_index(n);
 	LanternInstance::diffuse_override = n >= 0;
-	LanternInstance::diffuse_override_temp = !permanent;
+	LanternInstance::diffuse_override_is_temp = !permanent;
 }
 
-void set_specular(int n, bool permanent)
+void set_specular(int32_t n, bool permanent)
 {
-	palettes.specular_index(n);
+	globals::palettes.specular_index(n);
 	LanternInstance::specular_override = n >= 0;
-	LanternInstance::specular_override_temp = !permanent;
+	LanternInstance::specular_override_is_temp = !permanent;
 }
 
-int get_diffuse()
+int32_t get_diffuse()
 {
-	return (!palettes.size()) ? -1 : palettes[0].diffuse_index();
+	return (!globals::palettes.size()) ? -1 : globals::palettes[0].diffuse_index();
 }
 
-int get_specular()
+int32_t get_specular()
 {
-	return (!palettes.size()) ? -1 : palettes[0].specular_index();
+	return (!globals::palettes.size()) ? -1 : globals::palettes[0].specular_index();
 }
 
 void set_blend_factor(float factor)
@@ -128,7 +127,7 @@ void set_blend_factor(float factor)
 
 void allow_object_vcolor(bool allow)
 {
-	object_vcolor = allow;
+	apiconfig::object_vcolor = allow;
 }
 
 void use_default_diffuse(bool use)
@@ -143,11 +142,11 @@ void diffuse_override(bool enable)
 
 void diffuse_override_rgb(float r, float g, float b)
 {
-	D3DXVECTOR3 color = { r, g, b };
+	const D3DXVECTOR3 color = { r, g, b };
 	param::DiffuseOverrideColor = color;
 }
 
-void set_diffuse_blend(int src, int dest)
+void set_diffuse_blend(int32_t src, int32_t dest)
 {
 	if (dest < -1 || dest > 7)
 	{
@@ -158,7 +157,7 @@ void set_diffuse_blend(int src, int dest)
 
 	if (src == -1)
 	{
-		palettes.diffuse_blend_all(dest);
+		globals::palettes.diffuse_blend_all(dest);
 		return;
 	}
 
@@ -167,10 +166,10 @@ void set_diffuse_blend(int src, int dest)
 		return;
 	}
 
-	palettes.diffuse_blend(src, dest);
+	globals::palettes.diffuse_blend(src, dest);
 }
 
-void set_specular_blend(int src, int dest)
+void set_specular_blend(int32_t src, int32_t dest)
 {
 	if (dest < -1 || dest > 7)
 	{
@@ -181,7 +180,7 @@ void set_specular_blend(int src, int dest)
 
 	if (src == -1)
 	{
-		palettes.specular_blend_all(dest);
+		globals::palettes.specular_blend_all(dest);
 		return;
 	}
 
@@ -190,27 +189,27 @@ void set_specular_blend(int src, int dest)
 		return;
 	}
 
-	palettes.specular_blend(src, dest);
+	globals::palettes.specular_blend(src, dest);
 }
 
-int get_diffuse_blend(int src)
+int32_t get_diffuse_blend(int32_t src)
 {
 	if (src < 0 || src > 7)
 	{
 		return -1;
 	}
 
-	return palettes.diffuse_blend(src);
+	return globals::palettes.diffuse_blend(src);
 }
 
-int get_specular_blend(int src)
+int32_t get_specular_blend(int32_t src)
 {
 	if (src < 0 || src > 7)
 	{
 		return -1;
 	}
 
-	return palettes.specular_blend(src);
+	return globals::palettes.specular_blend(src);
 }
 
 void set_diffuse_blend_factor(float factor)
@@ -235,8 +234,40 @@ float get_specular_blend_factor()
 	return LanternInstance::specular_blend_factor();
 }
 
-void set_blend(int src, int dest)
+void set_blend(int32_t src, int32_t dest)
 {
 	set_diffuse_blend(src, dest);
 	set_specular_blend(src, dest);
+}
+
+void set_alpha_reject(float threshold, bool permanent)
+{
+	if (!permanent)
+	{
+		if (!apiconfig::alpha_ref_is_temp)
+		{
+			apiconfig::alpha_ref_value = param::AlphaRef.value();
+			apiconfig::alpha_ref_is_temp = true;
+		}
+	}
+	else
+	{
+		apiconfig::alpha_ref_value = threshold;
+	}
+
+	param::AlphaRef = threshold;
+}
+
+float get_alpha_reject()
+{
+	return param::AlphaRef.value();
+}
+
+void set_light_direction(const NJS_VECTOR* v)
+{
+	if (v != nullptr)
+	{
+		apiconfig::override_light_dir = true;
+		apiconfig::light_dir_override = *v;
+	}
 }

@@ -92,6 +92,7 @@
     </Link>
     <PostBuildEvent>
       <Command>xcopy /C /Y /D "$(ProjectDir)mod.ini" "$(OutDir)"
+xcopy /Y /D "$(ProjectDir)configschema.xml" "$(OutDir)"
 xcopy /C /Y /D "$(ProjectDir)lantern.hlsl" "$(OutDir)system\"
 xcopy /C /Y /D "$(OutDir)$(TargetName).lib" "$(OutDir)api\"
 xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Command>
@@ -119,6 +120,7 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
     </Link>
     <PostBuildEvent>
       <Command>xcopy /C /Y /D "$(ProjectDir)mod.ini" "$(OutDir)"
+xcopy /Y /D "$(ProjectDir)configschema.xml" "$(OutDir)"
 xcopy /C /Y /D "$(ProjectDir)lantern.hlsl" "$(OutDir)system\"
 xcopy /C /Y /D "$(OutDir)$(TargetName).lib" "$(OutDir)api\"
 xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Command>
@@ -148,6 +150,7 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
     </Link>
     <PostBuildEvent>
       <Command>xcopy /C /Y /D "$(ProjectDir)mod.ini" "$(OutDir)"
+xcopy /Y /D "$(ProjectDir)configschema.xml" "$(OutDir)"
 xcopy /C /Y /D "$(ProjectDir)lantern.hlsl" "$(OutDir)system\"
 xcopy /C /Y /D "$(OutDir)$(TargetName).lib" "$(OutDir)api\"
 xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Command>
@@ -156,10 +159,12 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
   <ItemGroup>
     <ClInclude Include="..\include\lanternapi.h" />
     <ClInclude Include="..\sadx-mod-loader\libmodutils\Trampoline.h" />
+    <ClInclude Include="apiconfig.h" />
     <ClInclude Include="d3d.h" />
     <ClInclude Include="datapointers.h" />
     <ClInclude Include="ecgarden.h" />
     <ClInclude Include="FileSystem.h" />
+    <ClInclude Include="polybuff.h" />
     <ClInclude Include="ShaderParameter.h" />
     <ClInclude Include="FixChaoGardenMaterials.h" />
     <ClInclude Include="FixCharacterMaterials.h" />
@@ -175,8 +180,10 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\sadx-mod-loader\libmodutils\Trampoline.cpp" />
+    <ClCompile Include="apiconfig.cpp" />
     <ClCompile Include="d3d.cpp" />
     <ClCompile Include="FileSystem.cpp" />
+    <ClCompile Include="polybuff.cpp" />
     <ClCompile Include="ShaderParameter.cpp" />
     <ClCompile Include="FixChaoGardenMaterials.cpp" />
     <ClCompile Include="FixCharacterMaterials.cpp" />
@@ -201,6 +208,9 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
     <None Include="lantern.hlsl">
       <FileType>Document</FileType>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="configschema.xml" />
   </ItemGroup>
   <ItemGroup>
     <None Include="blender.hlsl">
