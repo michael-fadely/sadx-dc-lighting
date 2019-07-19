@@ -308,7 +308,7 @@ float4 ps_main(PS_IN input, float2 vpos : VPOS, out float4 oDepth : COLOR1) : CO
 
 	if (currentDepth >= baseDepth)
 	{
-		discard;
+		clip(-1);
 	}
 
 	// Discard any fragment whose depth is less than the last fragment depth.
@@ -317,7 +317,7 @@ float4 ps_main(PS_IN input, float2 vpos : VPOS, out float4 oDepth : COLOR1) : CO
 
 	if (currentDepth <= lastDepth)
 	{
-		discard;
+		clip(-1);
 	}
 #endif
 
