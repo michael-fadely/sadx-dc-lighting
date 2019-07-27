@@ -159,7 +159,7 @@ float4 GetDiffuse(in float4 vcolor)
 
 //#define GARBAGE
 
-float4 encode_argb(float f)
+inline float4 encode_argb(float f)
 {
 #ifdef GARBAGE
 
@@ -167,10 +167,13 @@ float4 encode_argb(float f)
 
 #else
 
-	const float4 bit_shift = float4(1.0, 255.0, 65025.0, 16581375.0);
-	const float4 bit_mask = float4(1.0 / 255.0, 1.0 / 255.0, 1.0 / 255.0, 0.0);
+	float4 bit_shift = float4(1.0, 255.0, 65025.0, 16581375.0);
+	float4 bit_mask = float4(1.0 / 255.0, 1.0 / 255.0, 1.0 / 255.0, 0.0);
 
-	float4 result = frac(bit_shift * f);
+	// idk maybe it's some optimization bullshit
+	float4 result = bit_shift * f;
+
+	result = frac(result);
 	result -= result.yzww * bit_mask;
 
 	return result;
@@ -178,7 +181,7 @@ float4 encode_argb(float f)
 #endif
 }
 
-float decode_argb(float4 v)
+inline float decode_argb(float4 v)
 {
 #ifdef GARBAGE
 
@@ -186,7 +189,7 @@ float decode_argb(float4 v)
 
 #else
 
-	const float4 bit_shift = float4(1.0, 1 / 255.0, 1 / 65025.0, 1 / 16581375.0);
+	float4 bit_shift = float4(1.0, 1.0 / 255.0, 1.0 / 65025.0, 1.0 / 16581375.0);
 	return dot(v, bit_shift);
 
 #endif
@@ -286,6 +289,24 @@ PS_IN vs_main(VS_IN input)
 	return output;
 }
 
+/*
+ * The issue here is that either encoding or decoding a 32-bit float
+ * to the ARGB components of a 32-bit texture is failing.
+ * 
+ * I will likely need to just switch back to a separate depth buffer
+ * building pass even though that sssuucccckkkssss.
+ *
+ * This is only an issue because D3D9 does not allow multiple render
+ * targets of *differing* formats, but 10+ does.
+ *
+ * Additionally, for depth peeling, avoiding normalizing the depth
+ * values is critical for precision.
+ *
+ * oh shit's normalized anyway what the fuck
+ *
+ * In conclusion, fuck D3D9.
+ */
+
 #ifdef USE_OIT
 float4 ps_main(PS_IN input, float2 vpos : VPOS, out float4 oDepth : COLOR1, out float4 blend : COLOR2) : COLOR0
 #else
@@ -294,8 +315,8 @@ float4 ps_main(PS_IN input, float2 vpos : VPOS, out float4 oDepth : COLOR1) : CO
 {
 	float4 result;
 
-	float currentDepth = input.depth.x / input.depth.y;
-	oDepth = encode_argb(currentDepth);
+	oDepth = encode_argb(saturate(input.depth.x / input.depth.y));
+	float currentDepth = decode_argb(oDepth);
 
 #ifdef USE_OIT
 	float2 depthcoord = vpos / ViewPort;
@@ -304,21 +325,25 @@ float4 ps_main(PS_IN input, float2 vpos : VPOS, out float4 oDepth : COLOR1) : CO
 
 	// Exclude any fragment whose depth exceeds that of any opaque fragment.
 	// (equivalent to D3DCMP_LESS)
-	float baseDepth = decode_argb(tex2D(opaqueDepthSampler, depthcoord));
+	float baseDepth = saturate(decode_argb(tex2D(opaqueDepthSampler, depthcoord)));
 
 	if (currentDepth >= baseDepth)
 	{
 		clip(-1);
 	}
 
+	const float EPSILON = 0.0001;
+
 	// Discard any fragment whose depth is less than the last fragment depth.
 	// (equivalent to D3DCMP_GREATER)
-	float lastDepth = decode_argb(tex2D(alphaDepthSampler, depthcoord));
+	float lastDepth = saturate(decode_argb(tex2D(alphaDepthSampler, depthcoord)));
 
-	if (currentDepth <= lastDepth)
+	if (abs(currentDepth - lastDepth) < EPSILON || currentDepth < lastDepth)
 	{
 		clip(-1);
 	}
+
+	//return float4(currentDepth, lastDepth, 0, 1);
 #endif
 
 #ifdef USE_TEXTURE

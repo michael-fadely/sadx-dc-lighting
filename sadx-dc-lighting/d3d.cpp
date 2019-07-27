@@ -1,5 +1,6 @@
 #include "stdafx.h"
 
+
 #include <Windows.h>
 #include <WinCrypt.h>
 
@@ -17,6 +18,7 @@
 #include <MinHook.h>
 
 // Standard library
+#include <array>
 #include <iomanip>
 #include <sstream>
 #include <vector>
@@ -195,20 +197,26 @@ namespace local
 	static std::vector<D3DXMACRO> macros;
 
 #ifdef USE_OIT
-	static const int NUM_PASSES = 4;
+	static constexpr size_t NUM_PASSES = 8;
 
 	// depth texture
-	static Texture depth_maps[2] = {};
+	static std::array<Texture, 2> depth_maps = {};
+
 	// depth buffer
-	static Surface depth_buffers[2] = {};
+	static std::array<Surface, 2> depth_buffers = {};
+
 	// each peeled alpha layer
-	static Texture render_layers[NUM_PASSES] = {};
+	static std::array<Texture, NUM_PASSES> render_layers = {};
+
 	// stores blend modes per-pixel
-	static Texture blend_mode_layers[NUM_PASSES] = {};
+	static std::array<Texture, NUM_PASSES> blend_mode_layers = {};
+
 	// depth texture for opaque geometry
 	static Texture depth_map = nullptr;
+
 	// pingpong backbuffers for compositing the layers
-	static Texture back_buffers[2] = {};
+	static std::array<Texture, 2> back_buffers = {};
+
 	static Surface back_buffer_surface = nullptr;
 	static Surface orig_render_target = nullptr;
 	static Surface orig_depth_surface = nullptr;
@@ -318,7 +326,7 @@ namespace local
 		for (auto& it : depth_buffers)
 		{
 			h = device->CreateDepthStencilSurface(present.BackBufferWidth, present.BackBufferHeight,
-				D3DFMT_D24X8, D3DMULTISAMPLE_NONE, 0, FALSE, &it, nullptr);
+			                                      D3DFMT_D24X8, D3DMULTISAMPLE_NONE, 0, FALSE, &it, nullptr);
 
 			if (FAILED(h))
 			{
@@ -1497,8 +1505,9 @@ namespace local
 		D3DXVECTOR2 uv;
 	};
 	
-	DataPointer(NJS_ARGB, _nj_constant_material_, 0x03D0F7F0);
+	//DataPointer(NJS_ARGB, _nj_constant_material_, 0x03D0F7F0);
 
+	// ReSharper disable once CppDeclaratorNeverUsed
 	static void __cdecl AddToQueue_r(QueuedModelNode* node, float pri, int idk);
 	static void __declspec(naked) AddToQueue_asm()
 	{
@@ -1522,7 +1531,7 @@ namespace local
 
 	void __cdecl AddToQueue_o(QueuedModelNode* node, float pri, int idk)
 	{
-		// ReSharper disable once CppEntityNeverUsed
+		// ReSharper disable once CppDeclaratorNeverUsed
 		auto orig = AddToQueue_t.Target();
 
 		__asm
@@ -1606,7 +1615,10 @@ namespace local
 	};
 
 
+#ifdef USE_NODE_LIMIT
 	static constexpr auto NODE_LIMIT = 50;
+#endif
+
 	std::vector<QueuedNodeEx> nodes;
 
 	bool node_sort_pred(QueuedNodeEx& _a, QueuedNodeEx& _b)
@@ -1630,6 +1642,7 @@ namespace local
 	__inline void sort_nodes()
 	{
 		return;
+	#if 0
 		auto t = GetTickCount64();
 		sort(nodes.begin(), nodes.end(), &node_sort_pred);
 		auto e = GetTickCount64() - t;
@@ -1638,6 +1651,7 @@ namespace local
 		{
 			PrintDebug("%d\n", e);
 		}
+	#endif
 	}
 
 	void __cdecl AddToQueue_r(QueuedModelNode* node, float pri, int idk)
@@ -1717,6 +1731,7 @@ namespace local
 			this->is_peeling = is_peeling;
 			begin();
 		}
+
 		~draw_guard()
 		{
 			end();
@@ -1808,7 +1823,7 @@ namespace local
 			auto texNum = node->TexNum;
 			auto bit_7 = flags >> 6;
 
-#define SHIBYTE(x)   (*((int8_t*)&(x)+1))
+		#define SHIBYTE(x) (*((int8_t*)&(x)+1))
 
 			if (flags & QueuedModelFlags_FogEnabled && SHIBYTE(texNum) >= 0)
 			{
@@ -2007,11 +2022,13 @@ namespace local
 	{
 		using namespace d3d;
 
+		// ReSharper disable once CppEntityAssignedButNoRead
+		// ReSharper disable once CppInitializedValueIsAlwaysRewritten
 		HRESULT error = S_OK;
 
 		draw_guard guard(true);
 
-		const int passes = guard.passes;
+		//const int passes = guard.passes;
 		auto pad = ControllerPointers[0];
 
 		if (pad && pad->PressedButtons & Buttons_Right)
@@ -2021,7 +2038,8 @@ namespace local
 
 		set_flags(ShaderFlags_OIT, true);
 		param::OpaqueDepth = depth_map;
-		peeling = true;
+
+		peeling   = true;
 		do_effect = true;
 
 		begin();
@@ -2030,24 +2048,38 @@ namespace local
 		error = device->SetRenderState(D3DRS_ZENABLE, TRUE);
 		error = device->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESS);
 
+		// clear all the depth maps
+		for (auto& it : depth_maps)
+		{
+			Surface last_map = nullptr;
+			error = it->GetSurfaceLevel(0, &last_map);
+			error = device->ColorFill(last_map, nullptr, 0);
+		}
 
-		for (int p = 0; p < passes; p++)
+		// clear all the depth buffers
+		for (auto& it : depth_buffers)
+		{
+			error = device->SetDepthStencilSurface(it);
+			error = device->Clear(0, nullptr, D3DCLEAR_ZBUFFER, 0, 0.0f, 0);
+			error = device->SetDepthStencilSurface(nullptr);
+		}
+
+		for (size_t p = 0; p < /*passes*/ 1; p++) // what the fuck
 		{
 			// TODO: loop per draw type & use [numPasses] depth buffers?
-			for (int i = 0; i < NUM_PASSES; i++)
+			for (size_t i = 0; i < NUM_PASSES; i++)
 			{
 				error = device->SetRenderTarget(RT_DEPTHBUFFER, nullptr);
 				error = device->SetRenderTarget(RT_BLENDBUFFER, nullptr);
 
-				const int curr_id = i % 2;
-				const int last_id = (i + 1) % 2;
+				const size_t curr_id = i % 2;
+				const size_t last_id = (i + 1) % 2;
 
 				if (!i) // clear last depth buffer(?) and depth map to 0
 				{
 					Surface last_map = nullptr;
 					error = depth_maps[last_id]->GetSurfaceLevel(0, &last_map);
 					error = device->ColorFill(last_map, nullptr, 0);
-					last_map = nullptr;
 
 					error = device->SetDepthStencilSurface(depth_buffers[last_id]);
 					error = device->Clear(0, nullptr, D3DCLEAR_ZBUFFER, 0, 0.0f, 0);
@@ -2081,18 +2113,18 @@ namespace local
 
 				param::AlphaDepth = depth_maps[last_id];
 
-#ifdef USE_NODE_LIMIT
+			#ifdef USE_NODE_LIMIT
 				size_t index = 0;
-#endif
+			#endif
 
 				for (auto& it : nodes)
 				{
-#ifdef USE_NODE_LIMIT
+				#ifdef USE_NODE_LIMIT
 					if (++index > NODE_LIMIT)
 					{
 						break;
 					}
-#endif
+				#endif
 
 					guard.draw(it);
 				}
@@ -2102,10 +2134,6 @@ namespace local
 					const std::string path = "depth" + std::to_string(i + 1) + ".png";
 					D3DXSaveTextureToFileA(path.c_str(), D3DXIFF_PNG, depth_maps[curr_id], nullptr);
 				}
-
-				curr_map  = nullptr;
-				target    = nullptr;
-				blendmode = nullptr;
 
 				param::AlphaDepth.release();
 			}
@@ -2118,24 +2146,26 @@ namespace local
 		param::AlphaDepth.release();
 		set_flags(ShaderFlags_OIT, false);
 
-		Surface surface;
-		depth_map->GetSurfaceLevel(0, &surface);
-		device->SetRenderTarget(RT_DEPTHBUFFER, surface);
+		Surface depth_surface;
+		depth_map->GetSurfaceLevel(0, &depth_surface);
+		device->SetRenderTarget(RT_DEPTHBUFFER, depth_surface);
 		device->SetRenderTarget(RT_BLENDBUFFER, nullptr);
 	}
 
 	static void render_back_buffer()
 	{
 		using namespace d3d;
-		DWORD zenable, lighting, alphablendenable, alphatestenable,
-			srcblend, dstblend;
 
-		device->GetRenderState(D3DRS_ZENABLE, &zenable);
-		device->GetRenderState(D3DRS_LIGHTING, &lighting);
-		device->GetRenderState(D3DRS_ALPHABLENDENABLE, &alphablendenable);
-		device->GetRenderState(D3DRS_ALPHATESTENABLE, &alphatestenable);
-		device->GetRenderState(D3DRS_SRCBLEND, &srcblend);
-		device->GetRenderState(D3DRS_DESTBLEND, &dstblend);
+		DWORD ZENABLE, LIGHTING,
+		      ALPHABLENDENABLE, ALPHATESTENABLE,
+		      SRCBLEND, DESTBLEND;
+
+		device->GetRenderState(D3DRS_ZENABLE, &ZENABLE);
+		device->GetRenderState(D3DRS_LIGHTING, &LIGHTING);
+		device->GetRenderState(D3DRS_ALPHABLENDENABLE, &ALPHABLENDENABLE);
+		device->GetRenderState(D3DRS_ALPHATESTENABLE, &ALPHATESTENABLE);
+		device->GetRenderState(D3DRS_SRCBLEND, &SRCBLEND);
+		device->GetRenderState(D3DRS_DESTBLEND, &DESTBLEND);
 
 		device->SetRenderState(D3DRS_ALPHABLENDENABLE, false);
 		device->SetRenderState(D3DRS_ALPHATESTENABLE, false);
@@ -2162,7 +2192,7 @@ namespace local
 		device->SetVertexShader(blender_vs);
 		device->SetPixelShader(blender_ps);
 
-		do_effect = false;
+		do_effect    = false;
 		using_shader = false;
 
 		int lastId = 0;
@@ -2218,12 +2248,12 @@ namespace local
 		draw_quad();
 		device->SetTexture(0, nullptr);
 
-		device->SetRenderState(D3DRS_ZENABLE, zenable);
-		device->SetRenderState(D3DRS_LIGHTING, lighting);
-		device->SetRenderState(D3DRS_ALPHABLENDENABLE, alphablendenable);
-		device->SetRenderState(D3DRS_ALPHATESTENABLE, alphatestenable);
-		device->SetRenderState(D3DRS_SRCBLEND, srcblend);
-		device->SetRenderState(D3DRS_DESTBLEND, dstblend);
+		device->SetRenderState(D3DRS_ZENABLE, ZENABLE);
+		device->SetRenderState(D3DRS_LIGHTING, LIGHTING);
+		device->SetRenderState(D3DRS_ALPHABLENDENABLE, ALPHABLENDENABLE);
+		device->SetRenderState(D3DRS_ALPHATESTENABLE, ALPHATESTENABLE);
+		device->SetRenderState(D3DRS_SRCBLEND, SRCBLEND);
+		device->SetRenderState(D3DRS_DESTBLEND, DESTBLEND);
 
 #ifdef USE_NODE_LIMIT
 		// Use native draw queue to handle overflow
