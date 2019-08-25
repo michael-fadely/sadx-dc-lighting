@@ -3,13 +3,30 @@
 
 bool PaletteIndexPair::operator==(const PaletteIndexPair& other) const
 {
-	return diffuse == other.diffuse &&
-	       specular == other.specular;
+	return diffuse.data() == other.diffuse.data() &&
+	       specular.data() == other.specular.data();
 }
 
 bool PaletteIndexPair::operator!=(const PaletteIndexPair& other) const
 {
 	return !(*this == other);
+}
+
+bool PaletteIndexPair::dirty() const
+{
+	return diffuse.dirty() || specular.dirty();
+}
+
+void PaletteIndexPair::clear()
+{
+	diffuse.clear();
+	specular.clear();
+}
+
+void PaletteIndexPair::mark()
+{
+	diffuse.mark();
+	specular.mark();
 }
 
 CBufferBase& operator<<(CBufferBase& buffer, const PaletteIndexPair& pair)
@@ -19,13 +36,30 @@ CBufferBase& operator<<(CBufferBase& buffer, const PaletteIndexPair& pair)
 
 bool PaletteBlendFactorPair::operator==(const PaletteBlendFactorPair& other) const
 {
-	return diffuse == other.diffuse &&
-	       specular == other.specular;
+	return diffuse.data() == other.diffuse.data() &&
+	       specular.data() == other.specular.data();
 }
 
 bool PaletteBlendFactorPair::operator!=(const PaletteBlendFactorPair& other) const
 {
 	return !(*this == other);
+}
+
+bool PaletteBlendFactorPair::dirty() const
+{
+	return diffuse.dirty() || specular.dirty();
+}
+
+void PaletteBlendFactorPair::clear()
+{
+	diffuse.clear();
+	specular.clear();
+}
+
+void PaletteBlendFactorPair::mark()
+{
+	diffuse.mark();
+	specular.mark();
 }
 
 CBufferBase& operator<<(CBufferBase& buffer, const PaletteBlendFactorPair& pair)

@@ -1,25 +1,34 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26430.16
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29215.179
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sadx-dc-lighting", "sadx-dc-lighting\sadx-dc-lighting.vcxproj", "{4FCE8874-63A7-4561-BC27-EA435EF61224}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
+		Hybrid|x64 = Hybrid|x64
 		Hybrid|x86 = Hybrid|x86
+		Release|x64 = Release|x64
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4FCE8874-63A7-4561-BC27-EA435EF61224}.Debug|x64.ActiveCfg = Debug|Win32
 		{4FCE8874-63A7-4561-BC27-EA435EF61224}.Debug|x86.ActiveCfg = Debug|Win32
 		{4FCE8874-63A7-4561-BC27-EA435EF61224}.Debug|x86.Build.0 = Debug|Win32
+		{4FCE8874-63A7-4561-BC27-EA435EF61224}.Hybrid|x64.ActiveCfg = Hybrid|Win32
 		{4FCE8874-63A7-4561-BC27-EA435EF61224}.Hybrid|x86.ActiveCfg = Hybrid|Win32
 		{4FCE8874-63A7-4561-BC27-EA435EF61224}.Hybrid|x86.Build.0 = Hybrid|Win32
+		{4FCE8874-63A7-4561-BC27-EA435EF61224}.Release|x64.ActiveCfg = Release|Win32
 		{4FCE8874-63A7-4561-BC27-EA435EF61224}.Release|x86.ActiveCfg = Release|Win32
 		{4FCE8874-63A7-4561-BC27-EA435EF61224}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F500F754-D3A0-4222-98DA-98204382CD63}
 	EndGlobalSection
 EndGlobal

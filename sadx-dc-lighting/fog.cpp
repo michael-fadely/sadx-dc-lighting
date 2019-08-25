@@ -33,20 +33,27 @@ static void __cdecl njDisableFog_r()
 static void __cdecl njEnableFog_r()
 {
 	TARGET_STATIC(njEnableFog)();
+
+#if 0
 	param::FogMode = fog_mode;
+#endif
+
 	set_flags(LanternShaderFlags_Fog, true);
 }
 
 static void __cdecl njSetFogColor_r(Uint32 c)
 {
 	TARGET_STATIC(njSetFogColor)(c);
+#if 0
 	param::FogColor = float4(c);
+#endif
 }
 
 static void __cdecl njSetFogTable_r(NJS_FOG_TABLE fogtable)
 {
 	TARGET_STATIC(njSetFogTable)(fogtable);
 
+#if 0
 	if (device == nullptr)
 	{
 		return;
@@ -72,4 +79,5 @@ static void __cdecl njSetFogTable_r(NJS_FOG_TABLE fogtable)
 	}
 
 	param::FogConfig = fog_config;
+#endif
 }

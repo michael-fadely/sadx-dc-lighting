@@ -2,8 +2,10 @@
 
 #include <d3d8to9.hpp>
 #include <ninja.h>
+#include "PaletteParameters.h"
+#include "LanternParameters.h"
 
-using Texture = ComPtr<ID3D11Texture2D>;
+using Texture = ComPtr<Direct3DTexture8>;
 
 namespace d3d
 {
@@ -21,6 +23,11 @@ namespace d3d
 
 namespace param
 {
+	extern Texture PaletteA;
+	extern Texture PaletteB;
+
+	extern PaletteParameters palette;
+	extern LanternParameters lantern;
 }
 
 // Same as in the mod loader except with d3d8to9 types.

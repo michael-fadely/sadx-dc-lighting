@@ -11,7 +11,7 @@
 
 inline void check_blend()
 {
-	if (param::PaletteB.value() == nullptr)
+	if (param::PaletteB == nullptr)
 	{
 		param::PaletteB = param::PaletteA;
 	}
@@ -142,7 +142,7 @@ void diffuse_override(bool enable)
 
 void diffuse_override_rgb(float r, float g, float b)
 {
-	const float3 color = { r, g, b };
+	const float4 color = { r, g, b, 1.0f };
 	param::lantern.diffuse_override_color = color;
 }
 
@@ -246,7 +246,7 @@ void set_alpha_reject(float threshold, bool permanent)
 	{
 		if (!apiconfig::alpha_ref_is_temp)
 		{
-			apiconfig::alpha_ref_value = param::AlphaRef.value();
+			// TODO: apiconfig::alpha_ref_value = param::AlphaRef.value();
 			apiconfig::alpha_ref_is_temp = true;
 		}
 	}
@@ -255,12 +255,13 @@ void set_alpha_reject(float threshold, bool permanent)
 		apiconfig::alpha_ref_value = threshold;
 	}
 
-	param::AlphaRef = threshold;
+	// TODO: param::AlphaRef = threshold;
 }
 
 float get_alpha_reject()
 {
-	return param::AlphaRef.value();
+	// TODO: return param::AlphaRef.value();
+	return 0.0f;
 }
 
 void set_light_direction(const NJS_VECTOR* v)

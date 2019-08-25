@@ -82,10 +82,10 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3dx9.lib;libMinHook-$(PlatformTarget)-v$(PlatformToolsetVersion)-mdd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>
       </IgnoreSpecificDefaultLibraries>
       <AdditionalLibraryDirectories>$(DXSDK_DIR)Lib\x86;..\minhook\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>d3d11.lib;dxgi.lib;d3dcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /C /Y /D "$(ProjectDir)mod.ini" "$(OutDir)"
@@ -109,12 +109,12 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3dx9.lib;libMinHook-$(PlatformTarget)-v$(PlatformToolsetVersion)-mdd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>
       </IgnoreSpecificDefaultLibraries>
       <AdditionalLibraryDirectories>$(DXSDK_DIR)Lib\x86;..\minhook\lib</AdditionalLibraryDirectories>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <AdditionalDependencies>d3d11.lib;dxgi.lib;d3dcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /C /Y /D "$(ProjectDir)mod.ini" "$(OutDir)"
@@ -142,10 +142,10 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3dx9.lib;libMinHook-$(PlatformTarget)-v$(PlatformToolsetVersion)-md.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>
       </IgnoreSpecificDefaultLibraries>
       <AdditionalLibraryDirectories>$(DXSDK_DIR)Lib\x86;..\minhook\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>d3d11.lib;dxgi.lib;d3dcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /C /Y /D "$(ProjectDir)mod.ini" "$(OutDir)"
@@ -157,6 +157,8 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\include\lanternapi.h" />
+    <ClInclude Include="..\sadx-d3d11\sadx-d3d11\CBufferWriter.h" />
+    <ClInclude Include="..\sadx-d3d11\sadx-d3d11\dirty_t.h" />
     <ClInclude Include="..\sadx-mod-loader\libmodutils\Trampoline.h" />
     <ClInclude Include="apiconfig.h" />
     <ClInclude Include="d3d.h" />
@@ -180,6 +182,7 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
     <ClInclude Include="stupidbullshit.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\sadx-d3d11\sadx-d3d11\CBufferWriter.cpp" />
     <ClCompile Include="..\sadx-mod-loader\libmodutils\Trampoline.cpp" />
     <ClCompile Include="apiconfig.cpp" />
     <ClCompile Include="d3d.cpp" />

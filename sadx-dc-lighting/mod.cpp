@@ -6,9 +6,6 @@
 #include <SADXModLoader.h>
 #include <Trampoline.h>
 
-// MinHook
-#include <MinHook.h>
-
 // Local
 #include "d3d.h"
 #include "globals.h"
@@ -85,22 +82,6 @@ static void show_light_direction()
 }
 #endif
 
-static void update_material(const D3DMATERIAL8& material)
-{
-	using namespace d3d;
-
-	if (!LanternInstance::use_palette() || d3d::shaders_null())
-	{
-		return;
-	}
-
-	D3DMATERIALCOLORSOURCE colorsource;
-	Direct3D_Device->GetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, reinterpret_cast<DWORD*>(&colorsource));
-
-	param::DiffuseSource   = colorsource;
-	param::MaterialDiffuse = material.Diffuse;
-}
-
 static void __cdecl CorrectMaterial_r()
 {
 	using namespace d3d;
@@ -126,7 +107,6 @@ static void __cdecl CorrectMaterial_r()
 	material.Specular.b /= 255.0f;
 	material.Specular.a /= 255.0f;
 
-	update_material(material);
 	Direct3D_Device->SetMaterial(&material);
 }
 
@@ -177,7 +157,7 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 
 	if (globals::first_material)
 	{
-		constexpr auto FLAG_MASK = NJD_FLAG_IGNORE_SPECULAR;
+		constexpr uint32_t FLAG_MASK = NJD_FLAG_IGNORE_SPECULAR;
 
 		_nj_constant_attr_and_ &= ~FLAG_MASK;
 
@@ -209,13 +189,6 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 	set_flags(LanternShaderFlags_Alpha, (flags & NJD_FLAG_USE_ALPHA) != 0);
 	set_flags(LanternShaderFlags_EnvMap, (flags & NJD_FLAG_USE_ENV) != 0);
 	set_flags(LanternShaderFlags_Light, (flags & NJD_FLAG_IGNORE_LIGHT) == 0);
-
-	// Environment map matrix
-	param::TextureTransform = *reinterpret_cast<float4x4*>(0x038A5DD0);
-
-	D3DMATERIAL8 mat;
-	Direct3D_Device->GetMaterial(&mat);
-	update_material(mat);
 
 	do_effect = true;
 
@@ -355,14 +328,14 @@ static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
 {
 	if (texlist != Direct3D_CurrentTexList)
 	{
-		param::AllowVertexColor = true;
+		param::lantern.allow_vcolor = true;
 
 		if (!globals::light_type)
 		{
 			if (texlist == CommonTextures)
 			{
 				globals::palettes.set_palettes(0, 0);
-				param::AllowVertexColor = apiconfig::object_vcolor;
+				param::lantern.allow_vcolor = apiconfig::object_vcolor;
 			}
 			else
 			{
@@ -374,7 +347,7 @@ static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
 					}
 
 					globals::palettes.set_palettes(0, 0);
-					param::AllowVertexColor = apiconfig::object_vcolor;
+					param::lantern.allow_vcolor = apiconfig::object_vcolor;
 					break;
 				}
 			}
@@ -388,11 +361,11 @@ static void __cdecl NormalScale_r(float x, float y, float z)
 {
 	if (x > FLT_EPSILON || y > FLT_EPSILON || z > FLT_EPSILON)
 	{
-		param::NormalScale = float3(x, y, z);
+		param::lantern.normal_scale = float3(x, y, z);
 	}
 	else
 	{
-		param::NormalScale = float3(1.0f, 1.0f, 1.0f);
+		param::lantern.normal_scale = float3(1.0f, 1.0f, 1.0f);
 	}
 }
 
@@ -457,7 +430,7 @@ void __cdecl InitLandTableMeshSet_r(NJS_MODEL_SADX* model, NJS_MESHSET_SADX* mes
 		i += 2;
 	}
 
-	const VBufferFuncPtr func = MeshSetInitFunctions[i][static_cast<uint32_t>(meshset->type_matId) >> 14u];
+	VBufferFuncPtr func = MeshSetInitFunctions[i][static_cast<uint32_t>(meshset->type_matId) >> 14u];
 
 	if (func)
 	{
@@ -491,11 +464,9 @@ extern "C"
 			return;
 		}
 
-		MH_Initialize();
-
 		WriteJump(InitLandTableMeshSet, InitLandTableMeshSet_r);
 
-		LanternInstance base(&param::PaletteA);
+		LanternInstance base(param::PaletteA);
 		globals::palettes.add(base);
 
 		globals::helper_functions = helperFunctions;

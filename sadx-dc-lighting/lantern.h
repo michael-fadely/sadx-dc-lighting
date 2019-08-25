@@ -97,8 +97,6 @@ public:
 	LanternInstance(const LanternInstance&) = default;
 	LanternInstance& operator=(LanternInstance&&) noexcept;
 
-	~LanternInstance();
-
 	static bool diffuse_override;
 	static bool diffuse_override_is_temp;
 	static bool specular_override;

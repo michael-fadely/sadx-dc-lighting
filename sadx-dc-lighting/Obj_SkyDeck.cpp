@@ -25,7 +25,7 @@ static void __cdecl SkyDeck_SimulateAltitude_r(Uint16 act)
 	}
 	else
 	{
-		float f = (max(180.0f, min(250.0f, SkyDeck_SkyAltitude)) - 180.0f) / 70.0f;
+		float f = (std::max(180.0f, std::min(250.0f, SkyDeck_SkyAltitude)) - 180.0f) / 70.0f;
 		set_blend_factor(f);
 	}
 }
@@ -71,7 +71,7 @@ static void __cdecl Obj_SkyDeck_r(ObjectMaster* _this)
 	globals::palettes.load_source(LevelIDs_SkyDeck, 0);
 
 	param::PaletteB = nullptr;
-	LanternInstance lantern(&param::PaletteB);
+	LanternInstance lantern(param::PaletteB);
 
 	lantern.load_palette(LevelIDs_SkyDeck, 1);
 	handle = globals::palettes.add(lantern);

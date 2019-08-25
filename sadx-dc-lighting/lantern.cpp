@@ -14,6 +14,8 @@
 #include "globals.h"
 #include "datapointers.h"
 #include "lantern.h"
+#include "PaletteParameters.h"
+#include "stupidbullshit.h"
 
 bool SourceLight_t::operator==(const SourceLight_t& rhs) const
 {
@@ -318,14 +320,6 @@ LanternInstance& LanternInstance::operator=(LanternInstance&& inst) noexcept
 	return *this;
 }
 
-LanternInstance::~LanternInstance()
-{
-	if (atlas != nullptr)
-	{
-		*atlas = nullptr;
-	}
-}
-
 void LanternInstance::set_last_level(Sint32 level, Sint32 act)
 {
 	last_level = level;
@@ -366,7 +360,8 @@ bool LanternInstance::load_source(const std::string& path)
 	// Default light direction is down, so we want to rotate relative to that.
 	NJS_VECTOR vs = { 0.0f, -1.0f, 0.0f };
 	njCalcVector(m, &vs, &sl_direction);
-	param::LightDirection = -*reinterpret_cast<float3*>(&sl_direction);
+
+	param::lantern.light_direction = -*reinterpret_cast<float3*>(&sl_direction);
 
 	PrintDebug("[lantern] Source light rotation (direction): y: %d, z: %d (x: %f, y: %f, z: %f)\n",
 	           source_lights[15].stage.y, source_lights[15].stage.z, sl_direction.x, sl_direction.y, sl_direction.z);
@@ -422,33 +417,30 @@ bool LanternInstance::load_palette(const std::string& path)
 	}
 
 	palette_pairs = {};
-	memcpy(palette_pairs.data(), color_data.data(), min(sizeof(ColorPair) * color_data.size(), sizeof(ColorPair) * palette_pairs.size()));
+	memcpy(palette_pairs.data(), color_data.data(), std::min(sizeof(ColorPair) * color_data.size(), sizeof(ColorPair) * palette_pairs.size()));
 	generate_atlas();
 	return true;
 }
 
 void LanternInstance::generate_atlas()
 {
-	const bool is_32bit = d3d::supports_xrgb();
-	Texture texture = atlas->value();
+	Texture texture = atlas;
 
 	if (texture == nullptr)
 	{
-		// Using a floating point texture to support the GeForce 6000 series cards.
-		const auto format = is_32bit ? D3DFMT_X8R8G8B8 : D3DFMT_A32B32G32R32F;
+		static constexpr auto format = D3DFMT_X8R8G8B8;
 
-		if (FAILED(d3d::device->CreateTexture(256, 16, 1, 0, format, D3DPOOL_MANAGED, &texture, nullptr)))
+		if (FAILED(Direct3D_Device->CreateTexture(256, 16, 1, 0, format, D3DPOOL_MANAGED, &texture)))
 		{
 			throw std::exception("Failed to create palette texture!");
 		}
 
-		*atlas = texture;
+		atlas = texture;
 	}
 	else
 	{
 		// Release all of its references in case there are lingering textures.
-		atlas->release();
-		*atlas = texture;
+		atlas = nullptr;
 	}
 
 	D3DLOCKED_RECT rect;
@@ -474,47 +466,17 @@ void LanternInstance::generate_atlas()
 		}*/
 
 		const auto y = 512 * i;
+		const auto pixels = static_cast<NJS_COLOR*>(rect.pBits);
 
-		if (is_32bit)
+		for (size_t x = 0; x < 256; x++)
 		{
-			const auto pixels = static_cast<NJS_COLOR*>(rect.pBits);
+			const auto& color = palette_pairs[index + x];
 
-			for (size_t x = 0; x < 256; x++)
-			{
-				const auto& color = palette_pairs[index + x];
+			auto& diffuse  = pixels[y + x];
+			auto& specular = pixels[256 + y + x];
 
-				auto& diffuse  = pixels[y + x];
-				auto& specular = pixels[256 + y + x];
-
-				diffuse  = color.diffuse;
-				specular = color.specular;
-			}
-		}
-		else
-		{
-			const auto pixels = static_cast<ABGR32F*>(rect.pBits);
-
-			for (size_t x = 0; x < 256; x++)
-			{
-				const auto& color = palette_pairs[index + x];
-
-				auto& diffuse  = pixels[y + x];
-				auto& specular = pixels[256 + y + x];
-
-				const auto& _diffuse = color.diffuse.argb;
-
-				diffuse.r = _diffuse.r / 255.0f;
-				diffuse.g = _diffuse.g / 255.0f;
-				diffuse.b = _diffuse.b / 255.0f;
-				diffuse.a = _diffuse.a / 255.0f;
-
-				const auto& _specular = color.specular.argb;
-
-				specular.r = _specular.r / 255.0f;
-				specular.g = _specular.g / 255.0f;
-				specular.b = _specular.b / 255.0f;
-				specular.a = _specular.a / 255.0f;
-			}
+			diffuse  = color.diffuse;
+			specular = color.specular;
 		}
 	}
 
@@ -536,19 +498,13 @@ bool LanternInstance::load_palette(Sint32 level, Sint32 act)
 
 void LanternInstance::diffuse_blend_factor(float f)
 {
-	auto value = param::BlendFactor.value();
-	value.x = f;
-	param::BlendFactor = value;
-
+	param::palette.blend_factors.diffuse = f;
 	diffuse_blend_factor_ = f;
 }
 
 void LanternInstance::specular_blend_factor(float f)
 {
-	auto value = param::BlendFactor.value();
-	value.y = f;
-	param::BlendFactor = value;
-
+	param::palette.blend_factors.specular = f;
 	specular_blend_factor_ = f;
 }
 
@@ -821,7 +777,7 @@ bool LanternCollection::load_files()
 
 	if (instances.empty())
 	{
-		instances.emplace_back(&param::PaletteA);
+		instances.emplace_back(param::PaletteA);
 	}
 
 	const bool pl_handled = run_pl_callbacks(CurrentLevel, CurrentAct, time);
@@ -983,10 +939,10 @@ void LanternCollection::apply_parameters()
 	}
 
 	// .xy is diffuse A and B, .zw is specular A and B.
-	float4 indices { 0.0f, 0.0f, 0.0f, 0.0f };
+	PaletteIndexPair a, b;
 
 	// .x is diffuse, .y is specular.
-	float2 blend_factors { 0.0f, 0.0f };
+	PaletteBlendFactorPair blend_factors;
 
 	LanternInstance& i = instances[0];
 
@@ -994,12 +950,12 @@ void LanternCollection::apply_parameters()
 
 	if (d >= 0)
 	{
-		indices.x = _index_float(d, 0);
+		a.diffuse = 2 * d;
 
 		if (diffuse_blend_[d] >= 0)
 		{
-			indices.y       = _index_float(diffuse_blend_[d], 0);
-			blend_factors.x = LanternInstance::diffuse_blend_factor_;
+			b.diffuse = 2 * diffuse_blend_[d];
+			blend_factors.diffuse = LanternInstance::diffuse_blend_factor_;
 		}
 	}
 
@@ -1007,17 +963,18 @@ void LanternCollection::apply_parameters()
 
 	if (s >= 0)
 	{
-		indices.z = _index_float(s, 1);
+		a.specular = (2 * s) + 1;
 
 		if (specular_blend_[s] >= 0)
 		{
-			indices.w       = _index_float(specular_blend_[s], 1);
-			blend_factors.y = LanternInstance::specular_blend_factor_;
+			b.specular = (2 * specular_blend_[s]) + 1;
+			blend_factors.specular = LanternInstance::specular_blend_factor_;
 		}
 	}
 
-	param::Indices     = indices;
-	param::BlendFactor = blend_factors;
+	param::palette.base_indices  = a;
+	param::palette.blend_indices = b;
+	param::palette.blend_factors = blend_factors;
 }
 
 void LanternCollection::callback_add(std::deque<lantern_load_cb>& c, lantern_load_cb callback)

@@ -2,33 +2,41 @@
 
 #include <dirty_t.h>
 
-struct PaletteIndexPair
+struct PaletteIndexPair : dirty_impl
 {
-	uint diffuse;
-	uint specular;
+	dirty_t<uint> diffuse;
+	dirty_t<uint> specular;
 
 	bool operator==(const PaletteIndexPair& other) const;
 	bool operator!=(const PaletteIndexPair& other) const;
+
+	[[nodiscard]] bool dirty() const override;
+	void clear() override;
+	void mark() override;
 };
 
 CBufferBase& operator<<(CBufferBase& buffer, const PaletteIndexPair& pair);
 
-struct PaletteBlendFactorPair
+struct PaletteBlendFactorPair : dirty_impl
 {
-	float diffuse;
-	float specular;
+	dirty_t<float> diffuse;
+	dirty_t<float> specular;
 	
 	bool operator==(const PaletteBlendFactorPair& other) const;
 	bool operator!=(const PaletteBlendFactorPair& other) const;
+
+	[[nodiscard]] bool dirty() const override;
+	void clear() override;
+	void mark() override;
 };
 
 CBufferBase& operator<<(CBufferBase& buffer, const PaletteBlendFactorPair& pair);
 
 struct PaletteParameters : ICBuffer, dirty_impl
 {
-	dirty_t<PaletteIndexPair>       base_indices;
-	dirty_t<PaletteIndexPair>       blend_indices;
-	dirty_t<PaletteBlendFactorPair> blend_factors;
+	PaletteIndexPair       base_indices;
+	PaletteIndexPair       blend_indices;
+	PaletteBlendFactorPair blend_factors;
 
 	void write(CBufferBase& cbuf) const override;
 	[[nodiscard]] bool dirty() const override;

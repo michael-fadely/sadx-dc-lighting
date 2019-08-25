@@ -31,6 +31,8 @@ namespace param
 	//ShaderParameter<Texture>     PaletteA(1, nullptr, IShaderParameter::Type::vertex);
 	//ShaderParameter<Texture>     PaletteB(2, nullptr, IShaderParameter::Type::vertex);
 
+	Texture PaletteA, PaletteB;
+
 	PaletteParameters palette {};
 	LanternParameters lantern {};
 
