@@ -36,6 +36,9 @@ namespace param
 	PaletteParameters palette {};
 	LanternParameters lantern {};
 
+	ComPtr<ID3D11Buffer> palette_cbuffer;
+	ComPtr<ID3D11Buffer> lantern_cbuffer;
+
 	//ShaderParameter<float3> ViewPosition(34, {}, IShaderParameter::Type::pixel);
 }
 
@@ -755,6 +758,9 @@ namespace local
 
 		Direct3D_Device->draw_prologues["Direct3DDevice8::DrawIndexedPrimitiveUP"].emplace_back(shader_prologue_);
 		Direct3D_Device->draw_epilogues["Direct3DDevice8::DrawIndexedPrimitiveUP"].emplace_back(shader_epilogue_);
+
+		Direct3D_Device->make_cbuffer(param::palette, param::palette_cbuffer);
+		Direct3D_Device->make_cbuffer(param::lantern, param::lantern_cbuffer);
 	}
 
 #pragma region Trampolines
@@ -867,8 +873,8 @@ namespace local
 		if (Direct3D_Device != nullptr && !initialized)
 		{
 			initialized = true;
-			d3d::load_shader();
 			hook_vtable();
+			d3d::load_shader();
 		}
 	}
 
