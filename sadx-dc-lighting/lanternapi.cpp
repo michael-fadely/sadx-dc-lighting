@@ -132,18 +132,18 @@ void allow_object_vcolor(bool allow)
 
 void use_default_diffuse(bool use)
 {
-	param::ForceDefaultDiffuse = use;
+	param::lantern.force_default_diffuse = use;
 }
 
 void diffuse_override(bool enable)
 {
-	param::DiffuseOverride = enable;
+	param::lantern.diffuse_override = enable;
 }
 
 void diffuse_override_rgb(float r, float g, float b)
 {
-	const D3DXVECTOR3 color = { r, g, b };
-	param::DiffuseOverrideColor = color;
+	const float3 color = { r, g, b };
+	param::lantern.diffuse_override_color = color;
 }
 
 void set_diffuse_blend(int32_t src, int32_t dest)

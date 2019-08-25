@@ -1,7 +1,6 @@
 #include "stdafx.h"
 
 #include <Windows.h>
-#include <d3d9.h>
 
 // Mod loader
 #include <SADXModLoader.h>
@@ -22,6 +21,7 @@
 #include "FixCharacterMaterials.h"
 #include "polybuff.h"
 #include "apiconfig.h"
+#include "stupidbullshit.h"
 
 static Trampoline* CharSel_LoadA_t                 = nullptr;
 static Trampoline* Direct3D_ParseMaterial_t        = nullptr;
@@ -85,17 +85,17 @@ static void show_light_direction()
 }
 #endif
 
-static void update_material(const D3DMATERIAL9& material)
+static void update_material(const D3DMATERIAL8& material)
 {
 	using namespace d3d;
 
-	if (!LanternInstance::use_palette() || shaders_null())
+	if (!LanternInstance::use_palette() || d3d::shaders_null())
 	{
 		return;
 	}
 
 	D3DMATERIALCOLORSOURCE colorsource;
-	device->GetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, reinterpret_cast<DWORD*>(&colorsource));
+	Direct3D_Device->GetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, reinterpret_cast<DWORD*>(&colorsource));
 
 	param::DiffuseSource   = colorsource;
 	param::MaterialDiffuse = material.Diffuse;
@@ -104,9 +104,9 @@ static void update_material(const D3DMATERIAL9& material)
 static void __cdecl CorrectMaterial_r()
 {
 	using namespace d3d;
-	D3DMATERIAL9 material;
+	D3DMATERIAL8 material;
 
-	device->GetMaterial(&material);
+	Direct3D_Device->GetMaterial(&material);
 
 	if (!LanternInstance::use_palette())
 	{
@@ -127,7 +127,7 @@ static void __cdecl CorrectMaterial_r()
 	material.Specular.a /= 255.0f;
 
 	update_material(material);
-	device->SetMaterial(&material);
+	Direct3D_Device->SetMaterial(&material);
 }
 
 inline void fix_default_color(Uint32& color)
@@ -205,16 +205,16 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 
 	globals::palettes.set_palettes(globals::light_type, flags);
 
-	set_flags(ShaderFlags_Texture, (flags & NJD_FLAG_USE_TEXTURE) != 0);
-	set_flags(ShaderFlags_Alpha, (flags & NJD_FLAG_USE_ALPHA) != 0);
-	set_flags(ShaderFlags_EnvMap, (flags & NJD_FLAG_USE_ENV) != 0);
-	set_flags(ShaderFlags_Light, (flags & NJD_FLAG_IGNORE_LIGHT) == 0);
+	set_flags(LanternShaderFlags_Texture, (flags & NJD_FLAG_USE_TEXTURE) != 0);
+	set_flags(LanternShaderFlags_Alpha, (flags & NJD_FLAG_USE_ALPHA) != 0);
+	set_flags(LanternShaderFlags_EnvMap, (flags & NJD_FLAG_USE_ENV) != 0);
+	set_flags(LanternShaderFlags_Light, (flags & NJD_FLAG_IGNORE_LIGHT) == 0);
 
 	// Environment map matrix
-	param::TextureTransform = *reinterpret_cast<D3DXMATRIX*>(0x038A5DD0);
+	param::TextureTransform = *reinterpret_cast<float4x4*>(0x038A5DD0);
 
-	D3DMATERIAL9 mat;
-	device->GetMaterial(&mat);
+	D3DMATERIAL8 mat;
+	Direct3D_Device->GetMaterial(&mat);
 	update_material(mat);
 
 	do_effect = true;
@@ -388,11 +388,11 @@ static void __cdecl NormalScale_r(float x, float y, float z)
 {
 	if (x > FLT_EPSILON || y > FLT_EPSILON || z > FLT_EPSILON)
 	{
-		param::NormalScale = D3DXVECTOR3(x, y, z);
+		param::NormalScale = float3(x, y, z);
 	}
 	else
 	{
-		param::NormalScale = D3DXVECTOR3(1.0f, 1.0f, 1.0f);
+		param::NormalScale = float3(1.0f, 1.0f, 1.0f);
 	}
 }
 
@@ -470,13 +470,14 @@ extern "C"
 	EXPORT ModInfo SADXModInfo = { ModLoaderVer, nullptr, nullptr, 0, nullptr, 0, nullptr, 0, nullptr, 0 };
 	EXPORT void __cdecl Init(const char* path, const HelperFunctions& helperFunctions)
 	{
-		auto handle = GetModuleHandle(L"d3d9.dll");
+		auto d3d9_handle = GetModuleHandle(L"d3d9.dll");
+		auto d3d11_handle = GetModuleHandle(L"d3d11.dll");
 
-		if (handle == nullptr)
+		if (d3d9_handle == nullptr && d3d11_handle == nullptr)
 		{
 			MessageBoxA(WindowHandle,
-			            "SADX Lantern Engine will not function without d3d8to9 saved to your Sonic Adventure DX folder. "
-			            "Download d3d8.dll from from https://github.com/crosire/d3d8to9",
+			            "SADX Lantern Engine will not function without d3d8to9 or d3d8to11 saved to your Sonic Adventure DX folder. "
+			            "Download d3d8.dll from from https://github.com/crosire/d3d8to9 or [OTHER URL]",
 			            "Lantern Engine Error: Missing d3d8.dll", MB_OK | MB_ICONERROR);
 
 			return;
@@ -510,7 +511,7 @@ extern "C"
 
 		if (!strcmp(str.data(), "True"))
 		{
-			d3d::set_flags(ShaderFlags_RangeFog, true);
+			d3d::set_flags(LanternShaderFlags_RangeFog, true);
 		}
 
 		d3d::init_trampolines();

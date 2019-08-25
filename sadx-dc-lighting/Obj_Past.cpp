@@ -16,7 +16,7 @@ static Trampoline* Obj_Past_t = nullptr;
 static void __cdecl Obj_Past_Delete_r(ObjectMaster* _this)
 {
 	// Disable blending in the shader so it doesn't do extra work.
-	set_shader_flags(ShaderFlags_Blend, false);
+	set_shader_flags(LanternShaderFlags_Blend, false);
 
 	// Reset blend indices.
 	set_blend(-1, -1);
@@ -61,7 +61,7 @@ static void __cdecl Obj_Past_r(ObjectMaster* _this)
 					auto f = (njSin(entity->Rotation.x) + 1.0f) / 2.0f;
 
 					// Enables palette blending in the shader.
-					set_shader_flags(ShaderFlags_Blend, true);
+					set_shader_flags(LanternShaderFlags_Blend, true);
 
 					// Blend both diffuse and specular index 0 to index 5.
 					set_blend(0, 5);

@@ -1,7 +1,5 @@
 #pragma once
 
-#define _D3D8TYPES_H_
-
 #define EXPORT __declspec(dllexport)
 
 // Convenient macros for trampolines.
@@ -28,12 +26,10 @@
 #include <atlbase.h>
 #include <WinCrypt.h>
 
-// Direct3D
-#include <d3d9.h>
-#include <d3dx9.h>
-
 // d3d8to9
 #include <d3d8to9.hpp>
+#include <d3d8types.h>
+#include <d3d8types.hpp>
 
 // Mod loader
 #include <MemAccess.h>
@@ -60,7 +56,6 @@
 // Local
 #include "d3d.h"
 #include "datapointers.h"
-#include "ShaderParameter.h"
 #include "FixChaoGardenMaterials.h"
 #include "FixCharacterMaterials.h"
 #include "globals.h"

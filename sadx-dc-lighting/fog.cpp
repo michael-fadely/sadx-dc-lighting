@@ -27,20 +27,20 @@ using namespace d3d;
 static void __cdecl njDisableFog_r()
 {
 	TARGET_STATIC(njDisableFog)();
-	set_flags(ShaderFlags_Fog, false);
+	set_flags(LanternShaderFlags_Fog, false);
 }
 
 static void __cdecl njEnableFog_r()
 {
 	TARGET_STATIC(njEnableFog)();
 	param::FogMode = fog_mode;
-	set_flags(ShaderFlags_Fog, true);
+	set_flags(LanternShaderFlags_Fog, true);
 }
 
 static void __cdecl njSetFogColor_r(Uint32 c)
 {
 	TARGET_STATIC(njSetFogColor)(c);
-	param::FogColor = D3DXCOLOR(c);
+	param::FogColor = float4(c);
 }
 
 static void __cdecl njSetFogTable_r(NJS_FOG_TABLE fogtable)
@@ -54,9 +54,9 @@ static void __cdecl njSetFogTable_r(NJS_FOG_TABLE fogtable)
 
 	device->GetRenderState(D3DRS_FOGTABLEMODE, reinterpret_cast<DWORD*>(&fog_mode));
 	param::FogMode = fog_mode;
-	set_flags(ShaderFlags_Fog, true);
+	set_flags(LanternShaderFlags_Fog, true);
 
-	D3DXVECTOR3 fog_config {};
+	float3 fog_config {};
 
 	float start, end, density;
 	device->GetRenderState(D3DRS_FOGSTART, reinterpret_cast<DWORD*>(&start));

@@ -1,15 +1,12 @@
 #pragma once
 
-#include <d3d9.h>
-#include <d3dx9effect.h>
 #include <d3d8to9.hpp>
 #include <ninja.h>
 
-#include "ShaderParameter.h"
+using Texture = ComPtr<ID3D11Texture2D>;
 
 namespace d3d
 {
-	extern IDirect3DDevice9* device;
 	extern VertexShader vertex_shader;
 	extern PixelShader pixel_shader;
 
@@ -24,32 +21,6 @@ namespace d3d
 
 namespace param
 {
-	extern ShaderParameter<Texture> PaletteA;
-	extern ShaderParameter<Texture> PaletteB;
-
-	extern ShaderParameter<D3DXMATRIX> WorldMatrix;
-	extern ShaderParameter<D3DXMATRIX> ProjectionMatrix;
-	extern ShaderParameter<D3DXMATRIX> wvMatrixInvT;
-	extern ShaderParameter<D3DXMATRIX> TextureTransform;
-
-	extern ShaderParameter<D3DXVECTOR4> Indices;
-	extern ShaderParameter<D3DXVECTOR2> BlendFactor;
-
-	extern ShaderParameter<D3DXVECTOR3> NormalScale;
-	extern ShaderParameter<D3DXVECTOR3> LightDirection;
-	extern ShaderParameter<int> DiffuseSource;
-	extern ShaderParameter<D3DXCOLOR> MaterialDiffuse;
-
-	extern ShaderParameter<bool> AllowVertexColor;
-	extern ShaderParameter<bool> ForceDefaultDiffuse;
-	extern ShaderParameter<bool> DiffuseOverride;
-	extern ShaderParameter<D3DXVECTOR3> DiffuseOverrideColor;
-
-	extern ShaderParameter<int> FogMode;
-	extern ShaderParameter<D3DXVECTOR3> FogConfig;
-	extern ShaderParameter<D3DXCOLOR> FogColor;
-	extern ShaderParameter<float> AlphaRef;
-	extern ShaderParameter<D3DXVECTOR3> ViewPosition;
 }
 
 // Same as in the mod loader except with d3d8to9 types.

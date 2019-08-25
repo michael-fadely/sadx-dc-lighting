@@ -25,19 +25,19 @@ extern "C"
 
 	typedef enum
 	{
-		ShaderFlags_None,
+		LanternShaderFlags_None,
 
 		/** \brief The shader should expect a diffuse texture. */
-		ShaderFlags_Texture = 1 << 0,
+		LanternShaderFlags_Texture = 1 << 0,
 
 		/** \brief Enables environment mapping. */
-		ShaderFlags_EnvMap = 1 << 1,
+		LanternShaderFlags_EnvMap = 1 << 1,
 
 		/** \brief Enables considerations for alpha blending & testing. */
-		ShaderFlags_Alpha = 1 << 2,
+		LanternShaderFlags_Alpha = 1 << 2,
 
 		/** \brief Enables lighting. */
-		ShaderFlags_Light = 1 << 3,
+		LanternShaderFlags_Light = 1 << 3,
 
 		/**
 		 * \brief Enables palette blending.
@@ -45,23 +45,23 @@ extern "C"
 		 * \sa set_specular_blend
 		 * \sa set_blend
 		 */
-		ShaderFlags_Blend = 1 << 4,
+		LanternShaderFlags_Blend = 1 << 4,
 
 		/** \brief Enables fog in the pixel shader. */
-		ShaderFlags_Fog = 1 << 5,
+		LanternShaderFlags_Fog = 1 << 5,
 
 		/** \brief Enables enhanced range-based (radial) fog. */
-		ShaderFlags_RangeFog = 1 << 6,
+		LanternShaderFlags_RangeFog = 1 << 6,
 
 		/** \brief Shader flag bitmask. Other bits are ignored. */
-		ShaderFlags_Mask = 0x7F,
+		LanternShaderFlags_Mask = 0x7F,
 
 		/**
 		 * \brief The number of shader flags.
 		 * Can be considered the maximum number of shader permutations.
 		 */
-		ShaderFlags_Count
-	} ShaderFlags;
+		LanternShaderFlags_Count
+	} LanternShaderFlags;
 
 	/**
 	 * \brief The function prototype used for level-load callbacks.
@@ -154,7 +154,7 @@ extern "C"
 	 * \param flags The flags to add or remove.
 	 * \param add If \c true, \p flags will be added to any currently active flags (|= flags).
 	 * If \c false, they will be removed (&= ~flags).
-	 * \sa ShaderFlags
+	 * \sa LanternShaderFlags
 	 */
 	API void set_shader_flags(uint32_t flags, bool add);
 

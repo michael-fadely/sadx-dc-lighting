@@ -18,25 +18,24 @@
     <ProjectGuid>{4FCE8874-63A7-4561-BC27-EA435EF61224}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>sadxdclighting</RootNamespace>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140_xp</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Hybrid|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140_xp</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140_xp</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -58,19 +57,16 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)bin\</OutDir>
-    <IncludePath>$(DXSDK_DIR)Include;$(IncludePath)</IncludePath>
     <IntDir>$(SolutionDir)obj\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Hybrid|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)bin\</OutDir>
-    <IncludePath>$(DXSDK_DIR)Include;$(IncludePath)</IncludePath>
     <IntDir>$(SolutionDir)obj\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)bin\</OutDir>
-    <IncludePath>$(DXSDK_DIR)Include;$(IncludePath)</IncludePath>
     <IntDir>$(SolutionDir)obj\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -78,9 +74,10 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;LANTERN_API;_DEBUG;_WINDOWS;_USRDLL;SADXDCLIGHTING_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;LANTERN_API;NOMINMAX;_DEBUG;_WINDOWS;_USRDLL;SADXDCLIGHTING_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\sadx-mod-loader\SADXModLoader\include;..\minhook\include;..\sadx-mod-loader\libmodutils;..\d3d8to9\source</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\sadx-mod-loader\SADXModLoader\include;..\minhook\include;..\sadx-mod-loader\libmodutils;..\sadx-d3d11\sadx-d3d11;..\sadx-d3d11\DirectXTK\Inc;..\sadx-d3d11\GSL\include</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -103,10 +100,11 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;LANTERN_API;_DEBUG;_WINDOWS;_USRDLL;SADXDCLIGHTING_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;LANTERN_API;NOMINMAX;_DEBUG;_WINDOWS;_USRDLL;SADXDCLIGHTING_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\sadx-mod-loader\SADXModLoader\include;..\minhook\include;..\sadx-mod-loader\libmodutils;..\d3d8to9\source</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\sadx-mod-loader\SADXModLoader\include;..\minhook\include;..\sadx-mod-loader\libmodutils;..\sadx-d3d11\sadx-d3d11;..\sadx-d3d11\DirectXTK\Inc;..\sadx-d3d11\GSL\include</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -133,10 +131,11 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;LANTERN_API;NDEBUG;_WINDOWS;_USRDLL;SADXDCLIGHTING_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;LANTERN_API;NOMINMAX;NDEBUG;_WINDOWS;_USRDLL;SADXDCLIGHTING_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\sadx-mod-loader\SADXModLoader\include;..\minhook\include;..\sadx-mod-loader\libmodutils;..\d3d8to9\source</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\sadx-mod-loader\SADXModLoader\include;..\minhook\include;..\sadx-mod-loader\libmodutils;..\sadx-d3d11\sadx-d3d11;..\sadx-d3d11\DirectXTK\Inc;..\sadx-d3d11\GSL\include</AdditionalIncludeDirectories>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -164,8 +163,9 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
     <ClInclude Include="datapointers.h" />
     <ClInclude Include="ecgarden.h" />
     <ClInclude Include="FileSystem.h" />
+    <ClInclude Include="LanternParameters.h" />
+    <ClInclude Include="PaletteParameters.h" />
     <ClInclude Include="polybuff.h" />
-    <ClInclude Include="ShaderParameter.h" />
     <ClInclude Include="FixChaoGardenMaterials.h" />
     <ClInclude Include="FixCharacterMaterials.h" />
     <ClInclude Include="globals.h" />
@@ -177,14 +177,16 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
     <ClInclude Include="Obj_SkyDeck.h" />
     <ClInclude Include="ssgarden.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="stupidbullshit.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\sadx-mod-loader\libmodutils\Trampoline.cpp" />
     <ClCompile Include="apiconfig.cpp" />
     <ClCompile Include="d3d.cpp" />
     <ClCompile Include="FileSystem.cpp" />
+    <ClCompile Include="LanternParameters.cpp" />
+    <ClCompile Include="PaletteParameters.cpp" />
     <ClCompile Include="polybuff.cpp" />
-    <ClCompile Include="ShaderParameter.cpp" />
     <ClCompile Include="FixChaoGardenMaterials.cpp" />
     <ClCompile Include="FixCharacterMaterials.cpp" />
     <ClCompile Include="fog.cpp" />

@@ -27,11 +27,11 @@ bool SourceLight_t::operator!=(const SourceLight_t& rhs) const
 
 bool StageLight::operator==(const StageLight& rhs) const
 {
-	return specular == rhs.specular
-	       && multiplier == rhs.multiplier
-	       && !memcmp(&direction, &rhs.direction, sizeof(NJS_VECTOR))
-	       && !memcmp(&diffuse, &rhs.diffuse, sizeof(NJS_VECTOR))
-	       && !memcmp(&ambient, &rhs.ambient, sizeof(NJS_VECTOR));
+	return specular == rhs.specular &&
+	       multiplier == rhs.multiplier &&
+	       !memcmp(&direction, &rhs.direction, sizeof(NJS_VECTOR)) &&
+	       !memcmp(&diffuse, &rhs.diffuse, sizeof(NJS_VECTOR)) &&
+	       !memcmp(&ambient, &rhs.ambient, sizeof(NJS_VECTOR));
 }
 
 bool StageLight::operator!=(const StageLight& rhs) const
@@ -41,62 +41,15 @@ bool StageLight::operator!=(const StageLight& rhs) const
 
 bool StageLights::operator==(const StageLights& rhs) const
 {
-	return lights[0] == rhs.lights[0]
-	       && lights[1] == rhs.lights[1]
-	       && lights[2] == rhs.lights[2]
-	       && lights[3] == rhs.lights[3];
+	return lights[0] == rhs.lights[0] &&
+	       lights[1] == rhs.lights[1] &&
+	       lights[2] == rhs.lights[2] &&
+	       lights[3] == rhs.lights[3];
 }
 
 bool StageLights::operator!=(const StageLights& rhs) const
 {
 	return !(*this == rhs);
-}
-
-template <>
-bool ShaderParameter<SourceLight_t>::commit(IDirect3DDevice9* device)
-{
-	if (is_modified())
-	{
-		float buffer[24] {};
-		memcpy(buffer, &current, sizeof(SourceLight_t));
-
-		if (type & Type::vertex)
-		{
-			device->SetVertexShaderConstantF(index, buffer, 6);
-		}
-
-		if (type & Type::pixel)
-		{
-			device->SetPixelShaderConstantF(index, buffer, 6);
-		}
-
-		clear();
-		return true;
-	}
-
-	return false;
-}
-
-template <>
-bool ShaderParameter<StageLights>::commit(IDirect3DDevice9* device)
-{
-	if (is_modified())
-	{
-		if (type & Type::vertex)
-		{
-			device->SetVertexShaderConstantF(index, reinterpret_cast<float*>(&current), 16);
-		}
-
-		if (type & Type::pixel)
-		{
-			device->SetPixelShaderConstantF(index, reinterpret_cast<float*>(&current), 16);
-		}
-
-		clear();
-		return true;
-	}
-
-	return false;
 }
 
 static bool use_time(Uint32 level, Uint32 act)
@@ -348,7 +301,7 @@ void LanternInstance::copy(LanternInstance& inst)
 	specular_  = inst.specular_;
 }
 
-LanternInstance::LanternInstance(ShaderParameter<Texture>* atlas)
+LanternInstance::LanternInstance(Texture atlas)
 	: atlas(atlas)
 {
 }
@@ -413,7 +366,7 @@ bool LanternInstance::load_source(const std::string& path)
 	// Default light direction is down, so we want to rotate relative to that.
 	NJS_VECTOR vs = { 0.0f, -1.0f, 0.0f };
 	njCalcVector(m, &vs, &sl_direction);
-	param::LightDirection = -*reinterpret_cast<D3DXVECTOR3*>(&sl_direction);
+	param::LightDirection = -*reinterpret_cast<float3*>(&sl_direction);
 
 	PrintDebug("[lantern] Source light rotation (direction): y: %d, z: %d (x: %f, y: %f, z: %f)\n",
 	           source_lights[15].stage.y, source_lights[15].stage.z, sl_direction.x, sl_direction.y, sl_direction.z);
@@ -1030,10 +983,10 @@ void LanternCollection::apply_parameters()
 	}
 
 	// .xy is diffuse A and B, .zw is specular A and B.
-	D3DXVECTOR4 indices { 0.0f, 0.0f, 0.0f, 0.0f };
+	float4 indices { 0.0f, 0.0f, 0.0f, 0.0f };
 
 	// .x is diffuse, .y is specular.
-	D3DXVECTOR2 blend_factors { 0.0f, 0.0f };
+	float2 blend_factors { 0.0f, 0.0f };
 
 	LanternInstance& i = instances[0];
 

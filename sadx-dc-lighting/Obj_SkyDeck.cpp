@@ -33,7 +33,7 @@ static void __cdecl SkyDeck_SimulateAltitude_r(Uint16 act)
 static void __cdecl SkyBox_SkyDeck_Delete(ObjectMaster*)
 {
 	// Disable blending in the shader.
-	set_shader_flags(ShaderFlags_Blend, false);
+	set_shader_flags(LanternShaderFlags_Blend, false);
 	// Reset blend indices.
 	set_blend(-1, -1);
 }
@@ -51,7 +51,7 @@ static void __cdecl SkyBox_SkyDeck_r(ObjectMaster* _this)
 static void __cdecl Obj_SkyDeck_Delete(ObjectMaster* _this)
 {
 	globals::palettes.remove(handle);
-	set_shader_flags(ShaderFlags_Blend, false);
+	set_shader_flags(LanternShaderFlags_Blend, false);
 	globals::palettes.forward_blend_all(false);
 	handle = 0;
 }
@@ -77,7 +77,7 @@ static void __cdecl Obj_SkyDeck_r(ObjectMaster* _this)
 	handle = globals::palettes.add(lantern);
 	globals::palettes.set_last_level(-1, -1);
 	globals::palettes.forward_blend_all(true);
-	set_shader_flags(ShaderFlags_Blend, true);
+	set_shader_flags(LanternShaderFlags_Blend, true);
 }
 
 void SkyDeck_Init()

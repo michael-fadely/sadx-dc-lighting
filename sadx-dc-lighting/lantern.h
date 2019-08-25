@@ -5,8 +5,8 @@
 #include <deque>
 #include <SADXStructs.h>
 
-#include "ShaderParameter.h"
 #include "../include/lanternapi.h"
+#include "d3d.h"
 
 #pragma pack(push, 1)
 
@@ -60,8 +60,6 @@ struct ColorPair
 #pragma pack(pop)
 
 static_assert(sizeof(SourceLight) == 0x60, "SourceLight size mismatch");
-template<> bool ShaderParameter<SourceLight_t>::commit(IDirect3DDevice9* device);
-template<> bool ShaderParameter<StageLights>::commit(IDirect3DDevice9* device);
 
 class ILantern
 {
@@ -85,7 +83,7 @@ public:
 class LanternInstance : ILantern
 {
 	// TODO: handle externally
-	ShaderParameter<Texture>* atlas;
+	Texture atlas;
 	std::array<ColorPair, 256 * 8> palette_pairs {};
 	SourceLight source_lights[16] {};
 	NJS_VECTOR sl_direction {};
@@ -93,7 +91,7 @@ class LanternInstance : ILantern
 	void copy(LanternInstance& inst);
 
 public:
-	explicit LanternInstance(ShaderParameter<Texture>* atlas);
+	explicit LanternInstance(Texture atlas);
 	LanternInstance(LanternInstance&& inst) noexcept;
 
 	LanternInstance(const LanternInstance&) = default;
