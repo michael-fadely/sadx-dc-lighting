@@ -777,7 +777,7 @@ bool LanternCollection::load_files()
 
 	if (instances.empty())
 	{
-		instances.emplace_back(param::PaletteA);
+		instances.emplace_back(param::palette_a);
 	}
 
 	const bool pl_handled = run_pl_callbacks(CurrentLevel, CurrentAct, time);

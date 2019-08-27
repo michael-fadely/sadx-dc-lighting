@@ -34,9 +34,6 @@
     <Filter Include="Source Files\external">
       <UniqueIdentifier>{cdf248a8-f140-419f-a33f-e662ae601f58}</UniqueIdentifier>
     </Filter>
-    <Filter Include="bullshit">
-      <UniqueIdentifier>{abd7f27a-8c95-4f61-85f3-701c26f066cc}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -105,12 +102,6 @@
     <ClInclude Include="LanternParameters.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\sadx-d3d11\sadx-d3d11\CBufferWriter.h">
-      <Filter>bullshit</Filter>
-    </ClInclude>
-    <ClInclude Include="..\sadx-d3d11\sadx-d3d11\dirty_t.h">
-      <Filter>bullshit</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -166,9 +157,6 @@
     </ClCompile>
     <ClCompile Include="LanternParameters.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\sadx-d3d11\sadx-d3d11\CBufferWriter.cpp">
-      <Filter>bullshit</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -70,8 +70,8 @@ static void __cdecl Obj_SkyDeck_r(ObjectMaster* _this)
 	globals::palettes.load_palette(LevelIDs_SkyDeck, 0);
 	globals::palettes.load_source(LevelIDs_SkyDeck, 0);
 
-	param::PaletteB = nullptr;
-	LanternInstance lantern(param::PaletteB);
+	param::palette_b = nullptr;
+	LanternInstance lantern(param::palette_b);
 
 	lantern.load_palette(LevelIDs_SkyDeck, 1);
 	handle = globals::palettes.add(lantern);

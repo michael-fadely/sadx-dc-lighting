@@ -23,8 +23,8 @@ namespace d3d
 
 namespace param
 {
-	extern Texture PaletteA;
-	extern Texture PaletteB;
+	extern Texture palette_a;
+	extern Texture palette_b;
 
 	extern PaletteParameters palette;
 	extern LanternParameters lantern;

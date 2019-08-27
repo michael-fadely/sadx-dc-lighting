@@ -11,9 +11,9 @@
 
 inline void check_blend()
 {
-	if (param::PaletteB == nullptr)
+	if (param::palette_b == nullptr)
 	{
-		param::PaletteB = param::PaletteA;
+		param::palette_b = param::palette_a;
 	}
 }
 

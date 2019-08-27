@@ -30,14 +30,12 @@
 #include <d3d8to9.hpp>
 #include <d3d8types.h>
 #include <d3d8types.hpp>
+#include <CBufferWriter.h>
 
 // Mod loader
 #include <MemAccess.h>
 #include <SADXModLoader.h>
 #include <Trampoline.h>
-
-// MinHook
-#include <MinHook.h>
 
 // Standard library
 #include <algorithm>

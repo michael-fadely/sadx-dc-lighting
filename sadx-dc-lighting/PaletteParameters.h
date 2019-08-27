@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dirty_t.h>
+#include <CBufferWriter.h>
 
 struct PaletteIndexPair : dirty_impl
 {

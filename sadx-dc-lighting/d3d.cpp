@@ -25,13 +25,15 @@
 #include "stupidbullshit.h"
 #include "PaletteParameters.h"
 #include "LanternParameters.h"
+#include <ShaderIncluder.h>
+#include <hash_combine.h>
 
 namespace param
 {
-	//ShaderParameter<Texture>     PaletteA(1, nullptr, IShaderParameter::Type::vertex);
-	//ShaderParameter<Texture>     PaletteB(2, nullptr, IShaderParameter::Type::vertex);
+	//ShaderParameter<Texture>     palette_a(1, nullptr, IShaderParameter::Type::vertex);
+	//ShaderParameter<Texture>     palette_b(2, nullptr, IShaderParameter::Type::vertex);
 
-	Texture PaletteA, PaletteB;
+	Texture palette_a, palette_b;
 
 	PaletteParameters palette {};
 	LanternParameters lantern {};
@@ -40,6 +42,42 @@ namespace param
 	ComPtr<ID3D11Buffer> lantern_cbuffer;
 
 	//ShaderParameter<float3> ViewPosition(34, {}, IShaderParameter::Type::pixel);
+}
+
+struct ShaderFlagPair
+{
+	ShaderFlags::type shim_flags;
+	uint32_t lantern_flags;
+
+	ShaderFlagPair(ShaderFlags::type shim_flags_, uint32_t lantern_flags_)
+		: shim_flags(shim_flags_),
+		  lantern_flags(lantern_flags_)
+	{
+	}
+
+	bool operator==(const ShaderFlagPair& o) const
+	{
+		return shim_flags == o.shim_flags && lantern_flags == o.lantern_flags;
+	}
+
+	bool operator!=(const ShaderFlagPair& o) const
+	{
+		return !(*this == o);
+	}
+};
+
+namespace std
+{
+	template <>
+	struct hash<ShaderFlagPair>
+	{
+		std::size_t operator()(const ShaderFlagPair& s) const noexcept
+		{
+			size_t h = std::hash<ShaderFlags::type>()(s.shim_flags);
+			hash_combine(h, s.lantern_flags);
+			return h;
+		}
+	};
 }
 
 namespace local
@@ -68,8 +106,8 @@ namespace local
 	static float3 last_light_dir = {};
 
 	static std::vector<uint8_t> shader_file;
-	static std::unordered_map<LanternShaderFlags, VertexShader> vertex_shaders;
-	static std::unordered_map<LanternShaderFlags, PixelShader> pixel_shaders;
+	static std::unordered_map<ShaderFlagPair, VertexShader> vertex_shaders;
+	static std::unordered_map<ShaderFlagPair, PixelShader> pixel_shaders;
 
 	static bool   initialized   = false;
 	static Uint32 drawing       = 0;
@@ -114,42 +152,8 @@ namespace local
 		free_shaders();
 	}
 
-	static VertexShader get_vertex_shader(Uint32 flags);
-	static PixelShader get_pixel_shader(Uint32 flags);
-
-	static void create_shaders()
-	{
-		try
-		{
-			d3d::vertex_shader = get_vertex_shader(DEFAULT_FLAGS);
-			d3d::pixel_shader  = get_pixel_shader(DEFAULT_FLAGS);
-
-		#ifdef PRECOMPILE_SHADERS
-			for (Uint32 i = 0; i < LanternShaderFlags_Count; i++)
-			{
-				auto flags = local::sanitize(i);
-
-				auto vs = static_cast<LanternShaderFlags>(flags & VS_MASK);
-				if (vertex_shaders.find(vs) == vertex_shaders.end())
-				{
-					get_vertex_shader(flags);
-				}
-
-				auto ps = static_cast<LanternShaderFlags>(flags & PS_MASK);
-				if (pixel_shaders.find(ps) == pixel_shaders.end())
-				{
-					get_pixel_shader(flags);
-				}
-			}
-		#endif
-		}
-		catch (std::exception& ex)
-		{
-			d3d::vertex_shader = {};
-			d3d::pixel_shader  = {};
-			MessageBoxA(WindowHandle, ex.what(), "Shader creation failed", MB_OK | MB_ICONERROR);
-		}
-	}
+	static VertexShader get_vertex_shader(Uint32 lantern_flags, ShaderFlags::type flags, std::vector<D3D_SHADER_MACRO>& provided_macros);
+	static PixelShader get_pixel_shader(Uint32 lantern_flags, ShaderFlags::type flags, std::vector<D3D_SHADER_MACRO>& provided_macros);
 
 	static std::string to_string(Uint32 flags)
 	{
@@ -487,11 +491,11 @@ namespace local
 		file.write(reinterpret_cast<char*>(data.data()), data.size());
 	}
 
-	static VertexShader get_vertex_shader(Uint32 flags)
+	static VertexShader get_vertex_shader(Uint32 lantern_flags, ShaderFlags::type flags, std::vector<D3D_SHADER_MACRO>& provided_macros)
 	{
 		using namespace std;
 
-		flags = sanitize(flags & VS_MASK);
+		lantern_flags = sanitize(lantern_flags & VS_MASK);
 
 		if (shader_file.empty())
 		{
@@ -499,16 +503,16 @@ namespace local
 		}
 		else
 		{
-			const auto it = vertex_shaders.find(static_cast<LanternShaderFlags>(flags));
+			const auto it = vertex_shaders.find({ flags, lantern_flags });
 			if (it != vertex_shaders.end())
 			{
 				return it->second;
 			}
 		}
 
-		macros.clear();
+		macros = provided_macros;
 
-		const string sid_path = ::filesystem::combine_path(globals::cache_path, shader_id(flags) + ".vs");
+		const string sid_path = ::filesystem::combine_path(globals::cache_path, shader_id(lantern_flags) + ".vs");
 		bool is_cached = ::filesystem::exists(sid_path);
 
 		vector<uint8_t> data;
@@ -517,21 +521,23 @@ namespace local
 		if (is_cached)
 		{
 			PrintDebug("[lantern] Loading cached vertex shader #%02d: %08X (%s)\n",
-			           vertex_shaders.size(), flags, to_string(flags).c_str());
+			           vertex_shaders.size(), lantern_flags, to_string(lantern_flags).c_str());
 
 			load_cached_shader(sid_path, data);
 		}
 		else
 		{
 			PrintDebug("[lantern] Compiling vertex shader #%02d: %08X (%s)\n",
-			           vertex_shaders.size(), flags, to_string(flags).c_str());
+			           vertex_shaders.size(), lantern_flags, to_string(lantern_flags).c_str());
 
-			populate_macros(flags);
+			populate_macros(lantern_flags);
 
 			ComPtr<ID3DBlob> errors;
 
+			ShaderIncluder includer;
+
 			auto result = D3DCompile(shader_file.data(), shader_file.size(), sid_path.c_str(), macros.data(),
-			                         nullptr, "vs_main", "vs_4_0", 0, 0, &shader.blob, &errors);
+			                         &includer, "vs_main", "vs_5_0", 0, 0, &shader.blob, &errors);
 
 			if (FAILED(result) || errors != nullptr)
 			{
@@ -554,13 +560,15 @@ namespace local
 			save_cached_shader(sid_path, data);
 		}
 
-		vertex_shaders[static_cast<LanternShaderFlags>(flags)] = shader;
+		vertex_shaders[{ flags, lantern_flags }] = shader;
 		return shader;
 	}
 
-	static PixelShader get_pixel_shader(Uint32 flags)
+	static PixelShader get_pixel_shader(Uint32 lantern_flags, ShaderFlags::type flags, std::vector<D3D_SHADER_MACRO>& provided_macros)
 	{
 		using namespace std;
+
+		lantern_flags = sanitize(lantern_flags & PS_MASK);
 
 		if (shader_file.empty())
 		{
@@ -568,18 +576,18 @@ namespace local
 		}
 		else
 		{
-			const auto it = pixel_shaders.find(static_cast<LanternShaderFlags>(flags & PS_MASK));
+			const auto it = pixel_shaders.find({ flags, lantern_flags & PS_MASK });
 			if (it != pixel_shaders.end())
 			{
 				return it->second;
 			}
 		}
 
-		macros.clear();
+		macros = provided_macros;
 
-		flags = sanitize(flags & PS_MASK);
+		lantern_flags = sanitize(lantern_flags & PS_MASK);
 
-		const string sid_path = ::filesystem::combine_path(globals::cache_path, shader_id(flags) + ".ps");
+		const string sid_path = ::filesystem::combine_path(globals::cache_path, shader_id(lantern_flags) + ".ps");
 		bool is_cached = ::filesystem::exists(sid_path);
 
 		vector<uint8_t> data;
@@ -588,21 +596,23 @@ namespace local
 		if (is_cached)
 		{
 			PrintDebug("[lantern] Loading cached pixel shader #%02d: %08X (%s)\n",
-			           pixel_shaders.size(), flags, to_string(flags).c_str());
+			           pixel_shaders.size(), lantern_flags, to_string(lantern_flags).c_str());
 
 			load_cached_shader(sid_path, data);
 		}
 		else
 		{
 			PrintDebug("[lantern] Compiling pixel shader #%02d: %08X (%s)\n",
-			           pixel_shaders.size(), flags, to_string(flags).c_str());
+			           pixel_shaders.size(), lantern_flags, to_string(lantern_flags).c_str());
 
-			populate_macros(flags);
+			populate_macros(lantern_flags);
 
 			ComPtr<ID3DBlob> errors;
 
+			ShaderIncluder includer;
+
 			auto result = D3DCompile(shader_file.data(), shader_file.size(), sid_path.c_str(), macros.data(),
-			                         nullptr, "ps_main", "ps_4_0", 0, 0, &shader.blob, &errors);
+			                         &includer, "ps_main", "ps_5_0", 0, 0, &shader.blob, &errors);
 
 			if (FAILED(result) || errors != nullptr)
 			{
@@ -625,7 +635,7 @@ namespace local
 			save_cached_shader(sid_path, data);
 		}
 
-		pixel_shaders[static_cast<LanternShaderFlags>(flags & PS_MASK)] = shader;
+		pixel_shaders[{ flags, lantern_flags & PS_MASK }] = shader;
 		return shader;
 	}
 
@@ -669,7 +679,19 @@ namespace local
 		}
 	}
 
-	static void shader_start()
+	void commit_cbuffer(ComPtr<ID3D11Buffer>& buffer, ICBuffer& data)
+	{
+		auto& context = Direct3D_Device->context;
+
+		D3D11_MAPPED_SUBRESOURCE mapped {};
+		context->Map(buffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+
+		auto writer = CBufferWriter(reinterpret_cast<uint8_t*>(mapped.pData));
+		data.write(writer);
+		context->Unmap(buffer.Get(), 0);
+	}
+
+	static void shader_start(std::vector<D3D_SHADER_MACRO>& provided_macros, ShaderFlags::type flags__)
 	{
 		if (!d3d::do_effect || !drawing)
 		{
@@ -694,8 +716,8 @@ namespace local
 
 			try
 			{
-				vs = get_vertex_shader(flags);
-				ps = get_pixel_shader(flags);
+				vs = get_vertex_shader(flags, flags__, provided_macros);
+				ps = get_pixel_shader(flags, flags__, provided_macros);
 			}
 			catch (std::exception& ex)
 			{
@@ -724,23 +746,25 @@ namespace local
 
 		if (param::palette.dirty())
 		{
-			// TODO: commit
+			commit_cbuffer(param::palette_cbuffer, param::palette);
+			param::palette.clear();
 		}
 
 		if (param::lantern.dirty())
 		{
-			// TODO: commit
+			commit_cbuffer(param::lantern_cbuffer, param::lantern);
+			param::lantern.clear();
 		}
 
 		using_shader = true;
 	}
 
-	void shader_prologue_(const std::string&)
+	void shader_prologue_(std::vector<D3D_SHADER_MACRO>& provided_macros, ShaderFlags::type flags)
 	{
-		shader_start();
+		shader_start(provided_macros, flags);
 	}
 
-	void shader_epilogue_(const std::string&)
+	void shader_epilogue_(std::vector<D3D_SHADER_MACRO>&, ShaderFlags::type)
 	{
 		shader_end();
 	}
@@ -761,6 +785,14 @@ namespace local
 
 		Direct3D_Device->make_cbuffer(param::palette, param::palette_cbuffer);
 		Direct3D_Device->make_cbuffer(param::lantern, param::lantern_cbuffer);
+
+		auto context = Direct3D_Device->context;
+
+		context->VSSetConstantBuffers(4, 1, param::palette_cbuffer.GetAddressOf());
+		context->PSSetConstantBuffers(4, 1, param::palette_cbuffer.GetAddressOf());
+
+		context->VSSetConstantBuffers(5, 1, param::lantern_cbuffer.GetAddressOf());
+		context->PSSetConstantBuffers(5, 1, param::lantern_cbuffer.GetAddressOf());
 	}
 
 #pragma region Trampolines
@@ -1079,7 +1111,7 @@ namespace d3d
 		}
 
 		local::clear_shaders();
-		local::create_shaders();
+		//local::create_shaders();
 	}
 
 	void set_flags(Uint32 flags, bool add)
@@ -1123,7 +1155,7 @@ namespace d3d
 		// mov ecx, [eax] (device)
 		// call dword ptr [ecx+94h] (device->SetTransform)
 		WriteData<8>(reinterpret_cast<void*>(0x00403234), 0x90i8);
-		//WriteCall(reinterpret_cast<void*>(0x00403236), SetTransformHijack);
+		WriteCall(reinterpret_cast<void*>(0x00403236), SetTransformHijack);
 	}
 }
 
@@ -1139,7 +1171,7 @@ extern "C"
 
 	EXPORT void __cdecl OnRenderDeviceReset()
 	{
-		create_shaders();
+		//create_shaders();
 	}
 
 	EXPORT void __cdecl OnExit()

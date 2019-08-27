@@ -1,3 +1,6 @@
+#define NODE_WRITE
+#include "d3d8to11.hlsl"
+
 // From FixedFuncEMU.fx
 // Copyright (c) 2005 Microsoft Corporation. All rights reserved.
 #define FOGMODE_NONE   0
@@ -22,107 +25,48 @@
 	AlphaArg1 = Texture;    \
 	AlphaArg2 = Current
 
-// Textures
+Texture2D palette_a : register(t8);
+Texture2D palette_b : register(t9);
 
-Texture2D BaseTexture : register(t0);
-Texture2D PaletteA    : register(t1);
-Texture2D PaletteB    : register(t2);
+SamplerState palette_sampler_a : register(s8);
+SamplerState palette_sampler_b : register(s9);
 
-// Samplers
-
-SamplerState baseSampler : register(s0) = sampler_state
+struct PaletteIndexPair
 {
-	Texture = BaseTexture;
+	int diffuse;
+	int specular;
 };
 
-SamplerState atlasSamplerA : register(s1) = sampler_state
+struct PaletteBlendFactorPair
 {
-	Texture = PaletteA;
-	DEFAULT_SAMPLER;
+	float diffuse;
+	float specular;
 };
 
-SamplerState atlasSamplerB : register(s2) = sampler_state
+cbuffer PaletteParameters : register(b4)
 {
-	Texture = PaletteB;
-	DEFAULT_SAMPLER;
+	PaletteIndexPair       base_indices;
+	PaletteIndexPair       blend_indices;
+	PaletteBlendFactorPair blend_factors;
 };
 
-// Parameters
-
-float4x4 WorldMatrix      : register(c0);
-float4x4 wvMatrix         : register(c4);
-float4x4 ProjectionMatrix : register(c8);
-float4x4 wvMatrixInvT     : register(c12); // Inverse transpose world view - used for environment mapping.
-
-// Used primarily for environment mapping.
-float4x4 TextureTransform : register(c16) = {
-	-0.5, 0.0, 0.0, 0.0,
-	 0.0, 0.5, 0.0, 0.0,
-	 0.0, 0.0, 1.0, 0.0,
-	 0.5, 0.5, 0.0, 1.0
+cbuffer LanternParameters : register(b5)
+{
+	float3 normal_scale;
+	float3 light_direction;
+	bool   allow_vcolor;
+	bool   diffuse_override;
+	float4 diffuse_override_color;
+	bool   force_default_diffuse;
 };
-
-float3 NormalScale     : register(c20) = float3(1, 1, 1);
-float3 LightDirection  : register(c21) = float3(0.0f, -1.0f, 0.0f);
-uint   DiffuseSource   : register(c22) = (uint)D3DMCS_COLOR1;
-float4 MaterialDiffuse : register(c23) = float4(1.0f, 1.0f, 1.0f, 1.0f);
-
-// Pre-adjusted on the CPU before being sent to the shader.
-// Used for sampling colors from the palette atlases.
-// .xy is diffuse A and B, .zw is specular A and B.
-float4 Indices : register(c24) = float4(0, 0, 0, 0);
-// .x is diffuse, .y is specular
-float2 BlendFactor : register(c25) = float2(0.0f, 0.0f);
-
-bool   AllowVertexColor     : register(c26) = true;
-bool   ForceDefaultDiffuse  : register(c27) = false;
-bool   DiffuseOverride      : register(c28) = false;
-float3 DiffuseOverrideColor : register(c29) = float3(1, 1, 1);
-
-// FogMode cannot be merged with FogConfig because of
-// Shader Model 3 restrictions on acceptable values.
-uint FogMode : register(c30) = (uint)FOGMODE_NONE;
-// x y and z are start, end, and density respectively
-float3 FogConfig : register(c31);
-float4 FogColor  : register(c32);
-float  AlphaRef  : register(c33) = 16.0f / 255.0f;
-
-float3 ViewPosition : register(c34);
 
 // Helpers
 
-// From FixedFuncEMU.fx
-// Copyright (c) 2005 Microsoft Corporation. All rights reserved.
-float CalcFogFactor(float d)
-{
-	float fogCoeff;
-
-	switch (FogMode)
-	{
-		default:
-			break;
-
-		case FOGMODE_EXP:
-			fogCoeff = 1.0 / pow(E, d * FogConfig.z);
-			break;
-
-		case FOGMODE_EXP2:
-			fogCoeff = 1.0 / pow(E, d * d * FogConfig.z * FogConfig.z);
-			break;
-
-		case FOGMODE_LINEAR:
-			fogCoeff = (FogConfig.y - d) / (FogConfig.y - FogConfig.x);
-			break;
-	}
-
-	return clamp(fogCoeff, 0, 1);
-}
-
 float4 GetDiffuse(in float4 vcolor)
 {
-	float4 color = (DiffuseSource == D3DMCS_COLOR1 && any(vcolor)) ? vcolor : MaterialDiffuse;
+	float4 color = (material_sources.diffuse == D3DMCS_COLOR1 && any(vcolor)) ? vcolor : material.diffuse;
 
-	if (!AllowVertexColor || ForceDefaultDiffuse)
+	if (!allow_vcolor || force_default_diffuse)
 	{
 		return float4(1, 1, 1, color.a);
 	}
@@ -130,80 +74,54 @@ float4 GetDiffuse(in float4 vcolor)
 	return color;
 }
 
-struct VS_IN
-{
-	float3 position : POSITION;
-	float3 normal   : NORMAL;
-	float2 tex      : TEXCOORD0;
-	float4 color    : COLOR0;
-};
-
-struct PS_IN
-{
-	float4 position : POSITION0;
-	float4 diffuse  : COLOR0;
-	float4 specular : COLOR1;
-	float2 tex      : TEXCOORD0;
-	float  fogDist  : FOG0;
-	float3 worldPos : FOG1;
-};
-
 // Vertex shaders
 
-PS_IN vs_main(VS_IN input)
+VS_OUTPUT vs_main(VS_INPUT input)
 {
-	PS_IN output;
+	VS_OUTPUT output = fixed_func_vs(input);
 
-	output.position = mul(float4(input.position, 1), wvMatrix);
-	output.fogDist = output.position.z;
-
-	output.position = mul(output.position, ProjectionMatrix);
-
-	output.worldPos = (float3)mul(float4(input.position, 1), WorldMatrix);
-
-#if defined(USE_TEXTURE) && defined(USE_ENVMAP)
-	output.tex = (float2)mul(float4(input.normal, 1), wvMatrixInvT);
-	output.tex = (float2)mul(float4(output.tex, 0, 1), TextureTransform);
+#ifdef FVF_DIFFUSE
+	float4 input_diffuse = input.diffuse;
 #else
-	output.tex = input.tex;
+	float4 input_diffuse = (float4)0;
 #endif
 
-#if defined(USE_LIGHT)
+#if defined(USE_LIGHT) && defined(FVF_NORMAL)
 	{
-		float3 worldNormal = mul(input.normal * NormalScale, (float3x3)WorldMatrix);
-		float4 diffuse = GetDiffuse(input.color);
+		float3 worldNormal = mul(input.normal * normal_scale, (float3x3)world_matrix);
+		float4 diffuse = GetDiffuse(input_diffuse);
 
 		// This is the "brightness index" calculation. Just a dot product
 		// of the vertex normal (in world space) and the light direction.
-		float _dot = dot(normalize(LightDirection), worldNormal);
+		float _dot = dot(normalize(light_direction), worldNormal);
 
 		// The palette's brightest point is 0, and its darkest point is 1,
 		// so we push the dot product (-1 .. 1) into the rage 0 .. 1, and
 		// subtract it from 1. This is the value we use for indexing into
 		// the palette.
 		// HACK: This clamp prevents a visual bug in the Mystic Ruins past (shrine on fire)
-		float i = floor(clamp(1 - (_dot + 1) / 2, 0, 0.99) * 255) / 255;
+		int i = floor(clamp(1 - (_dot + 1) / 2, 0, 0.99) * 255);
 
 		float4 pdiffuse;
 
-		if (DiffuseOverride)
+		if (diffuse_override)
 		{
-			pdiffuse = float4(DiffuseOverrideColor, 1);
+			pdiffuse = float4(diffuse_override_color.rgb, 1);
 		}
 		else
 		{
-			pdiffuse = tex2Dlod(atlasSamplerA, float4(i, Indices.x, 0, 0));
+			pdiffuse = palette_a[int2(i, base_indices.diffuse)];
 		}
 
-		float4 pspecular = tex2Dlod(atlasSamplerA, float4(i, Indices.z, 0, 0));
+		float4 pspecular = palette_a[int2(i, base_indices.specular)];
 
 	#ifdef USE_BLEND
 		{
-			float4 bdiffuse = tex2Dlod(atlasSamplerB, float4(i, Indices.y, 0, 0));
-			float4 bspecular = tex2Dlod(atlasSamplerB, float4(i, Indices.w, 0, 0));
+			float4 bdiffuse  = palette_b[int2(i, blend_indices.diffuse)];
+			float4 bspecular = palette_b[int2(i, blend_indices.specular)];
 
-			pdiffuse = lerp(pdiffuse, bdiffuse, BlendFactor.x);
-			pspecular = lerp(pspecular, bspecular, BlendFactor.y);
+			pdiffuse = lerp(pdiffuse, bdiffuse, blend_factors.diffuse);
+			pspecular = lerp(pspecular, bspecular, blend_factors.specular);
 		}
 	#endif
 
@@ -213,7 +131,7 @@ PS_IN vs_main(VS_IN input)
 #else
 	{
 		// Just spit out the vertex or material color if lighting is off.
-		output.diffuse = GetDiffuse(input.color);
+		output.diffuse = GetDiffuse(input_diffuse);
 		output.specular = 0;
 	}
 #endif
@@ -221,33 +139,23 @@ PS_IN vs_main(VS_IN input)
 	return output;
 }
 
-float4 ps_main(PS_IN input) : COLOR
+float4 ps_main(VS_OUTPUT input) : SV_TARGET
 {
 	float4 result;
 
 #ifdef USE_TEXTURE
-	result = tex2D(baseSampler, input.tex);
+	result = textures[0].Sample(samplers[0], input.uv[0].xy);
 	result = result * input.diffuse + input.specular;
 #else
 	result = input.diffuse;
 #endif
 
-#ifdef USE_ALPHA
-	clip(result.a < AlphaRef ? -1 : 1);
-#endif
+	result = apply_fog(result, input.fog);
 
-#ifdef USE_FOG
-	float distance;
+	bool standard_blending = is_standard_blending();
 
-#ifdef RANGE_FOG
-	distance = length(input.worldPos - ViewPosition);
-#else
-	distance = input.fogDist;
-#endif
-
-	float factor = CalcFogFactor(distance);
-	result.rgb = (factor * result + (1.0 - factor) * FogColor).rgb;
-#endif
+	do_alpha_reject(result, standard_blending);
+	do_oit(result, input, standard_blending);
 
 	return result;
 }
