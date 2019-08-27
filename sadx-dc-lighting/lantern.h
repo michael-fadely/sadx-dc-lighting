@@ -83,7 +83,7 @@ public:
 class LanternInstance : ILantern
 {
 	// TODO: handle externally
-	Texture atlas;
+	Texture* atlas;
 	std::array<ColorPair, 256 * 8> palette_pairs {};
 	SourceLight source_lights[16] {};
 	NJS_VECTOR sl_direction {};
@@ -91,7 +91,7 @@ class LanternInstance : ILantern
 	void copy(LanternInstance& inst);
 
 public:
-	explicit LanternInstance(Texture atlas);
+	explicit LanternInstance(Texture* atlas);
 	LanternInstance(LanternInstance&& inst) noexcept;
 
 	LanternInstance(const LanternInstance&) = default;

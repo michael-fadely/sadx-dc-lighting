@@ -466,7 +466,7 @@ extern "C"
 
 		WriteJump(InitLandTableMeshSet, InitLandTableMeshSet_r);
 
-		LanternInstance base(param::palette_a);
+		LanternInstance base(&param::palette_a);
 		globals::palettes.add(base);
 
 		globals::helper_functions = helperFunctions;

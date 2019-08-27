@@ -303,7 +303,7 @@ void LanternInstance::copy(LanternInstance& inst)
 	specular_  = inst.specular_;
 }
 
-LanternInstance::LanternInstance(Texture atlas)
+LanternInstance::LanternInstance(Texture* atlas)
 	: atlas(atlas)
 {
 }
@@ -424,7 +424,7 @@ bool LanternInstance::load_palette(const std::string& path)
 
 void LanternInstance::generate_atlas()
 {
-	Texture texture = atlas;
+	Texture texture = *atlas;
 
 	if (texture == nullptr)
 	{
@@ -435,12 +435,12 @@ void LanternInstance::generate_atlas()
 			throw std::exception("Failed to create palette texture!");
 		}
 
-		atlas = texture;
+		*atlas = texture;
 	}
 	else
 	{
 		// Release all of its references in case there are lingering textures.
-		atlas = nullptr;
+		*atlas = nullptr;
 	}
 
 	D3DLOCKED_RECT rect;
@@ -777,7 +777,7 @@ bool LanternCollection::load_files()
 
 	if (instances.empty())
 	{
-		instances.emplace_back(param::palette_a);
+		instances.emplace_back(&param::palette_a);
 	}
 
 	const bool pl_handled = run_pl_callbacks(CurrentLevel, CurrentAct, time);
