@@ -100,8 +100,8 @@ namespace local
 	constexpr auto VS_MASK       = LanternShaderFlags_Texture | LanternShaderFlags_EnvMap | LanternShaderFlags_Light | LanternShaderFlags_Blend;
 	constexpr auto PS_MASK       = LanternShaderFlags_Texture | LanternShaderFlags_Alpha | LanternShaderFlags_Fog | LanternShaderFlags_RangeFog;
 
-	static Uint32 shader_flags = DEFAULT_FLAGS;
-	static Uint32 last_flags   = DEFAULT_FLAGS;
+	static ShaderFlagPair shader_flags = { 0, DEFAULT_FLAGS };
+	static ShaderFlagPair last_flags   = { 0, DEFAULT_FLAGS };
 
 	static float3 last_light_dir = {};
 
@@ -699,12 +699,35 @@ namespace local
 			return;
 		}
 
+		auto context = Direct3D_Device->context;
+
+		if (param::palette_a && param::palette_a->srv)
+		{
+			context->VSSetShaderResources(8, 1, param::palette_a->srv.GetAddressOf());
+		}
+		else
+		{
+			ID3D11ShaderResourceView* views[1] = {};
+			context->VSSetShaderResources(8, 1, views);
+		}
+
+		if (param::palette_b && param::palette_b->srv)
+		{
+			context->VSSetShaderResources(9, 1, param::palette_b->srv.GetAddressOf());
+		}
+		else
+		{
+			ID3D11ShaderResourceView* views[1] = {};
+			context->VSSetShaderResources(9, 1, views);
+		}
+
 		set_light_parameters();
 		globals::palettes.apply_parameters();
 
 		bool changes = false;
 
-		const auto flags = sanitize(shader_flags);
+		ShaderFlagPair flags = { flags__, shader_flags.lantern_flags };
+		flags.lantern_flags = sanitize(shader_flags.lantern_flags);
 
 		if (flags != last_flags)
 		{
@@ -716,8 +739,8 @@ namespace local
 
 			try
 			{
-				vs = get_vertex_shader(flags, flags__, provided_macros);
-				ps = get_pixel_shader(flags, flags__, provided_macros);
+				vs = get_vertex_shader(flags.lantern_flags, flags__, provided_macros);
+				ps = get_pixel_shader(flags.lantern_flags, flags__, provided_macros);
 			}
 			catch (std::exception& ex)
 			{
@@ -1118,11 +1141,11 @@ namespace d3d
 	{
 		if (add)
 		{
-			local::shader_flags |= flags;
+			local::shader_flags.lantern_flags |= flags;
 		}
 		else
 		{
-			local::shader_flags &= ~flags;
+			local::shader_flags.lantern_flags &= ~flags;
 		}
 	}
 
