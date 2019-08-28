@@ -28,6 +28,37 @@
 #include <ShaderIncluder.h>
 #include <hash_combine.h>
 
+inline uint32_t fvf_sanitize(uint32_t value)
+{
+	if ((value & D3DFVF_XYZ) == D3DFVF_XYZ)
+	{
+		value &= ~D3DFVF_XYZRHW;
+	}
+	else if ((value & D3DFVF_XYZRHW) == D3DFVF_XYZRHW)
+	{
+		value &= ~D3DFVF_NORMAL;
+	}
+
+	return value;
+}
+
+inline uint64_t sf_sanitize(uint64_t flags)
+{
+	flags &= ShaderFlags::mask;
+
+	if (flags & ShaderFlags::rs_lighting && !(flags & D3DFVF_NORMAL))
+	{
+		flags &= ~ShaderFlags::rs_lighting;
+	}
+
+	if (flags & ShaderFlags::rs_oit && !(flags & ShaderFlags::rs_alpha))
+	{
+		flags &= ~ShaderFlags::rs_oit;
+	}
+
+	return flags;
+}
+
 namespace param
 {
 	//ShaderParameter<Texture>     palette_a(1, nullptr, IShaderParameter::Type::vertex);
@@ -481,6 +512,7 @@ namespace local
 
 	static void save_cached_shader(const std::string& sid_path, std::vector<uint8_t>& data)
 	{
+		return;
 		std::ofstream file(sid_path, std::ios_base::binary);
 
 		if (!file.is_open())
@@ -513,7 +545,8 @@ namespace local
 		macros = provided_macros;
 
 		const string sid_path = ::filesystem::combine_path(globals::cache_path, shader_id(lantern_flags) + ".vs");
-		bool is_cached = ::filesystem::exists(sid_path);
+		//bool is_cached = ::filesystem::exists(sid_path);
+		bool is_cached = false;
 
 		vector<uint8_t> data;
 		VertexShader shader;
@@ -588,7 +621,8 @@ namespace local
 		lantern_flags = sanitize(lantern_flags & PS_MASK);
 
 		const string sid_path = ::filesystem::combine_path(globals::cache_path, shader_id(lantern_flags) + ".ps");
-		bool is_cached = ::filesystem::exists(sid_path);
+		//bool is_cached = ::filesystem::exists(sid_path);
+		bool is_cached = false;
 
 		vector<uint8_t> data;
 		PixelShader shader;
@@ -635,7 +669,7 @@ namespace local
 			save_cached_shader(sid_path, data);
 		}
 
-		pixel_shaders[{ flags, lantern_flags & PS_MASK }] = shader;
+		pixel_shaders[{ flags, lantern_flags }] = shader;
 		return shader;
 	}
 
@@ -673,8 +707,8 @@ namespace local
 	{
 		if (using_shader)
 		{
-			// TODO: d3d::device->SetPixelShader(nullptr);
-			// TODO: d3d::device->SetVertexShader(nullptr);
+			Direct3D_Device->context->VSSetShader(Direct3D_Device->current_vs.shader.Get(), nullptr, 0);
+			Direct3D_Device->context->PSSetShader(Direct3D_Device->current_ps.shader.Get(), nullptr, 0);
 			using_shader = false;
 		}
 	}
@@ -693,6 +727,7 @@ namespace local
 
 	static void shader_start(std::vector<D3D_SHADER_MACRO>& provided_macros, ShaderFlags::type flags__)
 	{
+		flags__ = sf_sanitize(flags__);
 		if (!d3d::do_effect || !drawing)
 		{
 			shader_end();
@@ -1151,7 +1186,7 @@ namespace d3d
 
 	bool shaders_null()
 	{
-		return !vertex_shader.has_value() || pixel_shader.has_value();
+		return !vertex_shader.has_value() || !pixel_shader.has_value();
 	}
 
 	void init_trampolines()
@@ -1188,8 +1223,8 @@ extern "C"
 
 	EXPORT void __cdecl OnRenderDeviceLost()
 	{
-		end();
-		free_shaders();
+		//end();
+		//free_shaders();
 	}
 
 	EXPORT void __cdecl OnRenderDeviceReset()
@@ -1200,6 +1235,6 @@ extern "C"
 	EXPORT void __cdecl OnExit()
 	{
 		//param::release_parameters();
-		free_shaders();
+		//free_shaders();
 	}
 }

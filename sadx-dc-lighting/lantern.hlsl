@@ -88,7 +88,7 @@ VS_OUTPUT vs_main(VS_INPUT input)
 
 #if defined(USE_LIGHT) && defined(FVF_NORMAL)
 	{
-		float3 worldNormal = mul(input.normal * normal_scale, (float3x3)world_matrix);
+		float3 worldNormal = mul((float3x3)world_matrix, input.normal * normal_scale);
 		float4 diffuse = GetDiffuse(input_diffuse);
 
 		// This is the "brightness index" calculation. Just a dot product
@@ -99,7 +99,6 @@ VS_OUTPUT vs_main(VS_INPUT input)
 		// so we push the dot product (-1 .. 1) into the rage 0 .. 1, and
 		// subtract it from 1. This is the value we use for indexing into
 		// the palette.
-		// HACK: This clamp prevents a visual bug in the Mystic Ruins past (shrine on fire)
 		int i = floor(clamp(1 - (_dot + 1) / 2, 0, 0.99) * 255);
 
 		float4 pdiffuse;
@@ -120,12 +119,12 @@ VS_OUTPUT vs_main(VS_INPUT input)
 			float4 bdiffuse  = palette_b[int2(i, blend_indices.diffuse)];
 			float4 bspecular = palette_b[int2(i, blend_indices.specular)];
 
-			pdiffuse = lerp(pdiffuse, bdiffuse, blend_factors.diffuse);
+			pdiffuse  = lerp(pdiffuse, bdiffuse, blend_factors.diffuse);
 			pspecular = lerp(pspecular, bspecular, blend_factors.specular);
 		}
 	#endif
 
-		output.diffuse = float4((diffuse * pdiffuse).rgb, diffuse.a);
+		output.diffuse  = float4((diffuse * pdiffuse).rgb, diffuse.a);
 		output.specular = float4(pspecular.rgb, 0.0f);
 	}
 #else

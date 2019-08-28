@@ -14,12 +14,13 @@
 
 // Enable shader precompilation (in release builds)
 #ifndef _DEBUG
-#define PRECOMPILE_SHADERS
+//#define PRECOMPILE_SHADERS
 #endif
 
 #define WIN32_LEAN_AND_MEAN
 
-#ifdef _DEBUG
+//#ifdef _DEBUG
+#if 1
 
 // Windows API
 #include <Windows.h>
