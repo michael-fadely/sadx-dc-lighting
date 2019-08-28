@@ -1,30 +1,6 @@
 #define NODE_WRITE
 #include "d3d8to11.hlsl"
 
-// From FixedFuncEMU.fx
-// Copyright (c) 2005 Microsoft Corporation. All rights reserved.
-#define FOGMODE_NONE   0
-#define FOGMODE_EXP    1
-#define FOGMODE_EXP2   2
-#define FOGMODE_LINEAR 3
-#define E 2.71828
-
-#define D3DMCS_MATERIAL 0 // Color from material is used
-#define D3DMCS_COLOR1   1 // Diffuse vertex color is used
-#define D3DMCS_COLOR2   2 // Specular vertex color is used
-
-#define DEFAULT_SAMPLER     \
-	MinFilter = Point;      \
-	MagFilter = Point;      \
-	AddressU  = Clamp;      \
-	AddressV  = Clamp;      \
-	ColorOp   = Modulate;   \
-	ColorArg1 = Texture;    \
-	ColorArg2 = Current;    \
-	AlphaOp   = SelectArg1; \
-	AlphaArg1 = Texture;    \
-	AlphaArg2 = Current
-
 Texture2D palette_a : register(t8);
 Texture2D palette_b : register(t9);
 
@@ -62,9 +38,9 @@ cbuffer LanternParameters : register(b5)
 
 // Helpers
 
-float4 GetDiffuse(in float4 vcolor)
+float4 get_diffuse(in float4 vcolor)
 {
-	float4 color = (material_sources.diffuse == D3DMCS_COLOR1 && any(vcolor)) ? vcolor : material.diffuse;
+	float4 color = (material_sources.diffuse == CS_COLOR1 && any(vcolor)) ? vcolor : material.diffuse;
 
 	if (!allow_vcolor || force_default_diffuse)
 	{
@@ -78,7 +54,9 @@ float4 GetDiffuse(in float4 vcolor)
 
 VS_OUTPUT vs_main(VS_INPUT input)
 {
-	VS_OUTPUT output = fixed_func_vs(input);
+	VS_OUTPUT output = (VS_OUTPUT)0;
+
+	transform(input, output);
 
 #ifdef FVF_DIFFUSE
 	float4 input_diffuse = input.diffuse;
@@ -89,7 +67,7 @@ VS_OUTPUT vs_main(VS_INPUT input)
 #if defined(USE_LIGHT) && defined(FVF_NORMAL)
 	{
 		float3 worldNormal = mul((float3x3)world_matrix, input.normal * normal_scale);
-		float4 diffuse = GetDiffuse(input_diffuse);
+		float4 diffuse = get_diffuse(input_diffuse);
 
 		// This is the "brightness index" calculation. Just a dot product
 		// of the vertex normal (in world space) and the light direction.
@@ -99,7 +77,7 @@ VS_OUTPUT vs_main(VS_INPUT input)
 		// so we push the dot product (-1 .. 1) into the rage 0 .. 1, and
 		// subtract it from 1. This is the value we use for indexing into
 		// the palette.
-		int i = floor(clamp(1 - (_dot + 1) / 2, 0, 0.99) * 255);
+		int i = floor(clamp(1 - (_dot + 1) / 2, 0, 1) * 255);
 
 		float4 pdiffuse;
 
@@ -130,10 +108,12 @@ VS_OUTPUT vs_main(VS_INPUT input)
 #else
 	{
 		// Just spit out the vertex or material color if lighting is off.
-		output.diffuse = GetDiffuse(input_diffuse);
+		output.diffuse = get_diffuse(input_diffuse);
 		output.specular = 0;
 	}
 #endif
+
+	output_texcoord(input, output);
 
 	return output;
 }

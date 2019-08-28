@@ -523,7 +523,7 @@ namespace local
 		file.write(reinterpret_cast<char*>(data.data()), data.size());
 	}
 
-	static VertexShader get_vertex_shader(Uint32 lantern_flags, ShaderFlags::type flags, std::vector<D3D_SHADER_MACRO>& provided_macros)
+	static VertexShader get_vertex_shader(Uint32 lantern_flags, ShaderFlags::type flags, const std::vector<D3D_SHADER_MACRO>& provided_macros)
 	{
 		using namespace std;
 
@@ -597,7 +597,7 @@ namespace local
 		return shader;
 	}
 
-	static PixelShader get_pixel_shader(Uint32 lantern_flags, ShaderFlags::type flags, std::vector<D3D_SHADER_MACRO>& provided_macros)
+	static PixelShader get_pixel_shader(Uint32 lantern_flags, ShaderFlags::type flags, const std::vector<D3D_SHADER_MACRO>& provided_macros)
 	{
 		using namespace std;
 
@@ -725,7 +725,7 @@ namespace local
 		context->Unmap(buffer.Get(), 0);
 	}
 
-	static void shader_start(std::vector<D3D_SHADER_MACRO>& provided_macros, ShaderFlags::type flags__)
+	static void shader_start(const std::vector<D3D_SHADER_MACRO>& provided_macros, ShaderFlags::type flags__)
 	{
 		flags__ = sf_sanitize(flags__);
 		if (!d3d::do_effect || !drawing)
@@ -817,12 +817,12 @@ namespace local
 		using_shader = true;
 	}
 
-	void shader_prologue_(std::vector<D3D_SHADER_MACRO>& provided_macros, ShaderFlags::type flags)
+	void shader_prologue_(const std::vector<D3D_SHADER_MACRO>& provided_macros, ShaderFlags::type flags)
 	{
 		shader_start(provided_macros, flags);
 	}
 
-	void shader_epilogue_(std::vector<D3D_SHADER_MACRO>&, ShaderFlags::type)
+	void shader_epilogue_(const std::vector<D3D_SHADER_MACRO>&, ShaderFlags::type)
 	{
 		shader_end();
 	}

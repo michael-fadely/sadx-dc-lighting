@@ -521,7 +521,7 @@ extern "C"
 		polybuff::rewrite_init();
 	}
 
-#ifdef _DEBUG
+//#ifdef _DEBUG
 	EXPORT void __cdecl OnFrame()
 	{
 		auto pad = ControllerPointers[0];
@@ -552,7 +552,9 @@ extern "C"
 			return;
 		}
 
+	#ifdef _DEBUG
 		show_light_direction();
+	#endif
 	}
-#endif
+//#endif
 }
