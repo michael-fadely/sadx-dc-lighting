@@ -76,7 +76,8 @@ void material_unregister(NJS_MATERIAL const* const* materials, size_t length, la
 			continue;
 		}
 
-		remove(it->second.begin(), it->second.end(), callback);
+		auto& callbacks = it->second;
+		callbacks.erase(std::remove(callbacks.begin(), callbacks.end(), callback));
 
 		if (it->second.empty())
 		{
