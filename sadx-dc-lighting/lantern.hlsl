@@ -36,8 +36,6 @@ cbuffer LanternParameters : register(b5)
 	bool   force_default_diffuse;
 };
 
-// Helpers
-
 float4 get_diffuse(in float4 vcolor)
 {
 	float4 color = (material_sources.diffuse == CS_COLOR1 && any(vcolor)) ? vcolor : material.diffuse;
@@ -49,8 +47,6 @@ float4 get_diffuse(in float4 vcolor)
 
 	return color;
 }
-
-// Vertex shaders
 
 VS_OUTPUT vs_main(VS_INPUT input)
 {
@@ -66,12 +62,12 @@ VS_OUTPUT vs_main(VS_INPUT input)
 
 #if defined(USE_LIGHT) && defined(FVF_NORMAL)
 	{
-		float3 worldNormal = mul((float3x3)world_matrix, input.normal * normal_scale);
+		float3 world_normal = mul((float3x3)world_matrix, input.normal * normal_scale);
 		float4 diffuse = get_diffuse(input_diffuse);
 
 		// This is the "brightness index" calculation. Just a dot product
 		// of the vertex normal (in world space) and the light direction.
-		float _dot = dot(normalize(light_direction), worldNormal);
+		float _dot = dot(normalize(light_direction), world_normal);
 
 		// The palette's brightest point is 0, and its darkest point is 1,
 		// so we push the dot product (-1 .. 1) into the rage 0 .. 1, and
@@ -123,7 +119,7 @@ float4 ps_main(VS_OUTPUT input) : SV_TARGET
 	float4 result;
 
 #ifdef USE_TEXTURE
-	result = textures[0].Sample(samplers[0], input.uv[0].xy);
+	result = sample_texture_stage(input, 0);
 	result = result * input.diffuse + input.specular;
 #else
 	result = input.diffuse;
