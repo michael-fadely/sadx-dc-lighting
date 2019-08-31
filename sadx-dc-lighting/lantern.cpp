@@ -437,11 +437,6 @@ void LanternInstance::generate_atlas()
 
 		*atlas = texture;
 	}
-	else
-	{
-		// Release all of its references in case there are lingering textures.
-		*atlas = nullptr;
-	}
 
 	D3DLOCKED_RECT rect;
 	if (FAILED(texture->LockRect(0, &rect, nullptr, 0)))
