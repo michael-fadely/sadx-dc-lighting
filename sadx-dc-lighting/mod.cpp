@@ -1,7 +1,10 @@
 #include "stdafx.h"
 
 #include <Windows.h>
+#include <direct.h> // for _getcwd
 #include <d3d9.h>
+
+#include <sstream>
 
 // Mod loader
 #include <SADXModLoader.h>
@@ -12,7 +15,6 @@
 
 // Local
 #include "d3d.h"
-#include "datapointers.h"
 #include "globals.h"
 #include "lantern.h"
 #include "../include/lanternapi.h"
@@ -201,7 +203,7 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 		flags = _nj_constant_attr_or_ | (_nj_constant_attr_and_ & flags);
 	}
 
-	fix_default_color(EntityVertexColor.color);
+	fix_default_color(PolyBuffVertexColor.color);
 	fix_default_color(LandTableVertexColor.color);
 
 	globals::palettes.set_palettes(globals::light_type, flags);
@@ -466,12 +468,27 @@ void __cdecl InitLandTableMeshSet_r(NJS_MODEL_SADX* model, NJS_MESHSET_SADX* mes
 	}
 }
 
+static std::string build_mod_path(const char* modpath, const char* path)
+{
+	std::stringstream result;
+	char workingdir[FILENAME_MAX] {};
+
+	result << _getcwd(workingdir, FILENAME_MAX) << "\\" << modpath << "\\" << path;
+
+	return result.str();
+}
+
 extern "C"
 {
 	EXPORT ModInfo SADXModInfo = { ModLoaderVer, nullptr, nullptr, 0, nullptr, 0, nullptr, 0, nullptr, 0 };
 	EXPORT void __cdecl Init(const char* path, const HelperFunctions& helperFunctions)
 	{
-		auto handle = GetModuleHandle(L"d3d9.dll");
+		HMODULE handle = nullptr;
+
+		const std::string dll = build_mod_path(path, "MinHook.x86.dll");
+		handle = LoadLibraryA(dll.c_str());
+
+		handle = GetModuleHandle(L"d3d9.dll");
 
 		if (handle == nullptr)
 		{
@@ -547,7 +564,7 @@ extern "C"
 
 		NormalScaleMultiplier = { 1.0f, 1.0f, 1.0f };
 
-		polybuff_rewrite_init();
+		polybuff::rewrite_init();
 	}
 
 #ifdef _DEBUG
