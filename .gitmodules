@@ -4,3 +4,4 @@
 [submodule "sadx-d3d11"]
 	path = sadx-d3d11
 	url = https://github.com/michael-fadely/sadx-d3d11.git
+	branch = generic
