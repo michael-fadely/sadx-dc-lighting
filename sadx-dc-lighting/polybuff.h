@@ -1,3 +1,6 @@
 #pragma once
 
-void polybuff_rewrite_init();
+namespace polybuff
+{
+	void rewrite_init();
+}

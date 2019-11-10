@@ -14,45 +14,6 @@ static HMODULE ADV00MODELS      = GetModuleHandle(L"ADV00MODELS");
 static HMODULE ADV03MODELS      = GetModuleHandle(L"ADV03MODELS");
 static HMODULE BOSSCHAOS0MODELS = GetModuleHandle(L"BOSSCHAOS0MODELS");
 
-static const NJS_MATERIAL* WhiteDiffuse[] = {
-	//Egg Hornet
-	((NJS_MATERIAL*)0x0155D1DC),
-	//Egg Viper cockpit
-	((NJS_MATERIAL*)0x0166BD68),
-	((NJS_MATERIAL*)0x0166BD7C),
-	((NJS_MATERIAL*)0x0166BD90),
-	((NJS_MATERIAL*)0x0166BDA4),
-	((NJS_MATERIAL*)0x0166BDB8),
-	((NJS_MATERIAL*)0x0166BDCC),
-	((NJS_MATERIAL*)0x0166BDE0),
-	//Mecha fish
-	((NJS_MATERIAL*)0x016F96C0),
-	((NJS_MATERIAL*)0x016F96D4),
-	((NJS_MATERIAL*)0x016F96E8),
-	((NJS_MATERIAL*)0x016F96FC),
-	((NJS_MATERIAL*)0x016F9710),
-	((NJS_MATERIAL*)0x016F9724),
-	((NJS_MATERIAL*)0x016FA4EC),
-	((NJS_MATERIAL*)0x016FA500),
-	((NJS_MATERIAL*)0x016FA514),
-	((NJS_MATERIAL*)0x0172872C),
-	((NJS_MATERIAL*)0x01728740),
-	((NJS_MATERIAL*)0x01728754),
-	((NJS_MATERIAL*)0x01727900),
-	((NJS_MATERIAL*)0x01727914),
-	((NJS_MATERIAL*)0x01727928),
-	((NJS_MATERIAL*)0x0172793C),
-	((NJS_MATERIAL*)0x01727950),
-	((NJS_MATERIAL*)0x01727964),
-	//Item capsule
-	((NJS_MATERIAL*)0x008BEB44),
-	//Emblem
-	((NJS_MATERIAL*)0x009740FC),
-	((NJS_MATERIAL*)0x00974110),
-	((NJS_MATERIAL*)0x00974124),
-	((NJS_MATERIAL*)0x00974138),
-};
-
 static const NJS_MATERIAL* ChaosPuddle[] = {
 	((NJS_MATERIAL*)0x038D936C),
 	((NJS_MATERIAL*)0x038DDA04),
@@ -60,7 +21,7 @@ static const NJS_MATERIAL* ChaosPuddle[] = {
 
 static const NJS_MATERIAL* Chaos2Materials[] = {
 	//Chaos 2
-	//extending arm
+	//Extending arm
 	((NJS_MATERIAL*)0x01143380),
 	((NJS_MATERIAL*)0x01143118),
 	((NJS_MATERIAL*)0x01142C30),
@@ -75,7 +36,7 @@ static const NJS_MATERIAL* Chaos2Materials[] = {
 	((NJS_MATERIAL*)0x01140118),
 	((NJS_MATERIAL*)0x0113FD38),
 	((NJS_MATERIAL*)0x0113F850),
-	//everything else
+	//Everything else
 	((NJS_MATERIAL*)0x01143924),
 	((NJS_MATERIAL*)0x01139FC8),
 	((NJS_MATERIAL*)0x01139900),
@@ -136,7 +97,7 @@ static const NJS_MATERIAL* Chaos2Materials[] = {
 	((NJS_MATERIAL*)0x011309EC),
 };
 
-static const NJS_MATERIAL* SpecialBossMaterials[] = {
+static const NJS_MATERIAL* Specular5Materials[] = {
 	//Chaos 6
 	((NJS_MATERIAL*)0x01271BCC),
 	((NJS_MATERIAL*)0x01271BE0),
@@ -194,7 +155,7 @@ static const NJS_MATERIAL* SpecialBossMaterials[] = {
 	((NJS_MATERIAL*)0x012633C4),
 	((NJS_MATERIAL*)0x01263064),
 	((NJS_MATERIAL*)0x01262B88),
-	//Chaos6 transforming
+	//Chaos 6 transforming
 	((NJS_MATERIAL*)0x01288360),
 	((NJS_MATERIAL*)0x01287E10),
 	((NJS_MATERIAL*)0x012878E8),
@@ -214,7 +175,7 @@ static const NJS_MATERIAL* SpecialBossMaterials[] = {
 	((NJS_MATERIAL*)0x012812FC),
 	((NJS_MATERIAL*)0x01280FC0),
 	((NJS_MATERIAL*)0x01280AB0),
-	//Chaos6 transformed
+	//Chaos 6 transformed
 	((NJS_MATERIAL*)0x01293990),
 	((NJS_MATERIAL*)0x01293528),
 	((NJS_MATERIAL*)0x01292ED8),
@@ -649,10 +610,7 @@ static const NJS_MATERIAL* ObjectSpecular[] = {
 	((NJS_MATERIAL*)0x028097C8),
 	((NJS_MATERIAL*)0x028097DC),
 	((NJS_MATERIAL*)0x028092C0),
-	//Pole
-	(NJS_MATERIAL*)((size_t)BOSSCHAOS0MODELS + 0x0004DA58),
-	(NJS_MATERIAL*)((size_t)BOSSCHAOS0MODELS + 0x0004DA6C),
-	//Chaos0 main
+	//Chaos 0 main
 	(NJS_MATERIAL*)((size_t)BOSSCHAOS0MODELS + 0x00013AF0),
 	(NJS_MATERIAL*)((size_t)BOSSCHAOS0MODELS + 0x00014018),
 	(NJS_MATERIAL*)((size_t)BOSSCHAOS0MODELS + 0x00014280),
@@ -688,7 +646,7 @@ static const NJS_MATERIAL* ObjectSpecular[] = {
 	(NJS_MATERIAL*)((size_t)BOSSCHAOS0MODELS + 0x00008544),
 	(NJS_MATERIAL*)((size_t)BOSSCHAOS0MODELS + 0x000082A0),
 	(NJS_MATERIAL*)((size_t)BOSSCHAOS0MODELS + 0x00008030),
-	//Egg Hornet eggmobile part
+	//Egg Hornet Eggmobile part
 	((NJS_MATERIAL*)0x0155EDA0),
 	((NJS_MATERIAL*)0x0155EDB4),
 	((NJS_MATERIAL*)0x0155EDC8),
@@ -767,23 +725,6 @@ static const NJS_MATERIAL* ObjectSpecular[] = {
 	((NJS_MATERIAL*)0x0330018C),
 	((NJS_MATERIAL*)0x033001A0),
 	((NJS_MATERIAL*)0x032FF9A8),
-	//Gamma's flying thing
-	(NJS_MATERIAL*)((size_t)CHRMODELS + 0x0020ABF0),
-	(NJS_MATERIAL*)((size_t)CHRMODELS + 0x0020AC04),
-	(NJS_MATERIAL*)((size_t)CHRMODELS + 0x0020AC18),
-	(NJS_MATERIAL*)((size_t)CHRMODELS + 0x0020AC2C),
-	(NJS_MATERIAL*)((size_t)CHRMODELS + 0x0020AC40),
-	(NJS_MATERIAL*)((size_t)CHRMODELS + 0x0020AC54),
-	(NJS_MATERIAL*)((size_t)CHRMODELS + 0x0020AC68),
-	//Gamma's laser thing
-	(NJS_MATERIAL*)((size_t)CHRMODELS + 0x0020B70C),
-	(NJS_MATERIAL*)((size_t)CHRMODELS + 0x0020B720),
-	(NJS_MATERIAL*)((size_t)CHRMODELS + 0x0020B734),
-	(NJS_MATERIAL*)((size_t)CHRMODELS + 0x0020B1D0),
-	(NJS_MATERIAL*)((size_t)CHRMODELS + 0x0020B1E4),
-	(NJS_MATERIAL*)((size_t)CHRMODELS + 0x0020B1F8),
-	(NJS_MATERIAL*)((size_t)CHRMODELS + 0x0020B20C),
-	(NJS_MATERIAL*)((size_t)CHRMODELS + 0x0020B220),
 	//ZERO cutscene model
 	((NJS_MATERIAL*)0x00990BC0),
 	((NJS_MATERIAL*)0x00990BD4),
@@ -1003,12 +944,6 @@ static const NJS_MATERIAL* LevelSpecular[] = {
 	((NJS_MATERIAL*)0x032FFB08),
 	((NJS_MATERIAL*)0x032FFB1C),
 	((NJS_MATERIAL*)0x032FFB30),
-	//Gamma's laser thing
-	(NJS_MATERIAL*)((size_t)CHRMODELS + 0x0020B9B8),
-	(NJS_MATERIAL*)((size_t)CHRMODELS + 0x0020B9CC),
-	(NJS_MATERIAL*)((size_t)CHRMODELS + 0x0020B9E0),
-	(NJS_MATERIAL*)((size_t)CHRMODELS + 0x0020B9F4),
-	(NJS_MATERIAL*)((size_t)CHRMODELS + 0x0020BA08),
 	//Zero cutscene model
 	((NJS_MATERIAL*)0x0098A2B0),
 	((NJS_MATERIAL*)0x0098A2C4),
@@ -1027,7 +962,7 @@ static const NJS_MATERIAL* LevelSpecular[] = {
 	((NJS_MATERIAL*)0x0098AAE0),
 };
 
-static const NJS_MATERIAL* SecondCharacterSpecular[] = {
+static const NJS_MATERIAL* Specular3Materials[] = {
 	//Policemen in Chaos 0
 	((NJS_MATERIAL*)0x0337A6B0),
 	((NJS_MATERIAL*)0x0337A518),
@@ -1304,6 +1239,9 @@ static const NJS_MATERIAL* SecondCharacterSpecular[] = {
 	((NJS_MATERIAL*)0x0333A130),
 	((NJS_MATERIAL*)0x0333A144),
 	((NJS_MATERIAL*)0x0333A158),
+	//Amy's Long Hammer
+	(NJS_MATERIAL*)((size_t)CHRMODELS + 0x0001C12C),
+	(NJS_MATERIAL*)((size_t)CHRMODELS + 0x0001CE00),
 	//Emerald in the cutscene before Sonic-Gamma fight
 	((NJS_MATERIAL*)0x02CD765C),
 	((NJS_MATERIAL*)0x02CD7368),
@@ -1637,7 +1575,7 @@ static const NJS_MATERIAL* SecondCharacterSpecular[] = {
 	((NJS_MATERIAL*)0x00892A50),
 };
 
-static const NJS_MATERIAL* FirstCharacterSpecular[] = {
+static const NJS_MATERIAL* Specular2Materials[] = {
 	//Metal Sonic jump ball
 	(NJS_MATERIAL*)((size_t)CHRMODELS + 0x0059C268),
 	//Policemen in Chaos 0
@@ -1685,7 +1623,7 @@ static const NJS_MATERIAL* FirstCharacterSpecular[] = {
 	(NJS_MATERIAL*)((size_t)ADV03MODELS + 0x0013A94C),
 	(NJS_MATERIAL*)((size_t)ADV03MODELS + 0x0013A4DC),
 	(NJS_MATERIAL*)((size_t)ADV03MODELS + 0x0013A068),
-	//Chaos0 cutscene
+	//Chaos 0 event model
 	((NJS_MATERIAL*)0x02C65E64),
 	((NJS_MATERIAL*)0x02C61D30),
 	((NJS_MATERIAL*)0x02C61D44),
@@ -2485,24 +2423,6 @@ static const NJS_MATERIAL* FirstCharacterSpecular[] = {
 	((NJS_MATERIAL*)0x00898F5C),
 };
 
-static const NJS_MATERIAL* WhiteDiffuseSecondCharSpecular[] = {
-	//Metal Sonic in Amy's cutscene
-	((NJS_MATERIAL*)0x032D31BC),
-	((NJS_MATERIAL*)0x032D31D0),
-	((NJS_MATERIAL*)0x032D31E4),
-	((NJS_MATERIAL*)0x032D31F8),
-};
-
-static const NJS_MATERIAL* E101Material[] = {
-	((NJS_MATERIAL*)0x014D5EB0),
-	((NJS_MATERIAL*)0x00C409AC),
-	((NJS_MATERIAL*)0x0312C188),
-	((NJS_MATERIAL*)0x02499330),
-	((NJS_MATERIAL*)0x03096CD8),
-	((NJS_MATERIAL*)0x0309F380),
-	((NJS_MATERIAL*)0x030A7B00),
-};
-
 static const NJS_MATERIAL* NPCMaterials[] = {
 	(NJS_MATERIAL*)((size_t)ADV00MODELS + 0x0021251C),
 	(NJS_MATERIAL*)((size_t)ADV00MODELS + 0x00212158),
@@ -2802,6 +2722,7 @@ static const NJS_MATERIAL* NPCMaterials[] = {
 	(NJS_MATERIAL*)((size_t)ADV00MODELS + 0x001FBC50),
 	(NJS_MATERIAL*)((size_t)ADV00MODELS + 0x001FB994),
 	(NJS_MATERIAL*)((size_t)ADV00MODELS + 0x001FB9A8),
+	(NJS_MATERIAL*)((size_t)ADV00MODELS + 0x001E4C98),
 	(NJS_MATERIAL*)((size_t)ADV00MODELS + 0x001ED5D8),
 	(NJS_MATERIAL*)((size_t)ADV00MODELS + 0x001ED5EC),
 	(NJS_MATERIAL*)((size_t)ADV00MODELS + 0x001ED600),
@@ -3108,73 +3029,43 @@ static const NJS_MATERIAL* NPCMaterials[] = {
 	(NJS_MATERIAL*)((size_t)ADV00MODELS + 0x0022B660),
 };
 
-static bool ForceLevelSpecular(NJS_MATERIAL* material, uint32_t flags)
+static bool ForceDiffuse0Specular0(NJS_MATERIAL* material, uint32_t flags)
 {
 	set_diffuse(0, false);
 	set_specular(0, false);
-	use_default_diffuse(true);
 	return true;
 }
 
-static bool ForceObjectSpecular(NJS_MATERIAL* material, uint32_t flags)
+static bool ForceDiffuse0Specular1(NJS_MATERIAL* material, uint32_t flags)
 {
 	set_diffuse(0, false);
 	set_specular(1, false);
-	use_default_diffuse(true);
 	return true;
 }
 
-static bool ForceFirstCharacterSpecular(NJS_MATERIAL* material, uint32_t flags)
+static bool ForceDiffuse2Specular2(NJS_MATERIAL* material, uint32_t flags)
 {
 	set_diffuse(2, false);
 	set_specular(2, false);
-	use_default_diffuse(true);
 	return true;
 }
 
-static bool ForceSecondCharacterSpecular(NJS_MATERIAL* material, uint32_t flags)
+static bool ForceDiffuse2Specular3(NJS_MATERIAL* material, uint32_t flags)
 {
 	set_diffuse(2, false);
 	set_specular(3, false);
-	use_default_diffuse(true);
 	return true;
 }
 
-static bool ForceWhiteDiffuse(NJS_MATERIAL* material, uint32_t flags)
+static bool ForceDiffuse4Specular5(NJS_MATERIAL* material, uint32_t flags)
 {
-	set_diffuse(1, false);
-	diffuse_override(true);
-	use_default_diffuse(true);
+	set_diffuse(4, false);
+	set_specular(5, false);
 	return true;
 }
-
-static bool ForceWhiteDiffuseSecondCharSpecular(NJS_MATERIAL* material, uint32_t flags)
-{
-	set_specular(3, false);
-	set_diffuse(1, false);
-	diffuse_override(true);
-	use_default_diffuse(true);
-	return true;
-}
-
-static bool E101Function(NJS_MATERIAL* material, uint32_t flags)
-{
-	if (CurrentLevel == 33 || CurrentLevel == 32)
-	{
-		set_diffuse(2, false);
-		set_specular(3, false);
-	}
-	else
-	{
-		set_diffuse(0, false);
-		set_specular(1, false);
-	}
-	return true;
-}
-
 static bool ChaosPuddleFunc(NJS_MATERIAL* material, uint32_t flags)
 {
-	if (CurrentLevel == 18 || CurrentLevel == 16 || CurrentLevel == 19)
+	if (CurrentLevel == LevelIDs_Chaos2 || CurrentLevel == LevelIDs_Chaos6 || CurrentLevel == LevelIDs_PerfectChaos)
 	{
 		set_diffuse(4, false);
 		set_specular(5, false);
@@ -3184,48 +3075,32 @@ static bool ChaosPuddleFunc(NJS_MATERIAL* material, uint32_t flags)
 		set_diffuse(0, false);
 		set_specular(1, false);
 	}
-
-	use_default_diffuse(true);
 	return true;
 }
 
 static bool NPCModelsFunction(NJS_MATERIAL* material, uint32_t flags)
 {
-	use_default_diffuse(true);
-
 	if (get_diffuse() != 2)
 	{
 		set_diffuse(2, false);
 	}
-
 	switch (get_specular())
 	{
 		case 0:
 			set_specular(2, false);
 			break;
-
 		case 1:
 			set_specular(3, false);
 			break;
-
 		default:
 			break;
 	}
-
-	return true;
-}
-
-static bool SpecialBossFunction(NJS_MATERIAL* material, uint32_t flags)
-{
-	set_diffuse(4, false);
-	set_specular(5, false);
-	use_default_diffuse(true);
 	return true;
 }
 
 static bool Chaos2Function(NJS_MATERIAL* material, uint32_t flags)
 {
-	if (CurrentLevel == 16)
+	if (CurrentLevel == LevelIDs_Chaos2)
 	{
 		set_diffuse(4, false);
 		set_specular(5, false);
@@ -3235,8 +3110,6 @@ static bool Chaos2Function(NJS_MATERIAL* material, uint32_t flags)
 		set_diffuse(2, false);
 		set_specular(3, false);
 	}
-
-	use_default_diffuse(true);
 	return true;
 }
 
@@ -3368,108 +3241,54 @@ static void actions(const std::string& id, int length, const T (&ids)[N])
 
 void FixCharacterMaterials()
 {
-	material_register(LevelSpecular, LengthOfArray(LevelSpecular), &ForceLevelSpecular);
-	material_register(ObjectSpecular, LengthOfArray(ObjectSpecular), &ForceObjectSpecular);
-	material_register(FirstCharacterSpecular, LengthOfArray(FirstCharacterSpecular), &ForceFirstCharacterSpecular);
-	material_register(SecondCharacterSpecular, LengthOfArray(SecondCharacterSpecular), &ForceSecondCharacterSpecular);
-	material_register(E101Material, LengthOfArray(E101Material), &E101Function);
-	material_register(SpecialBossMaterials, LengthOfArray(SpecialBossMaterials), &SpecialBossFunction);
-	material_register(Chaos2Materials, LengthOfArray(Chaos2Materials), &Chaos2Function);
+	material_register(LevelSpecular, LengthOfArray(LevelSpecular), &ForceDiffuse0Specular0);
+	material_register(ObjectSpecular, LengthOfArray(ObjectSpecular), &ForceDiffuse0Specular1);
+	material_register(Specular2Materials, LengthOfArray(Specular2Materials), &ForceDiffuse2Specular2);
+	material_register(Specular3Materials, LengthOfArray(Specular3Materials), &ForceDiffuse2Specular3);
+	material_register(Specular5Materials, LengthOfArray(Specular5Materials), &ForceDiffuse4Specular5);
 	material_register(ChaosPuddle, LengthOfArray(ChaosPuddle), &ChaosPuddleFunc);
-	material_register(WhiteDiffuse, LengthOfArray(WhiteDiffuse), &ForceWhiteDiffuse);
-	material_register(WhiteDiffuseSecondCharSpecular, LengthOfArray(WhiteDiffuseSecondCharSpecular), &ForceWhiteDiffuseSecondCharSpecular);
+	material_register(Chaos2Materials, LengthOfArray(Chaos2Materials), &Chaos2Function);
 	material_register(NPCMaterials, LengthOfArray(NPCMaterials), &NPCModelsFunction);
-
 	auto handle = reinterpret_cast<size_t>(CHRMODELS);
-
 	//Stuff that ignores lighting
-
-	// Sonic's Crystal Ring
+	//Sonic's Crystal Ring
 	DataArray_(NJS_MATERIAL, matlist_00582CF4, (0x00582CF4 + handle), 2);
-	matlist_00582CF4[1].attrflags |= NJD_FLAG_IGNORE_LIGHT;    // object_00583284 Sonic's Crystal Ring
-
-	// Big's eyes
-	// whites
-	DataArray_(NJS_MATERIAL, matlist_0011B788, (0x0011B788 + handle), 1);
-	DataArray_(NJS_MATERIAL, matlist_0011B978, (0x0011B978 + handle), 1);
-	// pupils
-	DataArray_(NJS_MATERIAL, matlist_0011B630, (0x0011B630 + handle), 1);
-	DataArray_(NJS_MATERIAL, matlist_0011B4D8, (0x0011B4D8 + handle), 1);
-	// (cutscenes)
-	// whites
-	DataArray_(NJS_MATERIAL, matlist_00129208, (0x00129208 + handle), 1);
-	DataArray_(NJS_MATERIAL, matlist_001293F8, (0x001293F8 + handle), 1);
-	// pupils
-	DataArray_(NJS_MATERIAL, matlist_00129910, (0x00129910 + handle), 1);
-	DataArray_(NJS_MATERIAL, matlist_001297B8, (0x001297B8 + handle), 1);
-
+	matlist_00582CF4[1].attrflags |= NJD_FLAG_IGNORE_LIGHT; //object_00583284
+	//Big's eyes
+	DataArray_(NJS_MATERIAL, matlist_0011B788, (0x0011B788 + handle), 1); //Whites 1
+	DataArray_(NJS_MATERIAL, matlist_0011B978, (0x0011B978 + handle), 1); //Whites 2
 	matlist_0011B788[0].attrflags |= NJD_FLAG_IGNORE_LIGHT;
 	matlist_0011B978[0].attrflags |= NJD_FLAG_IGNORE_LIGHT;
+	DataArray_(NJS_MATERIAL, matlist_0011B630, (0x0011B630 + handle), 1); //Pupils 1
+	DataArray_(NJS_MATERIAL, matlist_0011B4D8, (0x0011B4D8 + handle), 1); //Pupils 2
 	matlist_0011B630[0].attrflags |= NJD_FLAG_IGNORE_LIGHT;
 	matlist_0011B4D8[0].attrflags |= NJD_FLAG_IGNORE_LIGHT;
-	// (cutscenes)
+	//Big's eyes in cutscenes
+	DataArray_(NJS_MATERIAL, matlist_00129208, (0x00129208 + handle), 1); //Whites 1
+	DataArray_(NJS_MATERIAL, matlist_001293F8, (0x001293F8 + handle), 1); //Whites 2
 	matlist_00129208[0].attrflags |= NJD_FLAG_IGNORE_LIGHT;
 	matlist_001293F8[0].attrflags |= NJD_FLAG_IGNORE_LIGHT;
+	DataArray_(NJS_MATERIAL, matlist_00129910, (0x00129910 + handle), 1); //Pupils 1
+	DataArray_(NJS_MATERIAL, matlist_001297B8, (0x001297B8 + handle), 1); //Pupils 2
 	matlist_00129910[0].attrflags |= NJD_FLAG_IGNORE_LIGHT;
 	matlist_001297B8[0].attrflags |= NJD_FLAG_IGNORE_LIGHT;
-
-	DataArray_(NJS_MATERIAL, matlist_0020B1D0, (0x0020B1D0 + handle), 5); // Gamma's laser thing
+	//Gamma
+	DataArray_(NJS_MATERIAL, matlist_0020B1D0, (0x0020B1D0 + handle), 5); //Laser Scope
 	matlist_0020B1D0[4].attrflags |= NJD_FLAG_IGNORE_LIGHT;
-
-	DataArray_(NJS_MATERIAL, matlist_001FDBA0, (0x001FDBA0 + handle), 5);
-	matlist_001FDBA0[1].attrflags |= NJD_FLAG_IGNORE_LIGHT; // object_001FDF7C Gamma's light
-
-	DataArray_(NJS_MATERIAL, matlist_0020052C, (0x0020052C + handle), 3);
-	matlist_0020052C[1].attrflags |= NJD_FLAG_IGNORE_LIGHT; // object_0020098C Gamma's right eye
-	matlist_0020052C[2].attrflags |= NJD_FLAG_IGNORE_LIGHT; // object_0020098C Gamma's uh... arrow things in between his eyes
-
-	DataArray_(NJS_MATERIAL, matlist_002009C0, (0x002009C0 + handle), 3);
-	matlist_002009C0[2].attrflags |= NJD_FLAG_IGNORE_LIGHT; // object_00200D14 Gamma's left eye
-
-	DataArray_(NJS_MATERIAL, matlist_00200D48, (0x00200D48 + handle), 9);
-	matlist_00200D48[7].attrflags |= NJD_FLAG_IGNORE_LIGHT; // object_00201AE4 Gamma's head (blue line)
-
-	DataArray_(NJS_MATERIAL, matlist_00204EC8, (0x00204EC8 + handle), 3);
-	matlist_00204EC8[2].attrflags |= NJD_FLAG_IGNORE_LIGHT; // object_0020524C Gamma's left foot
-
-	DataArray_(NJS_MATERIAL, matlist_002062D8, (0x002062D8 + handle), 4);
-	matlist_002062D8[3].attrflags |= NJD_FLAG_IGNORE_LIGHT; // object_00206674 Gamma's right foot
-
-	//Emblem field model
-	((NJS_MATERIAL*)0x009740FC)->attrflags &= ~NJD_FLAG_IGNORE_SPECULAR;
-	((NJS_MATERIAL*)0x00974110)->attrflags &= ~NJD_FLAG_IGNORE_SPECULAR;
-	((NJS_MATERIAL*)0x00974124)->attrflags &= ~NJD_FLAG_IGNORE_SPECULAR;
-	((NJS_MATERIAL*)0x00974138)->attrflags &= ~NJD_FLAG_IGNORE_SPECULAR;
-
-	//Egg Walker cutscene
-	((NJS_MATERIAL*)0x03310F18)->attrflags |= NJD_FLAG_IGNORE_LIGHT;
-	((NJS_MATERIAL*)0x03310F18)->diffuse.color = 0xFFFFFFFF;
-
-	//Amy talking head
-	((NJS_MATERIAL*)((size_t)CHRMODELS + 0x0001EB94))->attrflags |= NJD_FLAG_IGNORE_LIGHT;
-	((NJS_MATERIAL*)((size_t)CHRMODELS + 0x0001EBBC))->attrflags |= NJD_FLAG_IGNORE_LIGHT;
-	//Sonic talking head
-	((NJS_MATERIAL*)((size_t)CHRMODELS + 0x0057BC8C))->attrflags |= NJD_FLAG_IGNORE_LIGHT;
-	((NJS_MATERIAL*)((size_t)CHRMODELS + 0x0057BCA0))->attrflags |= NJD_FLAG_IGNORE_LIGHT;
-	((NJS_MATERIAL*)((size_t)CHRMODELS + 0x0057BCC8))->attrflags |= NJD_FLAG_IGNORE_LIGHT;
-	((NJS_MATERIAL*)((size_t)CHRMODELS + 0x0057BCDC))->attrflags |= NJD_FLAG_IGNORE_LIGHT;
-	//Tails talking head
-	((NJS_MATERIAL*)((size_t)CHRMODELS + 0x00447754))->attrflags |= NJD_FLAG_IGNORE_LIGHT;
-	((NJS_MATERIAL*)((size_t)CHRMODELS + 0x00447768))->attrflags |= NJD_FLAG_IGNORE_LIGHT;
-	((NJS_OBJECT*)0x0333F0E4)->basicdxmodel->mats[3].attrflags |= NJD_FLAG_IGNORE_LIGHT; //Tails in intro cutscene
-	((NJS_OBJECT*)0x0333F0E4)->basicdxmodel->mats[4].attrflags |= NJD_FLAG_IGNORE_LIGHT; //Tails in intro cutscene
-	//Knuckles talking head
-	((NJS_MATERIAL*)((size_t)CHRMODELS + 0x002FC5C4))->attrflags |= NJD_FLAG_IGNORE_LIGHT;
-	((NJS_MATERIAL*)((size_t)CHRMODELS + 0x002FC5D8))->attrflags |= NJD_FLAG_IGNORE_LIGHT;
-	//Item capsule lighting fixes
-	((NJS_MODEL*)0x008BF260)->mats[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
-	((NJS_MODEL*)0x008BF260)->mats[1].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
-	((NJS_MODEL*)0x008BF260)->mats[2].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
-	((NJS_MODEL*)0x008BF260)->mats[3].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
-	((NJS_MODEL*)0x008BEAA8)->mats[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
-	((NJS_MODEL*)0x008BE620)->mats[0].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
-	((NJS_MODEL*)0x008BE620)->mats[1].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
-
+	DataArray_(NJS_MATERIAL, matlist_001FDBA0, (0x001FDBA0 + handle), 5); //Gamma's light
+	matlist_001FDBA0[1].attrflags |= NJD_FLAG_IGNORE_LIGHT; //object_001FDF7C
+	DataArray_(NJS_MATERIAL, matlist_0020052C, (0x0020052C + handle), 3); //Gamma's right eye and nose
+	matlist_0020052C[1].attrflags |= NJD_FLAG_IGNORE_LIGHT; //object_0020098C Gamma's right eye
+	matlist_0020052C[2].attrflags |= NJD_FLAG_IGNORE_LIGHT; //object_0020098C Gamma's uh... arrow things in between his eyes
+	DataArray_(NJS_MATERIAL, matlist_002009C0, (0x002009C0 + handle), 3); //Gamma's left eye
+	matlist_002009C0[2].attrflags |= NJD_FLAG_IGNORE_LIGHT; //object_00200D14
+	DataArray_(NJS_MATERIAL, matlist_00200D48, (0x00200D48 + handle), 9); //Gamma's head (blue line)
+	matlist_00200D48[7].attrflags |= NJD_FLAG_IGNORE_LIGHT; //object_00201AE4
+	DataArray_(NJS_MATERIAL, matlist_00204EC8, (0x00204EC8 + handle), 3); //Gamma's left foot
+	matlist_00204EC8[2].attrflags |= NJD_FLAG_IGNORE_LIGHT; //object_0020524C 
+	DataArray_(NJS_MATERIAL, matlist_002062D8, (0x002062D8 + handle), 4); //Gamma's right foot
+	matlist_002062D8[3].attrflags |= NJD_FLAG_IGNORE_LIGHT; //object_00206674 
+	//Tornado light type fixes
 	WriteData(reinterpret_cast<char*>(0x0062751B), 0i8); //Force Tornado light type
 	WriteData(reinterpret_cast<char*>(0x0062AC1F), 0i8); //Force Tornado light type (transformation cutscene)
 }

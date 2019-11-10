@@ -331,6 +331,12 @@ extern "C"
 	 */
 	API float get_alpha_reject(void);
 
+	/**
+	 * \brief Temporarily sets the light direction to be used by the shader.
+	 * \param v Pointer to a vector representing the light's direction.
+	 */
+	API void set_light_direction(const NJS_VECTOR* v);
+
 #ifdef __cplusplus
 }
 #endif

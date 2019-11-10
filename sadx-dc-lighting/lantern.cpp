@@ -12,11 +12,7 @@
 #include <SADXModLoader.h>
 
 #include "globals.h"
-
-#ifdef _DEBUG
 #include "datapointers.h"
-#endif
-
 #include "lantern.h"
 
 bool SourceLight_t::operator==(const SourceLight_t& rhs) const
@@ -156,13 +152,13 @@ static bool use_time(Uint32 level, Uint32 act)
 	}
 }
 
-bool LanternInstance::diffuse_override        = false;
-bool LanternInstance::diffuse_override_temp   = false;
-bool LanternInstance::specular_override       = false;
-bool LanternInstance::specular_override_temp  = false;
-bool LanternInstance::use_palette_            = false;
-float LanternInstance::diffuse_blend_factor_  = 0.0f;
-float LanternInstance::specular_blend_factor_ = 0.0f;
+bool LanternInstance::diffuse_override          = false;
+bool LanternInstance::diffuse_override_is_temp  = false;
+bool LanternInstance::specular_override         = false;
+bool LanternInstance::specular_override_is_temp = false;
+bool LanternInstance::use_palette_              = false;
+float LanternInstance::diffuse_blend_factor_    = 0.0f;
+float LanternInstance::specular_blend_factor_   = 0.0f;
 
 bool LanternInstance::use_palette()
 {
@@ -328,7 +324,7 @@ std::string LanternInstance::palette_id(Sint32 level, Sint32 act)
 		return result.str();
 	}
 
-	int n = (level - 10) / 26;
+	const int n = (level - 10) / 26;
 
 	if (n > 9)
 	{
@@ -337,7 +333,7 @@ std::string LanternInstance::palette_id(Sint32 level, Sint32 act)
 
 	!n ? result << "_" : result << n;
 
-	auto i = static_cast<char>(level - (10 + 26 * n) + 'A');
+	const auto i = static_cast<char>(level - (10 + 26 * n) + 'A');
 	result << i << act;
 	return result.str();
 }
@@ -650,9 +646,7 @@ void LanternInstance::set_palettes(Sint32 type, Uint32 flags)
 			diffuse  = 0;
 			specular = ignore_specular ? 0 : 1;
 
-#ifdef _DEBUG
-			globals::light_dir = *reinterpret_cast<NJS_VECTOR*>(&Direct3D_CurrentLight.Direction);
-#endif
+			globals::debug_stage_light_dir = *reinterpret_cast<NJS_VECTOR*>(&Direct3D_CurrentLight.Direction);
 			break;
 
 		case 2:
@@ -785,7 +779,7 @@ bool LanternCollection::run_pl_callbacks(Sint32 level, Sint32 act, Sint8 time)
 
 	for (auto& cb : pl_callbacks)
 	{
-		auto path_ptr = cb(level, act);
+		const auto path_ptr = cb(level, act);
 
 		if (path_ptr == nullptr)
 		{
@@ -877,8 +871,8 @@ bool LanternCollection::load_files()
 		instances.emplace_back(&param::PaletteA);
 	}
 
-	bool pl_handled = run_pl_callbacks(CurrentLevel, CurrentAct, time);
-	bool sl_handled = run_sl_callbacks(CurrentLevel, CurrentAct, time);
+	const bool pl_handled = run_pl_callbacks(CurrentLevel, CurrentAct, time);
+	const bool sl_handled = run_sl_callbacks(CurrentLevel, CurrentAct, time);
 
 	// No need to do automatic detection if a callback has
 	// already provided valid paths to both PL and SL files.
@@ -1043,7 +1037,7 @@ void LanternCollection::apply_parameters()
 
 	LanternInstance& i = instances[0];
 
-	int d = i.diffuse_index();
+	const int d = i.diffuse_index();
 
 	if (d >= 0)
 	{
@@ -1056,7 +1050,7 @@ void LanternCollection::apply_parameters()
 		}
 	}
 
-	int s = i.specular_index();
+	const int s = i.specular_index();
 
 	if (s >= 0)
 	{

@@ -20,9 +20,6 @@ namespace d3d
 	void set_flags(Uint32 flags, bool add = true);
 	bool shaders_null();
 	void init_trampolines();
-
-	extern float alpha_ref_value;
-	extern bool alpha_ref_temp;
 }
 
 namespace param
