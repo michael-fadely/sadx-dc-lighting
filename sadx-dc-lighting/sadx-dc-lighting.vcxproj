@@ -18,7 +18,6 @@
     <ProjectGuid>{4FCE8874-63A7-4561-BC27-EA435EF61224}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>sadxdclighting</RootNamespace>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -26,12 +25,14 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v141_xp</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
+    <SpectreMitigation>false</SpectreMitigation>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Hybrid|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v141_xp</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
+    <SpectreMitigation>false</SpectreMitigation>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
@@ -39,6 +40,7 @@
     <PlatformToolset>v141_xp</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
+    <SpectreMitigation>false</SpectreMitigation>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -85,17 +87,19 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3dx9.lib;libMinHook-$(PlatformTarget)-v$(PlatformToolsetVersion)-mdd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3dx9.lib;MinHook.x86.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>
       </IgnoreSpecificDefaultLibraries>
-      <AdditionalLibraryDirectories>$(DXSDK_DIR)Lib\x86;..\minhook\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(DXSDK_DIR)Lib\x86;..\minhook\bin</AdditionalLibraryDirectories>
+      <DelayLoadDLLs>MinHook.x86.dll</DelayLoadDLLs>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /C /Y /D "$(ProjectDir)mod.ini" "$(OutDir)"
 xcopy /Y /D "$(ProjectDir)configschema.xml" "$(OutDir)"
 xcopy /C /Y /D "$(ProjectDir)lantern.hlsl" "$(OutDir)system\"
 xcopy /C /Y /D "$(OutDir)$(TargetName).lib" "$(OutDir)api\"
-xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Command>
+xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"
+xcopy /C /Y /D "$(SolutionDir)minhook\bin\MinHook.x86.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Hybrid|Win32'">
@@ -111,19 +115,21 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3dx9.lib;libMinHook-$(PlatformTarget)-v$(PlatformToolsetVersion)-mdd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3dx9.lib;MinHook.x86.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>
       </IgnoreSpecificDefaultLibraries>
-      <AdditionalLibraryDirectories>$(DXSDK_DIR)Lib\x86;..\minhook\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(DXSDK_DIR)Lib\x86;..\minhook\bin</AdditionalLibraryDirectories>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <DelayLoadDLLs>MinHook.x86.dll</DelayLoadDLLs>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /C /Y /D "$(ProjectDir)mod.ini" "$(OutDir)"
 xcopy /Y /D "$(ProjectDir)configschema.xml" "$(OutDir)"
 xcopy /C /Y /D "$(ProjectDir)lantern.hlsl" "$(OutDir)system\"
 xcopy /C /Y /D "$(OutDir)$(TargetName).lib" "$(OutDir)api\"
-xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Command>
+xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"
+xcopy /C /Y /D "$(SolutionDir)minhook\bin\MinHook.x86.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -143,17 +149,19 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3dx9.lib;libMinHook-$(PlatformTarget)-v$(PlatformToolsetVersion)-md.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3dx9.lib;MinHook.x86.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>
       </IgnoreSpecificDefaultLibraries>
-      <AdditionalLibraryDirectories>$(DXSDK_DIR)Lib\x86;..\minhook\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(DXSDK_DIR)Lib\x86;..\minhook\bin</AdditionalLibraryDirectories>
+      <DelayLoadDLLs>MinHook.x86.dll</DelayLoadDLLs>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /C /Y /D "$(ProjectDir)mod.ini" "$(OutDir)"
 xcopy /Y /D "$(ProjectDir)configschema.xml" "$(OutDir)"
 xcopy /C /Y /D "$(ProjectDir)lantern.hlsl" "$(OutDir)system\"
 xcopy /C /Y /D "$(OutDir)$(TargetName).lib" "$(OutDir)api\"
-xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Command>
+xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"
+xcopy /C /Y /D "$(SolutionDir)minhook\bin\MinHook.x86.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
