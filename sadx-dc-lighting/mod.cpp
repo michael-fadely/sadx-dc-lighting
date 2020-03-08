@@ -200,7 +200,7 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 		flags = _nj_constant_attr_or_ | (_nj_constant_attr_and_ & flags);
 	}
 
-	fix_default_color(EntityVertexColor.color);
+	fix_default_color(PolyBuffVertexColor.color);
 	fix_default_color(LandTableVertexColor.color);
 
 	globals::palettes.set_palettes(globals::light_type, flags);
