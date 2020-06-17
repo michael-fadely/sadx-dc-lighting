@@ -469,7 +469,8 @@ bool LanternInstance::load_palette(const std::string& path)
 	}
 
 	palette_pairs = {};
-	memcpy(palette_pairs.data(), color_data.data(), min(sizeof(ColorPair) * color_data.size(), sizeof(ColorPair) * palette_pairs.size()));
+	memcpy(palette_pairs.data(), color_data.data(),
+	       std::min(sizeof(ColorPair) * color_data.size(), sizeof(ColorPair) * palette_pairs.size()));
 	generate_atlas();
 	return true;
 }
