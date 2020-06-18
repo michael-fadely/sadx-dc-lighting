@@ -19,26 +19,16 @@
  * secondary case CORRECTLY and use the mesh-provided vcolors.
  */
 
-DataPointer(NJS_COLOR, PolyBuffVertexColor, 0x03D0848C);
 DataPointer(PolyBuff, stru_3D0FEB4, 0x3D0FEB4);
 DataPointer(PolyBuff, stru_3D0FED8, 0x3D0FED8);
 DataPointer(PolyBuff, stru_3D0FF20, 0x3D0FF20);
 
-FastcallFunctionPointer(void, PolyBuff_SetCurrent, (PolyBuff *_this), 0x00794600);
-FastcallFunctionPointer(BYTE *, PolyBuff_LockTriangleStrip, (PolyBuff *_this, int primitives, int cullmode), 0x00794630);
-FastcallFunctionPointer(int, PolyBuff_Unlock, (PolyBuff *_this), 0x00794750);
-FastcallFunctionPointer(void, PolyBuff_DrawTriangleStrip, (PolyBuff *_this), 0x00794760);
-FastcallFunctionPointer(BYTE *, PolyBuff_LockTriangleList, (PolyBuff *_this, unsigned int primitives, int cullmode), 0x007946C0);
-FastcallFunctionPointer(void, PolyBuff_DrawTriangleList, (PolyBuff *_this), 0x007947B0);
-
-enum RenderFlags_
-{
-	RenderFlags_EnvironmentMap = 0x1,
-	RenderFlags_ConstantMaterial = 0x2,
-	RenderFlags_OffsetMaterial = 0x4,
-	RenderFlags_RenderFlags_8 = 0x8,
-	RenderFlags_NoVertexColor = 0x10,
-};
+FastcallFunctionPointer(void, PolyBuff_SetCurrent, (PolyBuff* _this), 0x00794600);
+FastcallFunctionPointer(BYTE*, PolyBuff_LockTriangleStrip, (PolyBuff* _this, int primitives, int cullmode), 0x00794630);
+FastcallFunctionPointer(int, PolyBuff_Unlock, (PolyBuff* _this), 0x00794750);
+FastcallFunctionPointer(void, PolyBuff_DrawTriangleStrip, (PolyBuff* _this), 0x00794760);
+FastcallFunctionPointer(BYTE*, PolyBuff_LockTriangleList, (PolyBuff* _this, unsigned int primitives, int cullmode), 0x007946C0);
+FastcallFunctionPointer(void, PolyBuff_DrawTriangleList, (PolyBuff* _this), 0x007947B0);
 
 void __cdecl polybuff_vcolor_strip_r(NJS_MESHSET_SADX* meshset, NJS_POINT3* points)
 {
@@ -62,9 +52,9 @@ void __cdecl polybuff_vcolor_strip_r(NJS_MESHSET_SADX* meshset, NJS_POINT3* poin
 	}
 
 	PolyBuff_SetCurrent(&stru_3D0FEB4);
-	FVFStruct_F* buffer = (FVFStruct_F *)PolyBuff_LockTriangleStrip(&stru_3D0FEB4, v5, Direct3D_CurrentCullMode);
+	auto buffer = (FVFStruct_F*)PolyBuff_LockTriangleStrip(&stru_3D0FEB4, v5, Direct3D_CurrentCullMode);
 
-	if (LastRenderFlags & RenderFlags_OffsetMaterial || !meshset->vertcolor)
+	if (_RenderFlags & RenderFlags_OffsetMaterial || !meshset->vertcolor)
 	{
 		if (meshset->nbMesh)
 		{
@@ -117,7 +107,7 @@ void __cdecl polybuff_vcolor_strip_r(NJS_MESHSET_SADX* meshset, NJS_POINT3* poin
 
 		for (int i = 0; i < meshset->nbMesh; i++)
 		{
-			const short n = meshes[index++] & 0x3FFF;
+			const auto n = static_cast<Sint16>(meshes[index++] & 0x3FFF);
 			auto head = buffer++;
 
 			for (int j = 0; j < n; j++)
@@ -157,11 +147,11 @@ void __cdecl polybuff_vcolor_tri_r(NJS_MESHSET_SADX* meshset, NJS_POINT3* points
 	unsigned int v6 = 3 * meshset->nbMesh;
 
 	PolyBuff_SetCurrent(&stru_3D0FEB4);
-	FVFStruct_F* buffer = (FVFStruct_F *)PolyBuff_LockTriangleList(&stru_3D0FEB4, v6, Direct3D_CurrentCullMode);
+	auto buffer = (FVFStruct_F*)PolyBuff_LockTriangleList(&stru_3D0FEB4, v6, Direct3D_CurrentCullMode);
 
 	if (buffer)
 	{
-		if (LastRenderFlags & RenderFlags_OffsetMaterial || !meshset->vertcolor)
+		if (_RenderFlags & RenderFlags_OffsetMaterial || !meshset->vertcolor)
 		{
 			for (; v6; v12->position.z = v13)
 			{
@@ -205,7 +195,7 @@ void __cdecl polybuff_normal_vcolor_strip_r(NJS_MESHSET_SADX* meshset, NJS_POINT
 	Sint16* meshes = meshset->meshes;
 	int v5 = 0;
 	v6.color = PolyBuffVertexColor.color;
-	char v33 = LastRenderFlags;
+	char v33 = _RenderFlags;
 	Sint16* v7 = meshset->meshes;
 
 	if (meshset->nbMesh)
@@ -221,7 +211,7 @@ void __cdecl polybuff_normal_vcolor_strip_r(NJS_MESHSET_SADX* meshset, NJS_POINT
 	}
 
 	PolyBuff_SetCurrent(&stru_3D0FED8);
-	FVFStruct_G* buffer = (FVFStruct_G *)PolyBuff_LockTriangleStrip(&stru_3D0FED8, v5, Direct3D_CurrentCullMode);
+	auto buffer = (FVFStruct_G*)PolyBuff_LockTriangleStrip(&stru_3D0FED8, v5, Direct3D_CurrentCullMode);
 
 	if (v33 & RenderFlags_OffsetMaterial || !meshset->vertcolor)
 	{
@@ -286,7 +276,7 @@ void __cdecl polybuff_normal_vcolor_strip_r(NJS_MESHSET_SADX* meshset, NJS_POINT
 
 		for (int i = 0; i < meshset->nbMesh; i++)
 		{
-			const short n = meshes[index++] & 0x3FFF;
+			const auto n = static_cast<Sint16>(meshes[index++] & 0x3FFF);
 			auto head = buffer++;
 
 			for (int j = 0; j < n; j++)
@@ -320,12 +310,12 @@ void __cdecl polybuff_normal_vcolor_tri_r(NJS_MESHSET_SADX* meshset, NJS_POINT3*
 
 	Sint16* meshes = meshset->meshes;
 	int nbMesh = meshset->nbMesh;
-	RenderFlags meshseta = LastRenderFlags;
+	RenderFlags meshseta = _RenderFlags;
 	v6.color = PolyBuffVertexColor.color;
-	unsigned int vertex_count = 3 * nbMesh;
+	int vertex_count = 3 * nbMesh;
 
 	PolyBuff_SetCurrent(&stru_3D0FED8);
-	FVFStruct_G* buffer = (FVFStruct_G *)PolyBuff_LockTriangleList(&stru_3D0FED8, vertex_count, Direct3D_CurrentCullMode);
+	auto buffer = (FVFStruct_G*)PolyBuff_LockTriangleList(&stru_3D0FED8, vertex_count, Direct3D_CurrentCullMode);
 
 	if (buffer)
 	{
@@ -387,7 +377,6 @@ void __cdecl polybuff_normal_vcolor_uv_strip_r(NJS_MESHSET_SADX* meshset, NJS_PO
 	Sint16* meshes; // edi
 	int primitiveCount; // ebx
 	Sint16* _meshes; // ecx
-	FVFStruct_I* buffer; // eax
 	_BOOL1 done; // zf
 	Sint16 _n; // cx
 	int v26; // ecx
@@ -415,7 +404,7 @@ void __cdecl polybuff_normal_vcolor_uv_strip_r(NJS_MESHSET_SADX* meshset, NJS_PO
 	meshes = meshset->meshes;
 	primitiveCount = 0;
 	v41.color = PolyBuffVertexColor.color;
-	v42 = LastRenderFlags;
+	v42 = _RenderFlags;
 	_meshes = meshset->meshes;
 
 	if (meshset->nbMesh)
@@ -431,7 +420,7 @@ void __cdecl polybuff_normal_vcolor_uv_strip_r(NJS_MESHSET_SADX* meshset, NJS_PO
 	}
 
 	PolyBuff_SetCurrent(&stru_3D0FF20);
-	buffer = (FVFStruct_I *)PolyBuff_LockTriangleStrip(&stru_3D0FF20, primitiveCount, Direct3D_CurrentCullMode);
+	auto buffer = (FVFStruct_I*)PolyBuff_LockTriangleStrip(&stru_3D0FF20, primitiveCount, Direct3D_CurrentCullMode);
 
 	if (v42 & RenderFlags_OffsetMaterial || !meshset->vertcolor)
 	{
@@ -450,9 +439,9 @@ void __cdecl polybuff_normal_vcolor_uv_strip_r(NJS_MESHSET_SADX* meshset, NJS_PO
 				buffer->position.y = v27->y;
 				buffer->position.z = v27->z;
 				normal = &buffer->normal;
-				normal->x = *(float *)((char *)&normals->x + a1f);
-				normal->y = *(float *)((char *)&normals->y + a1f);
-				normal->z = *(float *)((char *)&normals->z + a1f);
+				normal->x = *(float*)((char*)&normals->x + a1f);
+				normal->y = *(float*)((char*)&normals->y + a1f);
+				normal->z = *(float*)((char*)&normals->z + a1f);
 				buffer->diffuse = v3.color;
 				v29 = buffer + 1;
 				v29[-1].u = (float)uv->u * 0.0039215689f;
@@ -489,10 +478,10 @@ void __cdecl polybuff_normal_vcolor_uv_strip_r(NJS_MESHSET_SADX* meshset, NJS_PO
 				v29->position.y = v35->y;
 				v29->position.z = v35->z;
 				v36 = &v29->normal;
-				v36->x = *(float *)((char *)&normals->x + a1g);
-				v36->y = *(float *)((char *)&normals->y + a1g);
+				v36->x = *(float*)((char*)&normals->x + a1g);
+				v36->y = *(float*)((char*)&normals->y + a1g);
 				v37 = uv - 1;
-				v36->z = *(float *)((char *)&normals->z + a1g);
+				v36->z = *(float*)((char*)&normals->z + a1g);
 				v29->diffuse = v3.color;
 				a1h = v37->u;
 				buffer = v29 + 1;
@@ -510,7 +499,7 @@ void __cdecl polybuff_normal_vcolor_uv_strip_r(NJS_MESHSET_SADX* meshset, NJS_PO
 
 		for (int i = 0; i < meshset->nbMesh; i++)
 		{
-			const short n = meshes[index++] & 0x3FFF;
+			const auto n = static_cast<Sint16>(meshes[index++] & 0x3FFF);
 			auto head = buffer++;
 
 			for (int j = 0; j < n; j++)
@@ -525,8 +514,8 @@ void __cdecl polybuff_normal_vcolor_uv_strip_r(NJS_MESHSET_SADX* meshset, NJS_PO
 				++c;
 
 				buffer->diffuse = vertcolor;
-				buffer->u = vertuv.u / 255.0f;
-				buffer->v = vertuv.v / 255.0f;
+				buffer->u = static_cast<float>(vertuv.u) / 255.0f;
+				buffer->v = static_cast<float>(vertuv.v) / 255.0f;
 				++buffer;
 			}
 
@@ -550,11 +539,11 @@ void __cdecl polybuff_normal_vcolor_uv_tri_r(NJS_MESHSET* a1, NJS_POINT3* points
 	NJS_TEX* uv = a1->vertuv;
 	Sint16* meshes = a1->meshes;
 	const int nbMesh = a1->nbMesh;
-	int a1a = LastRenderFlags;
+	int a1a = _RenderFlags;
 	int v7 = 3 * nbMesh;
 
 	PolyBuff_SetCurrent(&stru_3D0FF20);
-	FVFStruct_I* buffer = (FVFStruct_I *)PolyBuff_LockTriangleList(&stru_3D0FF20, v7, v3);
+	auto buffer = (FVFStruct_I*)PolyBuff_LockTriangleList(&stru_3D0FF20, v7, v3);
 
 	if (buffer)
 	{
@@ -615,7 +604,7 @@ void __cdecl polybuff_normal_vcolor_uv_tri_r(NJS_MESHSET* a1, NJS_POINT3* points
 	PolyBuff_DrawTriangleList(&stru_3D0FF20);
 }
 
-void polybuff_rewrite_init()
+void polybuff::rewrite_init()
 {
 	WriteJump(polybuff_vcolor_strip, polybuff_vcolor_strip_r);
 	WriteJump(polybuff_vcolor_tri, polybuff_vcolor_tri_r);

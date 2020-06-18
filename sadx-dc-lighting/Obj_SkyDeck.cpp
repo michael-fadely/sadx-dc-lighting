@@ -18,14 +18,14 @@ static void __cdecl SkyDeck_SimulateAltitude_r(Uint16 act)
 {
 	TARGET_DYNAMIC(SkyDeck_SimulateAltitude)(act);
 
-	// 0 = high altitide (bright), 1 = low altitude (dark)
+	// 0 = high altitude (bright), 1 = low altitude (dark)
 	if (SkyDeck_AltitudeMode > 1)
 	{
 		set_blend_factor(0.0f);
 	}
 	else
 	{
-		float f = (max(180.0f, min(250.0f, SkyDeck_SkyAltitude)) - 180.0f) / 70.0f;
+		float f = (std::max(180.0f, std::min(250.0f, SkyDeck_SkyAltitude)) - 180.0f) / 70.0f;
 		set_blend_factor(f);
 	}
 }
