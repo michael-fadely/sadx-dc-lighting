@@ -1,5 +1,9 @@
 version: 1.4.{build}-{branch}
 
+environment:
+  matrix:
+    - PlatformToolset: v141_xp
+
 pull_requests:
   do_not_increment_build_number: true
  
