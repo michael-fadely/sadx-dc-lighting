@@ -483,7 +483,7 @@ void TitleScreenHack()
 	SetLevelAndAct(0, 0);
 	NJS_VECTOR dir = { 0.0f, 0.0f, -1.0f };
 	njUnitVector(&dir);
-	globals::palettes.load_palette(globals::get_system_path("PL_00B.BIN"));
+	globals::palettes.load_palette(globals::get_system_path("PL_TITLE.BIN"));
 	globals::palettes.light_direction(dir);
 	globals::palettes.set_last_level(CurrentLevel, CurrentAct);
 	globals::palettes.set_palettes(0, 0);
