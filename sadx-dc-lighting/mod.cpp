@@ -478,6 +478,17 @@ static std::string build_mod_path(const char* modpath, const char* path)
 	return result.str();
 }
 
+void TitleScreenHack()
+{
+	SetLevelAndAct(0, 0);
+	NJS_VECTOR dir = { 0.0f, 0.0f, -1.0f };
+	njUnitVector(&dir);
+	globals::palettes.load_palette(globals::get_system_path("PL_00B.BIN"));
+	globals::palettes.light_direction(dir);
+	globals::palettes.set_last_level(CurrentLevel, CurrentAct);
+	globals::palettes.set_palettes(0, 0);
+}
+
 extern "C"
 {
 	EXPORT ModInfo SADXModInfo = { ModLoaderVer, nullptr, nullptr, 0, nullptr, 0, nullptr, 0, nullptr, 0 };
@@ -554,6 +565,9 @@ extern "C"
 		Past_Init();
 		SkyDeck_Init();
 		Chaos7_Init();
+
+		//Title screen hack
+		WriteCall(reinterpret_cast<void*>(0x00510125), TitleScreenHack);
 
 		// Vertex normal correction for certain objects in
 		// Red Mountain and Sky Deck.
