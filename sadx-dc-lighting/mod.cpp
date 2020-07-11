@@ -97,10 +97,10 @@ static void update_material(const D3DMATERIAL9& material)
 		return;
 	}
 
-	D3DMATERIALCOLORSOURCE colorsource;
-	device->GetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, reinterpret_cast<DWORD*>(&colorsource));
+	D3DMATERIALCOLORSOURCE color_source;
+	device->GetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, reinterpret_cast<DWORD*>(&color_source));
 
-	param::DiffuseSource   = colorsource;
+	param::DiffuseSource   = color_source;
 	param::MaterialDiffuse = material.Diffuse;
 }
 
