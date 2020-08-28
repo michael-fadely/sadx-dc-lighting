@@ -7,7 +7,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sadx-dc-lighting", "sadx-dc
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "dependencies", "dependencies", "{6C9913B7-3457-4278-8834-103DCF0E70B0}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libd3d8to11", "sadx-d3d11\libd3d8to11\libcbuffer.vcxproj", "{322C4A08-4B89-4DDF-95C1-E73949432507}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libd3d8to11", "d3d8to11\libd3d8to11\libcbuffer.vcxproj", "{322C4A08-4B89-4DDF-95C1-E73949432507}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -34,8 +34,8 @@ Global
 		{322C4A08-4B89-4DDF-95C1-E73949432507}.Debug|x86.Build.0 = Debug|Win32
 		{322C4A08-4B89-4DDF-95C1-E73949432507}.Hybrid|x64.ActiveCfg = Release|x64
 		{322C4A08-4B89-4DDF-95C1-E73949432507}.Hybrid|x64.Build.0 = Release|x64
-		{322C4A08-4B89-4DDF-95C1-E73949432507}.Hybrid|x86.ActiveCfg = Debug|Win32
-		{322C4A08-4B89-4DDF-95C1-E73949432507}.Hybrid|x86.Build.0 = Debug|Win32
+		{322C4A08-4B89-4DDF-95C1-E73949432507}.Hybrid|x86.ActiveCfg = Release|Win32
+		{322C4A08-4B89-4DDF-95C1-E73949432507}.Hybrid|x86.Build.0 = Release|Win32
 		{322C4A08-4B89-4DDF-95C1-E73949432507}.Release|x64.ActiveCfg = Release|x64
 		{322C4A08-4B89-4DDF-95C1-E73949432507}.Release|x64.Build.0 = Release|x64
 		{322C4A08-4B89-4DDF-95C1-E73949432507}.Release|x86.ActiveCfg = Release|Win32

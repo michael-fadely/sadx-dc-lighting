@@ -76,7 +76,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;LANTERN_API;NOMINMAX;_DEBUG;_WINDOWS;_USRDLL;SADXDCLIGHTING_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\sadx-mod-loader\SADXModLoader\include;..\sadx-mod-loader\libmodutils;..\sadx-d3d11\sadx-d3d11;..\sadx-d3d11\DirectXTK\Inc;..\sadx-d3d11\GSL\include;..\sadx-d3d11\libd3d8to11</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\sadx-mod-loader\SADXModLoader\include;..\sadx-mod-loader\libmodutils;..\d3d8to11\d3d8to11;..\d3d8to11\DirectXTK\Inc;..\d3d8to11\GSL\include;..\d3d8to11\libd3d8to11</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
@@ -102,7 +102,7 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;LANTERN_API;NOMINMAX;_DEBUG;_WINDOWS;_USRDLL;SADXDCLIGHTING_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\sadx-mod-loader\SADXModLoader\include;..\sadx-mod-loader\libmodutils;..\sadx-d3d11\sadx-d3d11;..\sadx-d3d11\DirectXTK\Inc;..\sadx-d3d11\GSL\include;..\sadx-d3d11\libd3d8to11</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\sadx-mod-loader\SADXModLoader\include;..\sadx-mod-loader\libmodutils;..\d3d8to11\d3d8to11;..\d3d8to11\DirectXTK\Inc;..\d3d8to11\GSL\include;..\d3d8to11\libd3d8to11</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
@@ -133,7 +133,7 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;LANTERN_API;NOMINMAX;NDEBUG;_WINDOWS;_USRDLL;SADXDCLIGHTING_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\sadx-mod-loader\SADXModLoader\include;..\sadx-mod-loader\libmodutils;..\sadx-d3d11\sadx-d3d11;..\sadx-d3d11\DirectXTK\Inc;..\sadx-d3d11\GSL\include;..\sadx-d3d11\libd3d8to11</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\sadx-mod-loader\SADXModLoader\include;..\sadx-mod-loader\libmodutils;..\d3d8to11\d3d8to11;..\d3d8to11\DirectXTK\Inc;..\d3d8to11\GSL\include;..\d3d8to11\libd3d8to11</AdditionalIncludeDirectories>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
@@ -215,7 +215,7 @@ xcopy /C /Y /D "$(SolutionDir)include\lanternapi.h" "$(OutDir)api\include\"</Com
     <Xml Include="configschema.xml" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\sadx-d3d11\libd3d8to11\libcbuffer.vcxproj">
+    <ProjectReference Include="..\d3d8to11\libd3d8to11\libcbuffer.vcxproj">
       <Project>{322c4a08-4b89-4ddf-95c1-e73949432507}</Project>
     </ProjectReference>
   </ItemGroup>
