@@ -1,6 +1,9 @@
 #include "stdafx.h"
 
 #include <Windows.h>
+#include <direct.h> // for _getcwd
+
+#include <sstream>
 
 // Mod loader
 #include <SADXModLoader.h>
@@ -438,11 +441,37 @@ void __cdecl InitLandTableMeshSet_r(NJS_MODEL_SADX* model, NJS_MESHSET_SADX* mes
 	}
 }
 
+static std::string build_mod_path(const char* modpath, const char* path)
+{
+	std::stringstream result;
+	char workingdir[FILENAME_MAX] {};
+
+	result << _getcwd(workingdir, FILENAME_MAX) << "\\" << modpath << "\\" << path;
+
+	return result.str();
+}
+
+void TitleScreenHack()
+{
+	SetLevelAndAct(0, 0);
+	NJS_VECTOR dir = { 0.0f, 0.0f, -1.0f };
+	njUnitVector(&dir);
+	globals::palettes.load_palette(globals::get_system_path("PL_TITLE.BIN"));
+	globals::palettes.light_direction(dir);
+	globals::palettes.set_last_level(CurrentLevel, CurrentAct);
+	globals::palettes.set_palettes(0, 0);
+}
+
 extern "C"
 {
 	EXPORT ModInfo SADXModInfo = { ModLoaderVer, nullptr, nullptr, 0, nullptr, 0, nullptr, 0, nullptr, 0 };
 	EXPORT void __cdecl Init(const char* path, const HelperFunctions& helperFunctions)
 	{
+		HMODULE handle = nullptr;
+
+		const std::string dll = build_mod_path(path, "MinHook.x86.dll");
+		handle = LoadLibraryA(dll.c_str());
+
 		auto d3d9_handle = GetModuleHandle(L"d3d9.dll");
 		auto d3d11_handle = GetModuleHandle(L"d3d11.dll");
 
@@ -508,6 +537,9 @@ extern "C"
 		Past_Init();
 		SkyDeck_Init();
 		Chaos7_Init();
+
+		//Title screen hack
+		WriteCall(reinterpret_cast<void*>(0x00510125), TitleScreenHack);
 
 		// Vertex normal correction for certain objects in
 		// Red Mountain and Sky Deck.
