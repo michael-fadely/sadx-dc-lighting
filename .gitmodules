@@ -1,7 +1,6 @@
 [submodule "sadx-mod-loader"]
 	path = sadx-mod-loader
 	url = https://github.com/sonicretro/sadx-mod-loader.git
-[submodule "sadx-d3d11"]
-	path = sadx-d3d11
-	url = https://github.com/michael-fadely/sadx-d3d11.git
-	branch = generic
+[submodule "d3d8to11"]
+	path = d3d8to11
+	url = https://github.com/michael-fadely/d3d8to11.git
