@@ -910,6 +910,18 @@ namespace local
 			ptrs[76] = &chunk_d3d8_t::SetVertexShader;
 		}
 
+		static void set_palettes()
+		{
+			uint32_t temp_flags = flags;
+
+			if (_nj_control_3d_flag_ & NJD_CONTROL_3D_CONSTANT_ATTR)
+			{
+				temp_flags = _nj_constant_attr_or_ | (_nj_constant_attr_and_ & temp_flags);
+			}
+
+			globals::palettes.set_palettes(2, temp_flags);
+		}
+
 		static HRESULT __stdcall SetRenderState(Direct3DDevice8* /*This*/, D3DRENDERSTATETYPE State, DWORD Value)
 		{
 			switch (State)
@@ -949,24 +961,11 @@ namespace local
 					break;
 			}
 
-			const auto flags_backup = flags;
+			set_palettes();
 
-			if (_nj_control_3d_flag_ & NJD_CONTROL_3D_CONSTANT_ATTR)
-			{
-				flags = _nj_constant_attr_or_ | (_nj_constant_attr_and_ & flags);
-			}
-
-			// HACK: hard-coded to use character light
-			globals::palettes.set_palettes(2, flags);
-
-			//shader_flags = DEFAULT_FLAGS;
-
-			d3d::set_flags(ShaderFlags_Texture, true);
-			d3d::set_flags(ShaderFlags_Alpha, (flags & NJD_FLAG_USE_ALPHA) != 0);
-			d3d::set_flags(ShaderFlags_EnvMap, (flags & NJD_FLAG_USE_ENV) != 0);
-			d3d::set_flags(ShaderFlags_Light, (flags & NJD_FLAG_IGNORE_LIGHT) == 0);
-
-			flags = flags_backup;
+			d3d::set_flags(ShaderFlags_Alpha,   (flags & NJD_FLAG_USE_ALPHA)    != 0);
+			d3d::set_flags(ShaderFlags_EnvMap,  (flags & NJD_FLAG_USE_ENV)      != 0);
+			d3d::set_flags(ShaderFlags_Light,   (flags & NJD_FLAG_IGNORE_LIGHT) == 0);
 
 			return Direct3D_Device->SetRenderState(State, Value);
 		}
@@ -985,6 +984,7 @@ namespace local
 				}
 
 				d3d::set_flags(ShaderFlags_EnvMap, (flags & NJD_FLAG_USE_ENV) != 0);
+				set_palettes();
 			}
 
 			return Direct3D_Device->SetTextureStageState(Stage, Type, Value);
@@ -1002,20 +1002,26 @@ namespace local
 
 	bool poly_chunk_list_called = false;
 
+	// TODO: fix material diffuse color
 	static void __fastcall ProcessPolyChunkList_r(Sint16 *this_)
 	{
 		const bool first_caller = !poly_chunk_list_called;
 		poly_chunk_list_called = true;
 
 		const Uint32 backup_flags = shader_flags;
+		const bool backup_allow_vcolor = param::AllowVertexColor.value();
+		const int backup_diffuse_source = param::DiffuseSource.value();
 
 		if (first_caller)
 		{
-			d3d::do_effect = true;
-			shader_flags = DEFAULT_FLAGS;
 			chunk_d3d8_t::flags = NJD_FLAG_IGNORE_SPECULAR;
+
+			d3d::do_effect = true;
+
+			shader_flags &= ShaderFlags_Fog | ShaderFlags_RangeFog;
+
+			param::AllowVertexColor = true;
 			param::DiffuseSource = D3DMCS_COLOR1;
-			param::AllowVertexColor = false;
 		}
 		
 		run_trampoline(TARGET_DYNAMIC(ProcessPolyChunkList), this_);
@@ -1023,9 +1029,24 @@ namespace local
 		if (first_caller)
 		{
 			chunk_d3d8_t::flags = 0;
+
+			d3d::do_effect = false;
 			shader_flags = backup_flags;
+
+			param::DiffuseSource = backup_diffuse_source;
+			param::AllowVertexColor = backup_allow_vcolor;
+
 			poly_chunk_list_called = false;
 		}
+	}
+
+	void __fastcall ChunkTextureFlip_r(__int16 a1)
+	{
+		chunk_d3d8_t::flags |= NJD_FLAG_USE_TEXTURE;
+		d3d::set_flags(ShaderFlags_Texture, true);
+		chunk_d3d8_t::set_palettes();
+
+		ChunkTextureFlip(a1);
 	}
 
 	static void __cdecl njDrawModel_SADX_r(NJS_MODEL_SADX* a1)
@@ -1462,6 +1483,8 @@ namespace d3d
 		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078EECD + 1), &chunk_d3d8_ptr);
 		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078BB59 + 1), &chunk_d3d8_ptr);
 		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078BB89 + 1), &chunk_d3d8_ptr);
+
+		WriteCall(reinterpret_cast<void*>(0x0078ECEA), ChunkTextureFlip_r);
 
 		WriteJump(reinterpret_cast<void*>(0x0077EE45), DrawMeshSetBuffer_asm);
 
