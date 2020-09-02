@@ -103,8 +103,8 @@ namespace local
 	static Trampoline* Direct3D_PerformLighting_t         = nullptr;
 	static Trampoline* sub_77EAD0_t                       = nullptr;
 	static Trampoline* sub_77EBA0_t                       = nullptr;
-	static Trampoline* njCnkDrawModel_t                   = nullptr;
-	static Trampoline* ParseNjControl3D_t                 = nullptr;
+	static Trampoline* njCnkDrawModel_Chao_t              = nullptr;
+	static Trampoline* ProcessPolyChunkList_t             = nullptr;
 	static Trampoline* njDrawModel_SADX_t                 = nullptr;
 	static Trampoline* njDrawModel_SADX_Dynamic_t         = nullptr;
 	static Trampoline* Direct3D_SetProjectionMatrix_t     = nullptr;
@@ -881,18 +881,19 @@ namespace local
 		end();
 	}
 
-	static Sint32 __cdecl njCnkDrawModel_r(NJS_CNK_MODEL *model)
+	static Sint32 __cdecl njCnkDrawModel_Chao_r(NJS_CNK_MODEL *model)
 	{
 		d3d::do_effect = true;
 		begin();
 
-		const auto original = reinterpret_cast<decltype(njCnkDrawModel_r)*>(njCnkDrawModel_t->Target());
+		const auto original = reinterpret_cast<decltype(njCnkDrawModel_Chao_r)*>(njCnkDrawModel_Chao_t->Target());
 		const auto result = original(model);
 
 		end();
 		return result;
 	}
 
+	// dummy interface which has the same number of functions as [I]Direct3DDevice8
 	struct chunk_d3d8_t
 	{
 		void* ptr;
@@ -955,7 +956,8 @@ namespace local
 				flags = _nj_constant_attr_or_ | (_nj_constant_attr_and_ & flags);
 			}
 
-			globals::palettes.set_palettes(globals::light_type, flags);
+			// HACK: hard-coded to use character light
+			globals::palettes.set_palettes(2, flags);
 
 			shader_flags = DEFAULT_FLAGS;
 
@@ -998,10 +1000,13 @@ namespace local
 	static chunk_d3d8_t* chunk_d3d8_ptr = &chunk_d3d8;
 	uint32_t chunk_d3d8_t::flags = 0;
 
-	static void __fastcall ParseNjControl3D_r(Sint16 *this_)
+	static void __fastcall ProcessPolyChunkList_r(Sint16 *this_)
 	{
 		d3d::do_effect = true;
-		run_trampoline(TARGET_DYNAMIC(ParseNjControl3D), this_);
+		chunk_d3d8_t::flags = NJD_FLAG_IGNORE_SPECULAR;
+		param::DiffuseSource = D3DMCS_COLOR1;
+		param::AllowVertexColor = true;
+		run_trampoline(TARGET_DYNAMIC(ProcessPolyChunkList), this_);
 		chunk_d3d8_t::flags = 0;
 	}
 
@@ -1405,8 +1410,8 @@ namespace d3d
 		Direct3D_PerformLighting_t         = new Trampoline(0x00412420, 0x00412426, Direct3D_PerformLighting_r);
 		sub_77EAD0_t                       = new Trampoline(0x0077EAD0, 0x0077EAD7, sub_77EAD0_r);
 		sub_77EBA0_t                       = new Trampoline(0x0077EBA0, 0x0077EBA5, sub_77EBA0_r);
-		njCnkDrawModel_t                   = new Trampoline(0x0078AA10, 0x0078AA15, njCnkDrawModel_r);
-		ParseNjControl3D_t                 = new Trampoline(0x0078EB50, 0x0078EB58, ParseNjControl3D_r);
+		njCnkDrawModel_Chao_t              = new Trampoline(0x0078AA10, 0x0078AA15, njCnkDrawModel_Chao_r);
+		ProcessPolyChunkList_t             = new Trampoline(0x0078EB50, 0x0078EB58, ProcessPolyChunkList_r);
 		njDrawModel_SADX_t                 = new Trampoline(0x0077EDA0, 0x0077EDAA, njDrawModel_SADX_r);
 		njDrawModel_SADX_Dynamic_t         = new Trampoline(0x00784AE0, 0x00784AE5, njDrawModel_SADX_Dynamic_r);
 		Direct3D_SetProjectionMatrix_t     = new Trampoline(0x00791170, 0x00791175, Direct3D_SetProjectionMatrix_r);
@@ -1416,9 +1421,11 @@ namespace d3d
 		PolyBuff_DrawTriangleStrip_t       = new Trampoline(0x00794760, 0x00794767, PolyBuff_DrawTriangleStrip_r);
 		PolyBuff_DrawTriangleList_t        = new Trampoline(0x007947B0, 0x007947B7, PolyBuff_DrawTriangleList_r);
 
+		// sets chunk blending modes
 		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078DB90 + 1), &chunk_d3d8_ptr);
 		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078DBB4 + 1), &chunk_d3d8_ptr);
 
+		// hijacks all the d3d 
 		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078EB64 + 1), &chunk_d3d8_ptr);
 		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078EC8B + 1), &chunk_d3d8_ptr);
 		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078ECAE + 1), &chunk_d3d8_ptr);
