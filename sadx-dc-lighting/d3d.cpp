@@ -30,6 +30,8 @@
 #include "FileSystem.h"
 #include "apiconfig.h"
 
+// TODO: this file desperately needs to be split into multiple files
+
 namespace param
 {
 	ShaderParameter<Texture>     PaletteA(1, nullptr, IShaderParameter::Type::vertex);
@@ -893,7 +895,8 @@ namespace local
 		return result;
 	}
 
-	// dummy interface which has the same number of functions as [I]Direct3DDevice8
+	// Dummy interface which has the same number of function pointers as [I]Direct3DDevice8.
+	// Used for handling specific draw calls used for chunk model rendering.
 	struct chunk_d3d8_t
 	{
 		void* ptr;
@@ -999,6 +1002,30 @@ namespace local
 	static chunk_d3d8_t chunk_d3d8 {};
 	static chunk_d3d8_t* chunk_d3d8_ptr = &chunk_d3d8;
 	uint32_t chunk_d3d8_t::flags = 0;
+
+	static void __cdecl material_setup_hijack(int i, int16_t* p)
+	{
+		auto fn = reinterpret_cast<void(**)(int16_t*)>(0x038A5E1C + (4 * i));
+		(*fn)(p);
+
+		D3DMATERIAL8 material {};
+		Direct3D_Device->GetMaterial(&material);
+
+		param::MaterialDiffuse = material.Diffuse;
+	}
+
+	static const auto material_setup_hijack_return = reinterpret_cast<void*>(0x0078ED4D);
+
+	void __declspec(naked) material_setup_hijack_asm()
+	{
+		__asm
+		{
+			push edx
+			call material_setup_hijack
+			add esp, 4
+			jmp material_setup_hijack_return
+		}
+	}
 
 	bool poly_chunk_list_called = false;
 
@@ -1460,11 +1487,7 @@ namespace d3d
 		PolyBuff_DrawTriangleStrip_t       = new Trampoline(0x00794760, 0x00794767, PolyBuff_DrawTriangleStrip_r);
 		PolyBuff_DrawTriangleList_t        = new Trampoline(0x007947B0, 0x007947B7, PolyBuff_DrawTriangleList_r);
 
-		// sets chunk blending modes
-		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078DB90 + 1), &chunk_d3d8_ptr);
-		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078DBB4 + 1), &chunk_d3d8_ptr);
-
-		// hijacks all the d3d 
+		// Hijack all the D3D member functions used in ProcessPolyChunkList (0x0078EB50).
 		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078EB64 + 1), &chunk_d3d8_ptr);
 		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078EC8B + 1), &chunk_d3d8_ptr);
 		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078ECAE + 1), &chunk_d3d8_ptr);
@@ -1484,6 +1507,17 @@ namespace d3d
 		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078BB59 + 1), &chunk_d3d8_ptr);
 		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078BB89 + 1), &chunk_d3d8_ptr);
 
+		// Hijack blending mode adjustments in a function used exclusively by ProcessPolyChunkList.
+		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078DB90 + 1), &chunk_d3d8_ptr);
+		WriteData(reinterpret_cast<chunk_d3d8_t***>(0x0078DBB4 + 1), &chunk_d3d8_ptr);
+
+		// Ensure diffuse material color is submitted to the shader. The mod loader replaces a
+		// function and adds a parameter in order to fix specular lighting on chunk models.
+		// This doesn't leave room for a convenient trampoline, so assembly it is.
+		WriteJump(reinterpret_cast<void*>(0x0078ED46), material_setup_hijack_asm);
+
+		// Used to enable textures for the next-rendered chunk model. This is replacing a call
+		// from within ProcessPolyChunkList.
 		WriteCall(reinterpret_cast<void*>(0x0078ECEA), ChunkTextureFlip_r);
 
 		WriteJump(reinterpret_cast<void*>(0x0077EE45), DrawMeshSetBuffer_asm);
