@@ -105,7 +105,6 @@ namespace local
 	static Trampoline* Direct3D_PerformLighting_t         = nullptr;
 	static Trampoline* sub_77EAD0_t                       = nullptr;
 	static Trampoline* sub_77EBA0_t                       = nullptr;
-	static Trampoline* njCnkDrawModel_Chao_t              = nullptr;
 	static Trampoline* ProcessPolyChunkList_t             = nullptr;
 	static Trampoline* njDrawModel_SADX_t                 = nullptr;
 	static Trampoline* njDrawModel_SADX_Dynamic_t         = nullptr;
@@ -871,28 +870,12 @@ namespace local
 
 	static void __cdecl sub_77EAD0_r(void* a1, int a2, int a3)
 	{
-		begin();
 		run_trampoline(TARGET_DYNAMIC(sub_77EAD0), a1, a2, a3);
-		end();
 	}
 
 	static void __cdecl sub_77EBA0_r(void* a1, int a2, int a3)
 	{
-		begin();
 		run_trampoline(TARGET_DYNAMIC(sub_77EBA0), a1, a2, a3);
-		end();
-	}
-
-	static Sint32 __cdecl njCnkDrawModel_Chao_r(NJS_CNK_MODEL *model)
-	{
-		d3d::do_effect = true;
-		begin();
-
-		const auto original = reinterpret_cast<decltype(njCnkDrawModel_Chao_r)*>(njCnkDrawModel_Chao_t->Target());
-		const auto result = original(model);
-
-		end();
-		return result;
 	}
 
 	// Dummy interface which has the same number of function pointers as [I]Direct3DDevice8.
@@ -1476,7 +1459,6 @@ namespace d3d
 		Direct3D_PerformLighting_t         = new Trampoline(0x00412420, 0x00412426, Direct3D_PerformLighting_r);
 		sub_77EAD0_t                       = new Trampoline(0x0077EAD0, 0x0077EAD7, sub_77EAD0_r);
 		sub_77EBA0_t                       = new Trampoline(0x0077EBA0, 0x0077EBA5, sub_77EBA0_r);
-		njCnkDrawModel_Chao_t              = new Trampoline(0x0078AA10, 0x0078AA15, njCnkDrawModel_Chao_r);
 		ProcessPolyChunkList_t             = new Trampoline(0x0078EB50, 0x0078EB58, ProcessPolyChunkList_r);
 		njDrawModel_SADX_t                 = new Trampoline(0x0077EDA0, 0x0077EDAA, njDrawModel_SADX_r);
 		njDrawModel_SADX_Dynamic_t         = new Trampoline(0x00784AE0, 0x00784AE5, njDrawModel_SADX_Dynamic_r);
