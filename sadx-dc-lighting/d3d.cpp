@@ -1012,7 +1012,6 @@ namespace local
 
 	bool poly_chunk_list_called = false;
 
-	// TODO: fix material diffuse color
 	static void __fastcall ProcessPolyChunkList_r(Sint16 *this_)
 	{
 		const bool first_caller = !poly_chunk_list_called;
