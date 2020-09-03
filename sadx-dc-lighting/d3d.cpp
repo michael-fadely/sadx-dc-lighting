@@ -1049,7 +1049,7 @@ namespace local
 		}
 	}
 
-	void __fastcall ChunkTextureFlip_r(__int16 a1)
+	void __fastcall ChunkTextureFlip_r(int16_t a1)
 	{
 		chunk_d3d8_t::flags |= NJD_FLAG_USE_TEXTURE;
 		d3d::set_flags(ShaderFlags_Texture, true);
