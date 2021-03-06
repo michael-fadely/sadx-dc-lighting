@@ -91,11 +91,6 @@ void set_shader_flags(uint32_t flags, bool add)
 	d3d::set_flags(flags, add);
 }
 
-void allow_landtable_specular(bool allow)
-{
-	apiconfig::landtable_specular = allow;
-}
-
 void set_diffuse(int32_t n, bool permanent)
 {
 	globals::palettes.diffuse_index(n);

@@ -159,11 +159,6 @@ extern "C"
 	API void set_shader_flags(uint32_t flags, bool add);
 
 	/**
-	 * \brief Enables or disables specular lighting for landtables (stage geometry).
-	 */
-	API void allow_landtable_specular(bool allow);
-
-	/**
 	 * \brief Enables or disables vertex colors for "objects" (characters, enemies, etc)
 	 */
 	API void allow_object_vcolor(bool allow);

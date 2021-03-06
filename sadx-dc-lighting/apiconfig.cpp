@@ -3,7 +3,6 @@
 
 std::unordered_map<const NJS_MATERIAL*, std::deque<lantern_material_cb>> apiconfig::material_callbacks {};
 
-bool apiconfig::landtable_specular = false;
 bool apiconfig::object_vcolor      = true;
 bool apiconfig::override_light_dir = false;
 

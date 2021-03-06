@@ -34,7 +34,6 @@ static Trampoline* LoadLevelFiles_t                = nullptr;
 static Trampoline* SetLevelAndAct_t                = nullptr;
 static Trampoline* GoToNextChaoStage_t             = nullptr;
 static Trampoline* SetTimeOfDay_t                  = nullptr;
-static Trampoline* DrawLandTable_t                 = nullptr;
 static Trampoline* Direct3D_SetTexList_t           = nullptr;
 static Trampoline* SetCurrentStageLights_t         = nullptr;
 static Trampoline* SetCurrentStageLight_EggViper_t = nullptr;
@@ -334,25 +333,6 @@ static void __cdecl LoadLevelFiles_r()
 	globals::palettes.load_files();
 }
 
-static void __cdecl DrawLandTable_r()
-{
-	if (apiconfig::landtable_specular)
-	{
-		TARGET_DYNAMIC(DrawLandTable)();
-		return;
-	}
-
-	const auto flag = _nj_control_3d_flag_;
-	const auto or   = _nj_constant_attr_or_;
-
-	_nj_control_3d_flag_ |= NJD_CONTROL_3D_CONSTANT_ATTR;
-	_nj_constant_attr_or_ |= NJD_FLAG_IGNORE_SPECULAR;
-
-	TARGET_DYNAMIC(DrawLandTable)();
-
-	_nj_control_3d_flag_ = flag;
-	_nj_constant_attr_or_ = or;
-}
 
 static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
 {
@@ -552,7 +532,6 @@ extern "C"
 		SetLevelAndAct_t                = new Trampoline(0x00414570, 0x00414576, SetLevelAndAct_r);
 		GoToNextChaoStage_t             = new Trampoline(0x00715130, 0x00715135, GoToNextChaoStage_r);
 		SetTimeOfDay_t                  = new Trampoline(0x00412C00, 0x00412C05, SetTimeOfDay_r);
-		DrawLandTable_t                 = new Trampoline(0x0043A6A0, 0x0043A6A8, DrawLandTable_r);
 		Direct3D_SetTexList_t           = new Trampoline(0x0077F3D0, 0x0077F3D8, Direct3D_SetTexList_r);
 		SetCurrentStageLights_t         = new Trampoline(0x0040A950, 0x0040A955, SetCurrentStageLights_r);
 		SetCurrentStageLight_EggViper_t = new Trampoline(0x0057E560, 0x0057E567, SetCurrentStageLight_EggViper_r);
