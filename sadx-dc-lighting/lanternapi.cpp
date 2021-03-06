@@ -219,6 +219,21 @@ void set_diffuse_blend_factor(float factor)
 	LanternInstance::diffuse_blend_factor(factor);
 }
 
+void palette_from_rgb(int index, Uint8 r, Uint8 g, Uint8 b, bool specular, bool apply)
+{
+	globals::palettes.palette_from_rgb(index, r, g, b, specular, apply);
+}
+
+void palette_from_array(int index, NJS_ARGB* colors, bool specular, bool apply)
+{
+	globals::palettes.palette_from_array(index, colors, specular, apply);
+}
+
+void palette_from_mix(int index, int index_source, Uint8 r, Uint8 g, Uint8 b, bool specular, bool apply)
+{
+	globals::palettes.palette_from_mix(index, index_source, r, g, b, specular, apply);
+}
+
 void set_specular_blend_factor(float factor)
 {
 	check_blend();

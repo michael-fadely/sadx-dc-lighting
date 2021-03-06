@@ -475,6 +475,76 @@ bool LanternInstance::load_palette(const std::string& path)
 	return true;
 }
 
+void LanternInstance::palette_from_array(int index, NJS_ARGB* colors, bool specular, bool apply)
+{
+	for (size_t x = 0; x < 256; x++)
+	{
+		const auto ind = index * 256;
+		if (specular)
+		{
+			palette_pairs[ind + x].specular.argb.a = colors[x].a;
+			palette_pairs[ind + x].specular.argb.r = colors[x].r;
+			palette_pairs[ind + x].specular.argb.g = colors[x].g;
+			palette_pairs[ind + x].specular.argb.b = colors[x].b;
+		}
+		else
+		{
+			palette_pairs[ind + x].diffuse.argb.a = colors[x].a;
+			palette_pairs[ind + x].diffuse.argb.r = colors[x].r;
+			palette_pairs[ind + x].diffuse.argb.g = colors[x].g;
+			palette_pairs[ind + x].diffuse.argb.b = colors[x].b;
+		}
+	}
+	if (apply) generate_atlas();
+}
+
+void LanternInstance::palette_from_rgb(int index, Uint8 r, Uint8 g, Uint8 b, bool specular, bool apply)
+{
+	for (size_t x = 0; x < 256; x++)
+	{
+		const auto ind = index * 256;
+		if (specular)
+		{
+			palette_pairs[ind + x].specular.argb.a = 255;
+			palette_pairs[ind + x].specular.argb.r = r;
+			palette_pairs[ind + x].specular.argb.g = g;
+			palette_pairs[ind + x].specular.argb.b = b;
+		}
+		else
+		{
+			palette_pairs[ind + x].diffuse.argb.a = 255;
+			palette_pairs[ind + x].diffuse.argb.r = r;
+			palette_pairs[ind + x].diffuse.argb.g = g;
+			palette_pairs[ind + x].diffuse.argb.b = b;
+		}
+	}
+	if (apply) generate_atlas();
+}
+
+void LanternInstance::palette_from_mix(int index, int index_source, Uint8 r, Uint8 g, Uint8 b, bool specular, bool apply)
+{
+	for (size_t x = 0; x < 256; x++)
+	{
+		const auto ind = index * 256;
+		const auto ind_src = index_source * 256;
+		if (specular)
+		{
+			palette_pairs[ind + x].specular.argb.a = 255;
+			palette_pairs[ind + x].specular.argb.r = std::min(255, palette_pairs[ind_src + x].specular.argb.r + r);
+			palette_pairs[ind + x].specular.argb.g = std::min(255, palette_pairs[ind_src + x].specular.argb.g + g);
+			palette_pairs[ind + x].specular.argb.b = std::min(255, palette_pairs[ind_src + x].specular.argb.b + b);
+		}
+		else
+		{
+			palette_pairs[ind + x].diffuse.argb.a = 255;
+			palette_pairs[ind + x].diffuse.argb.r = std::min(255, palette_pairs[ind_src + x].diffuse.argb.r + r);
+			palette_pairs[ind + x].diffuse.argb.g = std::min(255, palette_pairs[ind_src + x].diffuse.argb.g + g);
+			palette_pairs[ind + x].diffuse.argb.b = std::min(255, palette_pairs[ind_src + x].diffuse.argb.b + b);
+		}
+	}
+	if (apply) generate_atlas();
+}
+
 void LanternInstance::generate_atlas()
 {
 	const bool is_32bit = d3d::supports_xrgb();
@@ -1098,6 +1168,24 @@ void LanternCollection::remove(size_t index)
 void LanternCollection::add_pl_callback(lantern_load_cb callback)
 {
 	callback_add(pl_callbacks, callback);
+}
+
+void LanternCollection::palette_from_rgb(int index, Uint8 r, Uint8 g, Uint8 b, bool specular, bool apply)
+{
+	LanternInstance& i = instances[0];
+	i.palette_from_rgb(index, r, g, b, specular, apply);
+}
+
+void LanternCollection::palette_from_array(int index, NJS_ARGB* colors, bool specular, bool apply)
+{
+	LanternInstance& i = instances[0];
+	i.palette_from_array(index, colors, specular, apply);
+}
+
+void LanternCollection::palette_from_mix(int index, int index_source, Uint8 r, Uint8 g, Uint8 b, bool specular, bool apply)
+{
+	LanternInstance& i = instances[0];
+	i.palette_from_mix(index, index_source, r, g, b, specular, apply);
 }
 
 void LanternCollection::remove_pl_callback(lantern_load_cb callback)
