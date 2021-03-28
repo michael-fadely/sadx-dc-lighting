@@ -196,11 +196,11 @@ extern "C"
 	 */
 	API void diffuse_override(bool enable);
 	/**
-	 * \brief Sets the shader input diffuse override color.
-	 * This replaces the input material and/or vertex color unconditionally.
+	 * \brief Temporarily (optionally permanently) sets the shader input diffuse override color.
+	 * This replaces the input material and/or vertex color.
 	 * \sa diffuse_override
 	 */
-	API void diffuse_override_rgb(float r, float g, float b);
+	API void diffuse_override_rgb(float r, float g, float b, bool permanent);
 
 	/**
 	 * \brief Gets the currently set diffuse index.

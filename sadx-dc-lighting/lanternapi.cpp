@@ -136,10 +136,11 @@ void diffuse_override(bool enable)
 	param::DiffuseOverride = enable;
 }
 
-void diffuse_override_rgb(float r, float g, float b)
+void diffuse_override_rgb(float r, float g, float b, bool permanent)
 {
 	const D3DXVECTOR3 color = { r, g, b };
 	param::DiffuseOverrideColor = color;
+	LanternInstance::diffuse_override_is_temp = !permanent;
 }
 
 void set_diffuse_blend(int32_t src, int32_t dest)
