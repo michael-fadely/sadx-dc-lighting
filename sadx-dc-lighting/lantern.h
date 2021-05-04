@@ -3,6 +3,7 @@
 #include <ninja.h>
 #include <array>
 #include <deque>
+#include <string>
 #include <SADXStructs.h>
 
 #include "ShaderParameter.h"
