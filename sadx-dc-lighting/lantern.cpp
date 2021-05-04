@@ -482,17 +482,17 @@ void LanternInstance::palette_from_array(int index, NJS_ARGB* colors, bool specu
 		const auto ind = index * 256;
 		if (specular)
 		{
-			palette_pairs[ind + x].specular.argb.a = colors[x].a;
-			palette_pairs[ind + x].specular.argb.r = colors[x].r;
-			palette_pairs[ind + x].specular.argb.g = colors[x].g;
-			palette_pairs[ind + x].specular.argb.b = colors[x].b;
+			palette_pairs[ind + x].specular.argb.a = static_cast<Uint8>(colors[x].a);
+			palette_pairs[ind + x].specular.argb.r = static_cast<Uint8>(colors[x].r);
+			palette_pairs[ind + x].specular.argb.g = static_cast<Uint8>(colors[x].g);
+			palette_pairs[ind + x].specular.argb.b = static_cast<Uint8>(colors[x].b);
 		}
 		else
 		{
-			palette_pairs[ind + x].diffuse.argb.a = colors[x].a;
-			palette_pairs[ind + x].diffuse.argb.r = colors[x].r;
-			palette_pairs[ind + x].diffuse.argb.g = colors[x].g;
-			palette_pairs[ind + x].diffuse.argb.b = colors[x].b;
+			palette_pairs[ind + x].diffuse.argb.a = static_cast<Uint8>(colors[x].a);
+			palette_pairs[ind + x].diffuse.argb.r = static_cast<Uint8>(colors[x].r);
+			palette_pairs[ind + x].diffuse.argb.g = static_cast<Uint8>(colors[x].g);
+			palette_pairs[ind + x].diffuse.argb.b = static_cast<Uint8>(colors[x].b);
 		}
 	}
 	if (apply) generate_atlas();
