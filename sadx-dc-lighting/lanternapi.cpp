@@ -37,7 +37,7 @@ void sl_load_unregister(lantern_load_cb callback)
 	globals::palettes.remove_sl_callback(callback);
 }
 
-void material_register(NJS_MATERIAL const* const* materials, size_t length, lantern_material_cb callback)
+void material_register(const NJS_MATERIAL** materials, size_t length, lantern_material_cb callback)
 {
 	if (!length || materials == nullptr || callback == nullptr)
 	{
@@ -46,7 +46,7 @@ void material_register(NJS_MATERIAL const* const* materials, size_t length, lant
 
 	for (size_t i = 0; i < length; i++)
 	{
-		auto material = materials[i];
+		const NJS_MATERIAL* material = materials[i];
 		auto it = apiconfig::material_callbacks.find(material);
 
 		if (it == apiconfig::material_callbacks.end())
@@ -60,7 +60,7 @@ void material_register(NJS_MATERIAL const* const* materials, size_t length, lant
 	}
 }
 
-void material_unregister(NJS_MATERIAL const* const* materials, size_t length, lantern_material_cb callback)
+void material_unregister(const NJS_MATERIAL** materials, size_t length, lantern_material_cb callback)
 {
 	if (!length || materials == nullptr || callback == nullptr)
 	{
@@ -215,21 +215,6 @@ void set_diffuse_blend_factor(float factor)
 	LanternInstance::diffuse_blend_factor(factor);
 }
 
-void palette_from_rgb(int index, Uint8 r, Uint8 g, Uint8 b, bool specular, bool apply)
-{
-	globals::palettes.palette_from_rgb(index, r, g, b, specular, apply);
-}
-
-void palette_from_array(int index, NJS_ARGB* colors, bool specular, bool apply)
-{
-	globals::palettes.palette_from_array(index, colors, specular, apply);
-}
-
-void palette_from_mix(int index, int index_source, Uint8 r, Uint8 g, Uint8 b, bool specular, bool apply)
-{
-	globals::palettes.palette_from_mix(index, index_source, r, g, b, specular, apply);
-}
-
 void set_specular_blend_factor(float factor)
 {
 	check_blend();
@@ -282,4 +267,19 @@ void set_light_direction(const NJS_VECTOR* v)
 		apiconfig::override_light_dir = true;
 		apiconfig::light_dir_override = *v;
 	}
+}
+
+void palette_from_rgb(int index, Uint8 r, Uint8 g, Uint8 b, bool specular, bool apply)
+{
+	globals::palettes.palette_from_rgb(index, r, g, b, specular, apply);
+}
+
+void palette_from_array(int index, const NJS_ARGB* colors, bool specular, bool apply)
+{
+	globals::palettes.palette_from_array(index, colors, specular, apply);
+}
+
+void palette_from_mix(int index, int index_source, Uint8 r, Uint8 g, Uint8 b, bool specular, bool apply)
+{
+	globals::palettes.palette_from_mix(index, index_source, r, g, b, specular, apply);
 }
