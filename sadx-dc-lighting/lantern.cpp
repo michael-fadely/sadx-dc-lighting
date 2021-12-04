@@ -27,11 +27,11 @@ bool SourceLight_t::operator!=(const SourceLight_t& rhs) const
 
 bool StageLight::operator==(const StageLight& rhs) const
 {
-	return specular == rhs.specular
-	       && multiplier == rhs.multiplier
-	       && !memcmp(&direction, &rhs.direction, sizeof(NJS_VECTOR))
-	       && !memcmp(&diffuse, &rhs.diffuse, sizeof(NJS_VECTOR))
-	       && !memcmp(&ambient, &rhs.ambient, sizeof(NJS_VECTOR));
+	return specular == rhs.specular &&
+	       multiplier == rhs.multiplier &&
+	       !memcmp(&direction, &rhs.direction, sizeof(NJS_VECTOR)) &&
+	       !memcmp(&diffuse, &rhs.diffuse, sizeof(NJS_VECTOR)) &&
+	       !memcmp(&ambient, &rhs.ambient, sizeof(NJS_VECTOR));
 }
 
 bool StageLight::operator!=(const StageLight& rhs) const
@@ -41,62 +41,15 @@ bool StageLight::operator!=(const StageLight& rhs) const
 
 bool StageLights::operator==(const StageLights& rhs) const
 {
-	return lights[0] == rhs.lights[0]
-	       && lights[1] == rhs.lights[1]
-	       && lights[2] == rhs.lights[2]
-	       && lights[3] == rhs.lights[3];
+	return lights[0] == rhs.lights[0] &&
+	       lights[1] == rhs.lights[1] &&
+	       lights[2] == rhs.lights[2] &&
+	       lights[3] == rhs.lights[3];
 }
 
 bool StageLights::operator!=(const StageLights& rhs) const
 {
 	return !(*this == rhs);
-}
-
-template <>
-bool ShaderParameter<SourceLight_t>::commit(IDirect3DDevice9* device)
-{
-	if (is_modified())
-	{
-		float buffer[24] {};
-		memcpy(buffer, &current, sizeof(SourceLight_t));
-
-		if (type & Type::vertex)
-		{
-			device->SetVertexShaderConstantF(index, buffer, 6);
-		}
-
-		if (type & Type::pixel)
-		{
-			device->SetPixelShaderConstantF(index, buffer, 6);
-		}
-
-		clear();
-		return true;
-	}
-
-	return false;
-}
-
-template <>
-bool ShaderParameter<StageLights>::commit(IDirect3DDevice9* device)
-{
-	if (is_modified())
-	{
-		if (type & Type::vertex)
-		{
-			device->SetVertexShaderConstantF(index, reinterpret_cast<float*>(&current), 16);
-		}
-
-		if (type & Type::pixel)
-		{
-			device->SetPixelShaderConstantF(index, reinterpret_cast<float*>(&current), 16);
-		}
-
-		clear();
-		return true;
-	}
-
-	return false;
 }
 
 static bool use_time(Uint32 level, Uint32 act)
@@ -152,13 +105,16 @@ static bool use_time(Uint32 level, Uint32 act)
 	}
 }
 
+// private static
+bool  LanternInstance::use_palette_           = false;
+float LanternInstance::diffuse_blend_factor_  = 0.0f;
+float LanternInstance::specular_blend_factor_ = 0.0f;
+
+// public static
 bool LanternInstance::diffuse_override          = false;
 bool LanternInstance::diffuse_override_is_temp  = false;
 bool LanternInstance::specular_override         = false;
 bool LanternInstance::specular_override_is_temp = false;
-bool LanternInstance::use_palette_              = false;
-float LanternInstance::diffuse_blend_factor_    = 0.0f;
-float LanternInstance::specular_blend_factor_   = 0.0f;
 
 bool LanternInstance::use_palette()
 {
@@ -223,7 +179,7 @@ std::string LanternInstance::palette_id(Sint32 level, Sint32 act)
 		}
 		else
 		{
-			act = GetTimeOfDay();
+			act = static_cast<Sint32>(GetTimeOfDay());
 		}
 	}
 	else
@@ -331,52 +287,68 @@ std::string LanternInstance::palette_id(Sint32 level, Sint32 act)
 		throw std::exception("Level ID out of range.");
 	}
 
-	!n ? result << "_" : result << n;
+	if (!n)
+	{
+		result << "_";
+	}
+	else
+	{
+		result << n;
+	}
 
 	const auto i = static_cast<char>(level - (10 + 26 * n) + 'A');
 	result << i << act;
 	return result.str();
 }
 
-void LanternInstance::copy(LanternInstance& inst)
-{
-	atlas      = inst.atlas;
-	last_time  = inst.last_time;
-	last_act   = inst.last_act;
-	last_level = inst.last_level;
-	diffuse_   = inst.diffuse_;
-	specular_  = inst.specular_;
-}
-
 LanternInstance::LanternInstance(ShaderParameter<Texture>* atlas)
-	: atlas(atlas)
+	: atlas_(atlas)
 {
 }
 
-LanternInstance::LanternInstance(LanternInstance&& inst) noexcept
+LanternInstance::LanternInstance(LanternInstance&& other) noexcept
+	: atlas_(std::exchange(other.atlas_, nullptr)),
+	  palette_pairs_(other.palette_pairs_),
+	  source_lights_(other.source_lights_),
+	  sl_direction_(other.sl_direction_),
+	  diffuse_index_(std::exchange(other.diffuse_index_, -1)),
+	  specular_index_(std::exchange(other.specular_index_, -1)),
+	  last_time_(std::exchange(other.last_time_, -1)),
+	  last_act_(std::exchange(other.last_act_, -1)),
+	  last_level_(std::exchange(other.last_level_, -1))
 {
-	*this = std::move(inst);
 }
 
-LanternInstance& LanternInstance::operator=(LanternInstance&& inst) noexcept
+LanternInstance& LanternInstance::operator=(LanternInstance&& rhs) noexcept
 {
-	copy(inst);
-	inst.atlas = nullptr;
+	if (&rhs != this)
+	{
+		atlas_          = std::exchange(rhs.atlas_, nullptr);
+		palette_pairs_  = rhs.palette_pairs_;
+		source_lights_  = rhs.source_lights_;
+		sl_direction_   = rhs.sl_direction_;
+		diffuse_index_  = std::exchange(rhs.diffuse_index_, -1);
+		specular_index_ = std::exchange(rhs.specular_index_, -1);
+		last_time_      = std::exchange(rhs.last_time_, -1);
+		last_act_       = std::exchange(rhs.last_act_, -1);
+		last_level_     = std::exchange(rhs.last_level_, -1);
+	}
+
 	return *this;
 }
 
 LanternInstance::~LanternInstance()
 {
-	if (atlas != nullptr)
+	if (atlas_ != nullptr)
 	{
-		*atlas = nullptr;
+		*atlas_ = nullptr;
 	}
 }
 
 void LanternInstance::set_last_level(Sint32 level, Sint32 act)
 {
-	last_level = level;
-	last_act   = act;
+	last_level_ = level;
+	last_act_   = act;
 }
 
 /// <summary>
@@ -391,13 +363,13 @@ bool LanternInstance::load_source(const std::string& path)
 	if (!file.is_open())
 	{
 		PrintDebug("[lantern] Lantern source not found: %s\n", path.c_str());
-		sl_direction = { 0.0f, -1.0f, 0.0f };
+		sl_direction_ = { 0.0f, -1.0f, 0.0f };
 		return false;
 	}
 
 	PrintDebug("[lantern] Loading lantern source: %s\n", path.c_str());
 
-	for (auto& source_light : source_lights)
+	for (auto& source_light : source_lights_)
 	{
 		file.read(reinterpret_cast<char*>(&source_light), sizeof(SourceLight));
 	}
@@ -405,18 +377,20 @@ bool LanternInstance::load_source(const std::string& path)
 	file.close();
 
 	NJS_MATRIX m;
+	const SourceLight& last_source_light = source_lights_[15];
 
 	njUnitMatrix(m);
-	njRotateY(m, source_lights[15].stage.y);
-	njRotateZ(m, source_lights[15].stage.z);
+	njRotateY(m, last_source_light.stage.y);
+	njRotateZ(m, last_source_light.stage.z);
 
 	// Default light direction is down, so we want to rotate relative to that.
 	NJS_VECTOR vs = { 0.0f, -1.0f, 0.0f };
-	njCalcVector(m, &vs, &sl_direction);
-	param::LightDirection = -*reinterpret_cast<D3DXVECTOR3*>(&sl_direction);
+	njCalcVector(m, &vs, &sl_direction_);
+	param::LightDirection = -*reinterpret_cast<D3DXVECTOR3*>(&sl_direction_);
 
 	PrintDebug("[lantern] Source light rotation (direction): y: %d, z: %d (x: %f, y: %f, z: %f)\n",
-	           source_lights[15].stage.y, source_lights[15].stage.z, sl_direction.x, sl_direction.y, sl_direction.z);
+	           last_source_light.stage.y, last_source_light.stage.z,
+	           sl_direction_.x, sl_direction_.y, sl_direction_.z);
 
 	return true;
 }
@@ -463,110 +437,130 @@ bool LanternInstance::load_palette(const std::string& path)
 
 	file.close();
 
-	if (color_data.size() > palette_pairs.size())
+	if (color_data.size() > palette_pairs_.size())
 	{
 		PrintDebug("[lantern] WARNING: Palette size exceeds standard maximum.\n");
 	}
 
-	palette_pairs = {};
-	memcpy(palette_pairs.data(), color_data.data(),
-	       std::min(sizeof(ColorPair) * color_data.size(), sizeof(ColorPair) * palette_pairs.size()));
+	palette_pairs_ = {};
+	memcpy(palette_pairs_.data(),
+	       color_data.data(),
+	       std::min(sizeof(ColorPair) * color_data.size(), sizeof(ColorPair) * palette_pairs_.size()));
 	generate_atlas();
 	return true;
 }
 
-void LanternInstance::palette_from_array(int index, NJS_ARGB* colors, bool specular, bool apply)
-{
-	for (size_t x = 0; x < 256; x++)
-	{
-		const auto ind = index * 256;
-		if (specular)
-		{
-			palette_pairs[ind + x].specular.argb.a = static_cast<Uint8>(colors[x].a);
-			palette_pairs[ind + x].specular.argb.r = static_cast<Uint8>(colors[x].r);
-			palette_pairs[ind + x].specular.argb.g = static_cast<Uint8>(colors[x].g);
-			palette_pairs[ind + x].specular.argb.b = static_cast<Uint8>(colors[x].b);
-		}
-		else
-		{
-			palette_pairs[ind + x].diffuse.argb.a = static_cast<Uint8>(colors[x].a);
-			palette_pairs[ind + x].diffuse.argb.r = static_cast<Uint8>(colors[x].r);
-			palette_pairs[ind + x].diffuse.argb.g = static_cast<Uint8>(colors[x].g);
-			palette_pairs[ind + x].diffuse.argb.b = static_cast<Uint8>(colors[x].b);
-		}
-	}
-	if (apply) generate_atlas();
-}
-
 void LanternInstance::palette_from_rgb(int index, Uint8 r, Uint8 g, Uint8 b, bool specular, bool apply)
 {
-	for (size_t x = 0; x < 256; x++)
+	const auto pair_index = index * palette_index_length;
+
+	for (size_t x = 0; x < palette_index_length; x++)
 	{
-		const auto ind = index * 256;
 		if (specular)
 		{
-			palette_pairs[ind + x].specular.argb.a = 255;
-			palette_pairs[ind + x].specular.argb.r = r;
-			palette_pairs[ind + x].specular.argb.g = g;
-			palette_pairs[ind + x].specular.argb.b = b;
+			palette_pairs_[pair_index + x].specular.argb.a = 255;
+			palette_pairs_[pair_index + x].specular.argb.r = r;
+			palette_pairs_[pair_index + x].specular.argb.g = g;
+			palette_pairs_[pair_index + x].specular.argb.b = b;
 		}
 		else
 		{
-			palette_pairs[ind + x].diffuse.argb.a = 255;
-			palette_pairs[ind + x].diffuse.argb.r = r;
-			palette_pairs[ind + x].diffuse.argb.g = g;
-			palette_pairs[ind + x].diffuse.argb.b = b;
+			palette_pairs_[pair_index + x].diffuse.argb.a = 255;
+			palette_pairs_[pair_index + x].diffuse.argb.r = r;
+			palette_pairs_[pair_index + x].diffuse.argb.g = g;
+			palette_pairs_[pair_index + x].diffuse.argb.b = b;
 		}
 	}
-	if (apply) generate_atlas();
+
+	if (apply)
+	{
+		generate_atlas();
+	}
+}
+
+void LanternInstance::palette_from_array(int index, const NJS_ARGB* colors, bool specular, bool apply)
+{
+	const auto pair_index = index * palette_index_length;
+
+	for (size_t x = 0; x < palette_index_length; x++)
+	{
+		if (specular)
+		{
+			palette_pairs_[pair_index + x].specular.argb.a = static_cast<Uint8>(colors[x].a);
+			palette_pairs_[pair_index + x].specular.argb.r = static_cast<Uint8>(colors[x].r);
+			palette_pairs_[pair_index + x].specular.argb.g = static_cast<Uint8>(colors[x].g);
+			palette_pairs_[pair_index + x].specular.argb.b = static_cast<Uint8>(colors[x].b);
+		}
+		else
+		{
+			palette_pairs_[pair_index + x].diffuse.argb.a = static_cast<Uint8>(colors[x].a);
+			palette_pairs_[pair_index + x].diffuse.argb.r = static_cast<Uint8>(colors[x].r);
+			palette_pairs_[pair_index + x].diffuse.argb.g = static_cast<Uint8>(colors[x].g);
+			palette_pairs_[pair_index + x].diffuse.argb.b = static_cast<Uint8>(colors[x].b);
+		}
+	}
+
+	if (apply)
+	{
+		generate_atlas();
+	}
 }
 
 void LanternInstance::palette_from_mix(int index, int index_source, Uint8 r, Uint8 g, Uint8 b, bool specular, bool apply)
 {
-	for (size_t x = 0; x < 256; x++)
+	const auto pair_index_dst = index * palette_index_length;
+	const auto pair_index_src = index_source * palette_index_length;
+
+	for (size_t x = 0; x < palette_index_length; x++)
 	{
-		const auto ind = index * 256;
-		const auto ind_src = index_source * 256;
 		if (specular)
 		{
-			palette_pairs[ind + x].specular.argb.a = 255;
-			palette_pairs[ind + x].specular.argb.r = std::min(255, palette_pairs[ind_src + x].specular.argb.r + r);
-			palette_pairs[ind + x].specular.argb.g = std::min(255, palette_pairs[ind_src + x].specular.argb.g + g);
-			palette_pairs[ind + x].specular.argb.b = std::min(255, palette_pairs[ind_src + x].specular.argb.b + b);
+			NJS_BGRA& color = palette_pairs_[pair_index_dst + x].specular.argb;
+
+			color.a = 255;
+			color.r = static_cast<Uint8>(std::min<Uint32>(255, palette_pairs_[pair_index_src + x].specular.argb.r + r));
+			color.g = static_cast<Uint8>(std::min<Uint32>(255, palette_pairs_[pair_index_src + x].specular.argb.g + g));
+			color.b = static_cast<Uint8>(std::min<Uint32>(255, palette_pairs_[pair_index_src + x].specular.argb.b + b));
 		}
 		else
 		{
-			palette_pairs[ind + x].diffuse.argb.a = 255;
-			palette_pairs[ind + x].diffuse.argb.r = std::min(255, palette_pairs[ind_src + x].diffuse.argb.r + r);
-			palette_pairs[ind + x].diffuse.argb.g = std::min(255, palette_pairs[ind_src + x].diffuse.argb.g + g);
-			palette_pairs[ind + x].diffuse.argb.b = std::min(255, palette_pairs[ind_src + x].diffuse.argb.b + b);
+			NJS_BGRA& color = palette_pairs_[pair_index_dst + x].diffuse.argb;
+
+			color.a = 255;
+			color.r = static_cast<Uint8>(std::min<Uint32>(255, palette_pairs_[pair_index_src + x].diffuse.argb.r + r));
+			color.g = static_cast<Uint8>(std::min<Uint32>(255, palette_pairs_[pair_index_src + x].diffuse.argb.g + g));
+			color.b = static_cast<Uint8>(std::min<Uint32>(255, palette_pairs_[pair_index_src + x].diffuse.argb.b + b));
 		}
 	}
-	if (apply) generate_atlas();
+
+	if (apply)
+	{
+		generate_atlas();
+	}
 }
 
 void LanternInstance::generate_atlas()
 {
 	const bool is_32bit = d3d::supports_xrgb();
-	Texture texture = atlas->value();
+	Texture texture = atlas_->value();
 
 	if (texture == nullptr)
 	{
 		// Using a floating point texture to support the GeForce 6000 series cards.
 		const auto format = is_32bit ? D3DFMT_X8R8G8B8 : D3DFMT_A32B32G32R32F;
 
-		if (FAILED(d3d::device->CreateTexture(256, 16, 1, 0, format, D3DPOOL_MANAGED, &texture, nullptr)))
+		if (FAILED(d3d::device->CreateTexture(palette_index_length, 2 * palette_index_count, 1, 0, format, D3DPOOL_MANAGED, &texture, nullptr)))
 		{
 			throw std::exception("Failed to create palette texture!");
 		}
 
-		*atlas = texture;
+		*atlas_ = texture;
 	}
 	else
 	{
 		// Release all of its references in case there are lingering textures.
-		atlas->release();
-		*atlas = texture;
+		atlas_->release();
+		*atlas_ = texture;
 	}
 
 	D3DLOCKED_RECT rect;
@@ -582,27 +576,28 @@ void LanternInstance::generate_atlas()
 
 	static_assert(sizeof(ABGR32F) == sizeof(float) * 4, "nope");
 
-	for (size_t i = 0; i < 8; i++)
+	for (size_t i = 0; i < palette_index_count; i++)
 	{
-		const auto index = i * 256;
+		const auto index = i * palette_index_length;
 
-		/*if (index >= palette_pairs.size() || index + 256 >= palette_pairs.size())
+		/*if (index >= palette_pairs_.size() || index + palette_index_length >= palette_pairs_.size())
 		{
 			break;
 		}*/
 
-		const auto y = 512 * i;
+		// Multiplied by 2 since colors are stored in pairs of diffuse and specular.
+		const auto y = 2 * palette_index_length * i;
 
 		if (is_32bit)
 		{
 			const auto pixels = static_cast<NJS_COLOR*>(rect.pBits);
 
-			for (size_t x = 0; x < 256; x++)
+			for (size_t x = 0; x < palette_index_length; x++)
 			{
-				const auto& color = palette_pairs[index + x];
+				const auto& color = palette_pairs_[index + x];
 
 				auto& diffuse  = pixels[y + x];
-				auto& specular = pixels[256 + y + x];
+				auto& specular = pixels[palette_index_length + y + x];
 
 				diffuse  = color.diffuse;
 				specular = color.specular;
@@ -612,26 +607,26 @@ void LanternInstance::generate_atlas()
 		{
 			const auto pixels = static_cast<ABGR32F*>(rect.pBits);
 
-			for (size_t x = 0; x < 256; x++)
+			for (size_t x = 0; x < palette_index_length; x++)
 			{
-				const auto& color = palette_pairs[index + x];
+				const auto& color = palette_pairs_[index + x];
 
 				auto& diffuse  = pixels[y + x];
-				auto& specular = pixels[256 + y + x];
+				auto& specular = pixels[palette_index_length + y + x];
 
-				const auto& _diffuse = color.diffuse.argb;
+				const auto& diffuse_argb = color.diffuse.argb;
 
-				diffuse.r = _diffuse.r / 255.0f;
-				diffuse.g = _diffuse.g / 255.0f;
-				diffuse.b = _diffuse.b / 255.0f;
-				diffuse.a = _diffuse.a / 255.0f;
+				diffuse.r = static_cast<float>(diffuse_argb.r) / 255.0f;
+				diffuse.g = static_cast<float>(diffuse_argb.g) / 255.0f;
+				diffuse.b = static_cast<float>(diffuse_argb.b) / 255.0f;
+				diffuse.a = static_cast<float>(diffuse_argb.a) / 255.0f;
 
-				const auto& _specular = color.specular.argb;
+				const auto& specular_argb = color.specular.argb;
 
-				specular.r = _specular.r / 255.0f;
-				specular.g = _specular.g / 255.0f;
-				specular.b = _specular.b / 255.0f;
-				specular.a = _specular.a / 255.0f;
+				specular.r = static_cast<float>(specular_argb.r) / 255.0f;
+				specular.g = static_cast<float>(specular_argb.g) / 255.0f;
+				specular.b = static_cast<float>(specular_argb.b) / 255.0f;
+				specular.a = static_cast<float>(specular_argb.a) / 255.0f;
 			}
 		}
 	}
@@ -668,11 +663,6 @@ void LanternInstance::specular_blend_factor(float f)
 	param::BlendFactor = value;
 
 	specular_blend_factor_ = f;
-}
-
-inline float _index_float(Sint32 i, Sint32 offset)
-{
-	return (static_cast<float>(2 * i + offset) + 0.5f) / 16.0f;
 }
 
 /// <summary>
@@ -745,39 +735,39 @@ void LanternInstance::set_palettes(Sint32 type, Uint32 flags)
 
 void LanternInstance::diffuse_index(Sint32 value)
 {
-	diffuse_ = value;
+	diffuse_index_ = value;
 }
 
 void LanternInstance::specular_index(Sint32 value)
 {
-	specular_ = value;
+	specular_index_ = value;
 }
 
 Sint32 LanternInstance::diffuse_index()
 {
-	return diffuse_;
+	return diffuse_index_;
 }
 
 Sint32 LanternInstance::specular_index()
 {
-	return specular_;
+	return specular_index_;
 }
 
 void LanternInstance::light_direction(const NJS_VECTOR& d)
 {
-	sl_direction = d;
+	sl_direction_ = d;
 }
 
 const NJS_VECTOR& LanternInstance::light_direction()
 {
-	return sl_direction;
+	return sl_direction_;
 }
 
 // Collection
 
 void LanternCollection::set_last_level(Sint32 level, Sint32 act)
 {
-	for (auto& i : instances)
+	for (auto& i : instances_)
 	{
 		i.set_last_level(level, act);
 	}
@@ -787,7 +777,7 @@ bool LanternCollection::load_palette(Sint32 level, Sint32 act)
 {
 	size_t count = 0;
 
-	for (auto& i : instances)
+	for (auto& i : instances_)
 	{
 		if (i.load_palette(level, act))
 		{
@@ -795,14 +785,14 @@ bool LanternCollection::load_palette(Sint32 level, Sint32 act)
 		}
 	}
 
-	return count == instances.size();
+	return count == instances_.size();
 }
 
 bool LanternCollection::load_palette(const std::string& path)
 {
 	size_t count = 0;
 
-	for (auto& i : instances)
+	for (auto& i : instances_)
 	{
 		if (i.load_palette(path))
 		{
@@ -810,14 +800,14 @@ bool LanternCollection::load_palette(const std::string& path)
 		}
 	}
 
-	return count == instances.size();
+	return count == instances_.size();
 }
 
 bool LanternCollection::load_source(Sint32 level, Sint32 act)
 {
 	size_t count = 0;
 
-	for (auto& i : instances)
+	for (auto& i : instances_)
 	{
 		if (i.load_source(level, act))
 		{
@@ -825,14 +815,14 @@ bool LanternCollection::load_source(Sint32 level, Sint32 act)
 		}
 	}
 
-	return count == instances.size();
+	return count == instances_.size();
 }
 
 bool LanternCollection::load_source(const std::string& path)
 {
 	size_t count = 0;
 
-	for (auto& i : instances)
+	for (auto& i : instances_)
 	{
 		if (i.load_source(path))
 		{
@@ -840,17 +830,16 @@ bool LanternCollection::load_source(const std::string& path)
 		}
 	}
 
-	return count == instances.size();
+	return count == instances_.size();
 }
 
-// TODO: solve duplicate code by having PL and SL classes which inherit a common interface
 bool LanternCollection::run_pl_callbacks(Sint32 level, Sint32 act, Sint8 time)
 {
 	bool result = false;
 
-	for (auto& cb : pl_callbacks)
+	for (const auto& callback : pl_callbacks_)
 	{
-		const auto path_ptr = cb(level, act);
+		const auto path_ptr = callback(level, act);
 
 		if (path_ptr == nullptr)
 		{
@@ -859,9 +848,11 @@ bool LanternCollection::run_pl_callbacks(Sint32 level, Sint32 act, Sint8 time)
 
 		std::string path_str = path_ptr;
 
-		for (auto& instance : instances)
+		for (auto& instance : instances_)
 		{
-			if (level == instance.last_level && act == instance.last_act && time == instance.last_time)
+			if (level == instance.last_level_ &&
+			    act == instance.last_act_ &&
+			    time == instance.last_time_)
 			{
 				result = true;
 				break;
@@ -872,9 +863,9 @@ bool LanternCollection::run_pl_callbacks(Sint32 level, Sint32 act, Sint8 time)
 				return false;
 			}
 
-			instance.last_time  = time;
-			instance.last_level = level;
-			instance.last_act   = act;
+			instance.last_time_  = time;
+			instance.last_level_ = level;
+			instance.last_act_   = act;
 
 			result = true;
 		}
@@ -892,9 +883,9 @@ bool LanternCollection::run_sl_callbacks(Sint32 level, Sint32 act, Sint8 time)
 {
 	bool result = false;
 
-	for (auto& cb : sl_callbacks)
+	for (const auto& callback : sl_callbacks_)
 	{
-		const char* path_ptr = cb(level, act);
+		const char* path_ptr = callback(level, act);
 
 		if (path_ptr == nullptr)
 		{
@@ -903,9 +894,11 @@ bool LanternCollection::run_sl_callbacks(Sint32 level, Sint32 act, Sint8 time)
 
 		const std::string path_str = path_ptr;
 
-		for (auto& instance : instances)
+		for (auto& instance : instances_)
 		{
-			if (level == instance.last_level && act == instance.last_act && time == instance.last_time)
+			if (level == instance.last_level_ &&
+			    act == instance.last_act_ &&
+			    time == instance.last_time_)
 			{
 				result = true;
 				break;
@@ -916,9 +909,9 @@ bool LanternCollection::run_sl_callbacks(Sint32 level, Sint32 act, Sint8 time)
 				return false;
 			}
 
-			instance.last_time  = time;
-			instance.last_level = level;
-			instance.last_act   = act;
+			instance.last_time_  = time;
+			instance.last_level_ = level;
+			instance.last_act_   = act;
 
 			result = true;
 		}
@@ -937,9 +930,9 @@ bool LanternCollection::load_files()
 	const auto time = GetTimeOfDay();
 	size_t count = 0;
 
-	if (instances.empty())
+	if (instances_.empty())
 	{
-		instances.emplace_back(&param::PaletteA);
+		instances_.emplace_back(&param::PaletteA);
 	}
 
 	const bool pl_handled = run_pl_callbacks(CurrentLevel, CurrentAct, time);
@@ -959,7 +952,7 @@ bool LanternCollection::load_files()
 		return true;
 	}
 
-	for (auto& instance : instances)
+	for (auto& instance : instances_)
 	{
 		// This is a fallback for cases where stage acts
 		// palettes from the previous acts.
@@ -973,8 +966,10 @@ bool LanternCollection::load_files()
 				GetTimeOfDayLevelAndAct(&level, &act);
 			}
 
-			if (!pl_handled && !sl_handled
-			    && level == instance.last_level && act == instance.last_act && time == instance.last_time)
+			if (!pl_handled && !sl_handled &&
+			    level == instance.last_level_ &&
+			    act == instance.last_act_ &&
+			    time == instance.last_time_)
 			{
 				break;
 			}
@@ -988,14 +983,14 @@ bool LanternCollection::load_files()
 
 			if (!sl_handled)
 			{
-				// Source light loading on the other hand is not a
-				// requirement, so failure is fine.
+				// Source light loading on the other hand is not
+				// a requirement, so failure is fine.
 				instance.load_source(CurrentLevel, i);
 			}
 
-			instance.last_time  = time;
-			instance.last_level = level;
-			instance.last_act   = act;
+			instance.last_time_  = time;
+			instance.last_level_ = level;
+			instance.last_act_   = act;
 
 			LanternInstance::use_palette_ = false;
 			d3d::do_effect = false;
@@ -1004,12 +999,12 @@ bool LanternCollection::load_files()
 		}
 	}
 
-	return count == instances.size();
+	return count == instances_.size();
 }
 
 void LanternCollection::set_palettes(Sint32 type, Uint32 flags)
 {
-	for (auto& i : instances)
+	for (auto& i : instances_)
 	{
 		i.set_palettes(type, flags);
 	}
@@ -1017,7 +1012,7 @@ void LanternCollection::set_palettes(Sint32 type, Uint32 flags)
 
 void LanternCollection::diffuse_index(Sint32 value)
 {
-	for (auto& i : instances)
+	for (auto& i : instances_)
 	{
 		i.diffuse_index(value);
 	}
@@ -1025,15 +1020,25 @@ void LanternCollection::diffuse_index(Sint32 value)
 
 void LanternCollection::specular_index(Sint32 value)
 {
-	for (auto& i : instances)
+	for (auto& i : instances_)
 	{
 		i.specular_index(value);
 	}
 }
 
+Sint32 LanternCollection::diffuse_index()
+{
+	return -1;
+}
+
+Sint32 LanternCollection::specular_index()
+{
+	return -1;
+}
+
 void LanternCollection::light_direction(const NJS_VECTOR& d)
 {
-	for (auto& i : instances)
+	for (auto& i : instances_)
 	{
 		i.light_direction(d);
 	}
@@ -1041,21 +1046,20 @@ void LanternCollection::light_direction(const NJS_VECTOR& d)
 
 const NJS_VECTOR& LanternCollection::light_direction()
 {
-	return instances[0].light_direction();
+	return instances_[0].light_direction();
 }
 
 void LanternCollection::forward_blend_all(bool enable)
 {
-	for (int i = 0; i < 8; i++)
+	for (size_t i = 0; i < LanternInstance::palette_index_count; i++)
 	{
-		const auto n = enable ? i : -1;
+		const auto n = enable ? static_cast<Sint32>(i) : -1;
 		diffuse_blend_[i]  = n;
 		specular_blend_[i] = n;
 	}
 }
 
-__forceinline
-void _blend_all(Sint32 (&src_array)[8], int value)
+inline void blend_all(std::array<Sint32, LanternInstance::palette_index_count>& src_array, Sint32 value)
 {
 	for (auto& i : src_array)
 	{
@@ -1065,12 +1069,12 @@ void _blend_all(Sint32 (&src_array)[8], int value)
 
 void LanternCollection::diffuse_blend_all(int value)
 {
-	_blend_all(diffuse_blend_, value);
+	blend_all(diffuse_blend_, value);
 }
 
 void LanternCollection::specular_blend_all(int value)
 {
-	_blend_all(specular_blend_, value);
+	blend_all(specular_blend_, value);
 }
 
 void LanternCollection::diffuse_blend(int index, int value)
@@ -1093,9 +1097,14 @@ int LanternCollection::specular_blend(int index) const
 	return specular_blend_[index];
 }
 
+inline float index_float(Sint32 i, Sint32 offset)
+{
+	return (static_cast<float>(2 * i + offset) + 0.5f) / static_cast<float>(2 * LanternInstance::palette_index_count);
+}
+
 void LanternCollection::apply_parameters()
 {
-	if (instances.empty())
+	if (instances_.empty())
 	{
 		return;
 	}
@@ -1106,17 +1115,17 @@ void LanternCollection::apply_parameters()
 	// .x is diffuse, .y is specular.
 	D3DXVECTOR2 blend_factors { 0.0f, 0.0f };
 
-	LanternInstance& i = instances[0];
+	LanternInstance& i = instances_[0];
 
 	const int d = i.diffuse_index();
 
 	if (d >= 0)
 	{
-		indices.x = _index_float(d, 0);
+		indices.x = index_float(d, 0);
 
 		if (diffuse_blend_[d] >= 0)
 		{
-			indices.y       = _index_float(diffuse_blend_[d], 0);
+			indices.y       = index_float(diffuse_blend_[d], 0);
 			blend_factors.x = LanternInstance::diffuse_blend_factor_;
 		}
 	}
@@ -1125,17 +1134,22 @@ void LanternCollection::apply_parameters()
 
 	if (s >= 0)
 	{
-		indices.z = _index_float(s, 1);
+		indices.z = index_float(s, 1);
 
 		if (specular_blend_[s] >= 0)
 		{
-			indices.w       = _index_float(specular_blend_[s], 1);
+			indices.w       = index_float(specular_blend_[s], 1);
 			blend_factors.y = LanternInstance::specular_blend_factor_;
 		}
 	}
 
 	param::Indices     = indices;
 	param::BlendFactor = blend_factors;
+}
+
+LanternInstance& LanternCollection::operator[](size_t i)
+{
+	return instances_[i];
 }
 
 void LanternCollection::callback_add(std::deque<lantern_load_cb>& c, lantern_load_cb callback)
@@ -1156,49 +1170,54 @@ void LanternCollection::callback_del(std::deque<lantern_load_cb>& c, lantern_loa
 
 size_t LanternCollection::add(LanternInstance& src)
 {
-	instances.emplace_back(std::move(src));
-	return instances.size() - 1;
+	instances_.emplace_back(std::move(src));
+	return instances_.size() - 1;
 }
 
 void LanternCollection::remove(size_t index)
 {
-	instances.erase(instances.begin() + index);
+	instances_.erase(instances_.begin() + index);
+}
+
+size_t LanternCollection::size() const
+{
+	return instances_.size();
 }
 
 void LanternCollection::add_pl_callback(lantern_load_cb callback)
 {
-	callback_add(pl_callbacks, callback);
+	callback_add(pl_callbacks_, callback);
 }
 
 void LanternCollection::palette_from_rgb(int index, Uint8 r, Uint8 g, Uint8 b, bool specular, bool apply)
 {
-	LanternInstance& i = instances[0];
+	LanternInstance& i = instances_[0];
 	i.palette_from_rgb(index, r, g, b, specular, apply);
 }
 
-void LanternCollection::palette_from_array(int index, NJS_ARGB* colors, bool specular, bool apply)
+void LanternCollection::palette_from_array(int index, const NJS_ARGB* colors, bool specular, bool apply)
 {
-	LanternInstance& i = instances[0];
+	LanternInstance& i = instances_[0];
 	i.palette_from_array(index, colors, specular, apply);
 }
 
 void LanternCollection::palette_from_mix(int index, int index_source, Uint8 r, Uint8 g, Uint8 b, bool specular, bool apply)
 {
-	LanternInstance& i = instances[0];
+	LanternInstance& i = instances_[0];
 	i.palette_from_mix(index, index_source, r, g, b, specular, apply);
 }
 
 void LanternCollection::remove_pl_callback(lantern_load_cb callback)
 {
-	callback_del(pl_callbacks, callback);
+	callback_del(pl_callbacks_, callback);
 }
 
 void LanternCollection::add_sl_callback(lantern_load_cb callback)
 {
-	callback_add(sl_callbacks, callback);
+	callback_add(sl_callbacks_, callback);
 }
 
 void LanternCollection::remove_sl_callback(lantern_load_cb callback)
 {
-	callback_del(sl_callbacks, callback);
+	callback_del(sl_callbacks_, callback);
 }

@@ -145,7 +145,7 @@ void diffuse_override_rgb(float r, float g, float b, bool permanent)
 
 void set_diffuse_blend(int32_t src, int32_t dest)
 {
-	if (dest < -1 || dest > 7)
+	if (dest < -1 || dest >= static_cast<int32_t>(LanternInstance::palette_index_count))
 	{
 		return;
 	}
@@ -158,7 +158,7 @@ void set_diffuse_blend(int32_t src, int32_t dest)
 		return;
 	}
 
-	if (src < 0 || src > 7)
+	if (src < 0 || src >= static_cast<int32_t>(LanternInstance::palette_index_count))
 	{
 		return;
 	}
@@ -168,7 +168,7 @@ void set_diffuse_blend(int32_t src, int32_t dest)
 
 void set_specular_blend(int32_t src, int32_t dest)
 {
-	if (dest < -1 || dest > 7)
+	if (dest < -1 || dest >= static_cast<int32_t>(LanternInstance::palette_index_count))
 	{
 		return;
 	}
@@ -181,7 +181,7 @@ void set_specular_blend(int32_t src, int32_t dest)
 		return;
 	}
 
-	if (src < 0 || src > 7)
+	if (src < 0 || src >= static_cast<int32_t>(LanternInstance::palette_index_count))
 	{
 		return;
 	}
@@ -191,7 +191,7 @@ void set_specular_blend(int32_t src, int32_t dest)
 
 int32_t get_diffuse_blend(int32_t src)
 {
-	if (src < 0 || src > 7)
+	if (src < 0 || src >= static_cast<int32_t>(LanternInstance::palette_index_count))
 	{
 		return -1;
 	}
@@ -201,7 +201,7 @@ int32_t get_diffuse_blend(int32_t src)
 
 int32_t get_specular_blend(int32_t src)
 {
-	if (src < 0 || src > 7)
+	if (src < 0 || src >= static_cast<int32_t>(LanternInstance::palette_index_count))
 	{
 		return -1;
 	}
