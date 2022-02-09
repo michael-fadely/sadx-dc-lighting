@@ -539,13 +539,19 @@ extern "C"
 		// Material callback hijack
 		WriteJump(reinterpret_cast<void*>(0x0040A340), CorrectMaterial_r);
 
-		FixCharacterMaterials();
-		FixChaoGardenMaterials();
+		// Material fixes 
+		GetPrivateProfileStringA("Enhancements", "MaterialFixes", "True", str.data(), str.size(), config_path.c_str());
+		if (!strcmp(str.data(), "True"))
+		{
+			FixCharacterMaterials();
+			FixChaoGardenMaterials();
+		}
+
 		Past_Init();
 		SkyDeck_Init();
 		Chaos7_Init();
 
-		//Title screen hack
+		// Title screen hack
 		WriteCall(reinterpret_cast<void*>(0x00510125), TitleScreenHack);
 
 		// Vertex normal correction for certain objects in
