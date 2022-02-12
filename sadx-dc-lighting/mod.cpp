@@ -565,6 +565,10 @@ extern "C"
 
 		NormalScaleMultiplier = { 1.0f, 1.0f, 1.0f };
 
+		// Do not force add NJD_FLAG_IGNORE_LIGHT for 
+		// queued models. This prevents the game from 
+		// disabling lighting on transparent models.
+		WriteData<10>(reinterpret_cast<void*>(0x0040889C), 0x90i8);
 	}
 
 #ifdef _DEBUG
