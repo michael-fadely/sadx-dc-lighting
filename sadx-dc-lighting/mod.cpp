@@ -23,7 +23,6 @@
 #include "Obj_Chaos7.h"
 #include "FixChaoGardenMaterials.h"
 #include "FixCharacterMaterials.h"
-#include "polybuff.h"
 #include "apiconfig.h"
 
 static Trampoline* CharSel_LoadA_t                 = nullptr;
@@ -563,7 +562,6 @@ extern "C"
 
 		NormalScaleMultiplier = { 1.0f, 1.0f, 1.0f };
 
-		polybuff::rewrite_init();
 	}
 
 #ifdef _DEBUG
