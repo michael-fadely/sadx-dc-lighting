@@ -340,28 +340,16 @@ static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
 {
 	if (texlist != Direct3D_CurrentTexList)
 	{
-		param::AllowVertexColor = true;
-
 		if (!globals::light_type)
 		{
-			if (texlist == CommonTextures)
+			if (!CurrentLandTable || texlist == CurrentLandTable->TexList)
 			{
-				globals::palettes.set_palettes(0, 0);
-				param::AllowVertexColor = apiconfig::object_vcolor;
+				param::AllowVertexColor = true;
 			}
 			else
 			{
-				for (int i = 0; i < 4; i++)
-				{
-					if (LevelObjTexlists[i] != texlist)
-					{
-						continue;
-					}
-
-					globals::palettes.set_palettes(0, 0);
-					param::AllowVertexColor = apiconfig::object_vcolor;
-					break;
-				}
+				globals::palettes.set_palettes(0, 0);
+				param::AllowVertexColor = apiconfig::object_vcolor;
 			}
 		}
 	}
