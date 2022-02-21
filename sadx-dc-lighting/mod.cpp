@@ -131,11 +131,11 @@ static void __cdecl CorrectMaterial_r()
 	device->SetMaterial(&material);
 }
 
-inline void fix_default_color(Uint32& color)
+inline void fix_default_color(Uint32& color, bool polybuff = false)
 {
 	// HACK: fixes stupid default material color
 	// TODO: toggle? What if someone actually wants this color?
-	if ((color & 0xFFFFFF) == 0xB2B2B2)
+	if ((color & 0xFFFFFF) == 0xB2B2B2 || (polybuff && !apiconfig::object_vcolor))
 	{
 		color |= 0xFFFFFF;
 	}
@@ -203,7 +203,7 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 
 	if (!(flags & NJD_FLAG_IGNORE_LIGHT))
 	{
-		fix_default_color(PolyBuffVertexColor.color);
+		fix_default_color(PolyBuffVertexColor.color, true);
 		fix_default_color(LandTableVertexColor.color);
 	}
 

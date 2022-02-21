@@ -120,9 +120,9 @@ float CalcFogFactor(float d)
 
 float4 GetDiffuse(in float4 vcolor)
 {
-	float4 color = (DiffuseSource == D3DMCS_COLOR1 && any(vcolor)) ? vcolor : MaterialDiffuse;
+	float4 color = (AllowVertexColor && DiffuseSource == D3DMCS_COLOR1 && any(vcolor)) ? vcolor : MaterialDiffuse;
 
-	if (!AllowVertexColor || ForceDefaultDiffuse)
+	if (ForceDefaultDiffuse)
 	{
 		return float4(1, 1, 1, color.a);
 	}
