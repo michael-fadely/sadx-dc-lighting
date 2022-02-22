@@ -342,13 +342,13 @@ static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
 	{
 		if (!globals::light_type)
 		{
+			globals::palettes.set_palettes(0, 0);
 			if (!CurrentLandTable || texlist == CurrentLandTable->TexList)
 			{
 				param::AllowVertexColor = true;
 			}
 			else
 			{
-				globals::palettes.set_palettes(0, 0);
 				param::AllowVertexColor = apiconfig::object_vcolor;
 			}
 		}
