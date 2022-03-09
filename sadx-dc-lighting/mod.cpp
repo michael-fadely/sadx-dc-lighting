@@ -340,16 +340,28 @@ static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
 {
 	if (texlist != Direct3D_CurrentTexList)
 	{
+		param::AllowVertexColor = true;
+
 		if (!globals::light_type)
 		{
 			globals::palettes.set_palettes(0, 0);
-			if (!CurrentLandTable || texlist == CurrentLandTable->TexList)
+			if (texlist == CommonTextures || texlist == &OBJ_CASINO9_TEXLIST || texlist == &OBJ_CASINO2_TEXLIST)
 			{
-				param::AllowVertexColor = true;
+				param::AllowVertexColor = apiconfig::object_vcolor;
 			}
 			else
 			{
-				param::AllowVertexColor = apiconfig::object_vcolor;
+				for (int i = 0; i < 4; i++)
+				{
+					// This array doesn't include Casinopolis object texlists so those are handled separately
+					if (LevelObjTexlists[i] != texlist)
+					{
+						continue;
+					}
+
+					param::AllowVertexColor = apiconfig::object_vcolor;
+					break;
+				}
 			}
 		}
 	}
