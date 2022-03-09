@@ -135,7 +135,7 @@ inline void fix_default_color(Uint32& color, bool polybuff = false)
 {
 	// HACK: fixes stupid default material color
 	// TODO: toggle? What if someone actually wants this color?
-	if ((color & 0xFFFFFF) == 0xB2B2B2 || (polybuff && !apiconfig::object_vcolor))
+	if ((color & 0xFFFFFF) == 0xB2B2B2 || (polybuff && !apiconfig::object_mcolor))
 	{
 		color |= 0xFFFFFF;
 	}
