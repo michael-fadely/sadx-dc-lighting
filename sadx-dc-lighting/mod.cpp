@@ -569,6 +569,9 @@ extern "C"
 		// queued models. This prevents the game from 
 		// disabling lighting on transparent models.
 		WriteData<10>(reinterpret_cast<void*>(0x0040889C), 0x90i8);
+
+		// Fix normal scale pointer being filled with garbage
+		WriteData<58>(reinterpret_cast<void*>(0x00412746), 0x90i8);
 	}
 
 #ifdef _DEBUG
