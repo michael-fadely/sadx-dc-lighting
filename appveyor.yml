@@ -3,7 +3,8 @@ version: 1.4.{build}-{branch}
 pull_requests:
   do_not_increment_build_number: true
  
-image: Visual Studio 2015
+image: Visual Studio 2017
+platform: x86
 configuration: Release
 
 install:

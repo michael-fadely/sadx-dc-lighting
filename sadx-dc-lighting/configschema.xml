@@ -2,8 +2,11 @@
 <ConfigSchema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://www.sonicretro.org">
   <Groups>
     <Group name="Enhancements">
-      <Property name="RangeFog" type="bool" defaultvalue="false">
+      <Property name="RangeFog" type="bool" defaultvalue="False">
         <HelpText>Enables enhanced range-based fog.</HelpText>
+      </Property>
+      <Property name="MaterialFixes" type="bool" defaultvalue="True">
+        <HelpText>Enables material hacks to improve lighting consistency with vanilla DX models.</HelpText>
       </Property>
     </Group>
   </Groups>

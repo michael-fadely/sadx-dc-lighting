@@ -12,8 +12,8 @@ class apiconfig
 public:
 	static std::unordered_map<const NJS_MATERIAL*, std::deque<lantern_material_cb>> material_callbacks;
 
-	static bool landtable_specular;
 	static bool object_vcolor;
+	static bool object_mcolor;
 	static bool override_light_dir;
 
 	static NJS_VECTOR light_dir_override;

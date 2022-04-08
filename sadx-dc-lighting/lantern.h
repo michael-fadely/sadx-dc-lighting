@@ -3,6 +3,7 @@
 #include <ninja.h>
 #include <array>
 #include <deque>
+#include <string>
 #include <SADXStructs.h>
 
 #include "ShaderParameter.h"
@@ -60,8 +61,6 @@ struct ColorPair
 #pragma pack(pop)
 
 static_assert(sizeof(SourceLight) == 0x60, "SourceLight size mismatch");
-template<> bool ShaderParameter<SourceLight_t>::commit(IDirect3DDevice9* device);
-template<> bool ShaderParameter<StageLights>::commit(IDirect3DDevice9* device);
 
 class ILantern
 {
@@ -82,38 +81,60 @@ public:
 	virtual const NJS_VECTOR& light_direction() = 0;
 };
 
+class LanternCollection;
+
 class LanternInstance : ILantern
 {
-	// TODO: handle externally
-	ShaderParameter<Texture>* atlas;
-	std::array<ColorPair, 256 * 8> palette_pairs {};
-	SourceLight source_lights[16] {};
-	NJS_VECTOR sl_direction {};
+	friend class LanternCollection;
 
-	void copy(LanternInstance& inst);
+public:
+	/**
+	 * \brief The maximum number of palette indices.
+	 */
+	static constexpr size_t palette_index_count = 8;
+
+	/**
+	 * \brief The number of diffuse/specular pairs in a given palette index.
+	 */
+	static constexpr size_t palette_index_length = 256;
+
+	/**
+	 * \brief The maximum number of source lights.
+	 */
+	static constexpr size_t source_light_count = 16;
+
+private:
+	// TODO: handle externally
+	ShaderParameter<Texture>* atlas_;
+	std::array<ColorPair, palette_index_count * palette_index_length> palette_pairs_ {};
+	std::array<SourceLight, source_light_count> source_lights_ {};
+	NJS_VECTOR sl_direction_ {};
+
+	Sint32 diffuse_index_ = -1;
+	Sint32 specular_index_ = -1;
+
+	Sint8  last_time_ = -1;
+	Sint32 last_act_ = -1;
+	Sint32 last_level_ = -1;
+
+	static bool use_palette_;
+	static float diffuse_blend_factor_;
+	static float specular_blend_factor_;
 
 public:
 	explicit LanternInstance(ShaderParameter<Texture>* atlas);
-	LanternInstance(LanternInstance&& inst) noexcept;
+	LanternInstance(LanternInstance&& other) noexcept;
+	LanternInstance(const LanternInstance&) = delete;
 
-	LanternInstance(const LanternInstance&) = default;
+	LanternInstance& operator=(LanternInstance&) = delete;
 	LanternInstance& operator=(LanternInstance&&) noexcept;
 
-	~LanternInstance();
+	~LanternInstance() override;
 
 	static bool diffuse_override;
 	static bool diffuse_override_is_temp;
 	static bool specular_override;
 	static bool specular_override_is_temp;
-	static float diffuse_blend_factor_;
-	static float specular_blend_factor_;
-	static bool use_palette_;
-
-	Sint8  last_time  = -1;
-	Sint32 last_act   = -1;
-	Sint32 last_level = -1;
-	Sint32 diffuse_   = -1;
-	Sint32 specular_  = -1;
 
 	static bool use_palette();
 	static float diffuse_blend_factor();
@@ -125,6 +146,9 @@ public:
 
 	bool load_palette(Sint32 level, Sint32 act) override;
 	bool load_palette(const std::string& path) override;
+	void palette_from_rgb(int index, Uint8 r, Uint8 g, Uint8 b, bool specular, bool apply);
+	void palette_from_array(int index, const NJS_ARGB* colors, bool specular, bool apply);
+	void palette_from_mix(int index, int index_source, Uint8 r, Uint8 g, Uint8 b, bool specular, bool apply);
 	void generate_atlas();
 	bool load_source(Sint32 level, Sint32 act) override;
 	bool load_source(const std::string& path) override;
@@ -140,25 +164,24 @@ public:
 
 class LanternCollection : ILantern
 {
-	std::deque<LanternInstance> instances;
-	std::deque<lantern_load_cb> pl_callbacks;
-	std::deque<lantern_load_cb> sl_callbacks;
+	std::deque<LanternInstance> instances_;
+	std::deque<lantern_load_cb> pl_callbacks_;
+	std::deque<lantern_load_cb> sl_callbacks_;
 
 	static void callback_add(std::deque<lantern_load_cb>& c, lantern_load_cb callback);
 	static void callback_del(std::deque<lantern_load_cb>& c, lantern_load_cb callback);
 
-	Sint32 diffuse_blend_[8]  = { -1, -1, -1, -1, -1, -1, -1, -1 };
-	Sint32 specular_blend_[8] = { -1, -1, -1, -1, -1, -1, -1, -1 };
+	std::array<Sint32, LanternInstance::palette_index_count> diffuse_blend_  = { -1, -1, -1, -1, -1, -1, -1, -1 };
+	std::array<Sint32, LanternInstance::palette_index_count> specular_blend_ = { -1, -1, -1, -1, -1, -1, -1, -1 };
 
 public:
 	size_t add(LanternInstance& src);
 	void remove(size_t index);
+	size_t size() const;
 
-	auto size() const
-	{
-		return instances.size();
-	}
-
+	void palette_from_rgb(int index, Uint8 r, Uint8 g, Uint8 b, bool specular, bool apply);
+	void palette_from_array(int index, const NJS_ARGB* colors, bool specular, bool apply);
+	void palette_from_mix(int index, int index_source, Uint8 r, Uint8 g, Uint8 b, bool specular, bool apply);
 	void add_pl_callback(lantern_load_cb callback);
 	void remove_pl_callback(lantern_load_cb callback);
 	void add_sl_callback(lantern_load_cb callback);
@@ -168,6 +191,7 @@ public:
 	bool load_files();
 
 	// TODO: Expose to API when explicit multi-palette management is implemented.
+	// TODO: Rewrite and reformat documentation below.
 	/// Blend all indices of diffuse and specular to the same index
 	/// of a secondary palette atlas.
 	void forward_blend_all(bool enable);
@@ -186,10 +210,7 @@ public:
 	/// Apply necessary shader parameters.
 	void apply_parameters();
 
-	LanternInstance& operator[](size_t i)
-	{
-		return instances[i];
-	}
+	LanternInstance& operator[](size_t i);
 
 	bool load_palette(Sint32 level, Sint32 act) override;
 	bool load_palette(const std::string& path) override;
@@ -199,17 +220,8 @@ public:
 	void set_palettes(Sint32 type, Uint32 flags) override;
 	void diffuse_index(Sint32 value) override;
 	void specular_index(Sint32 value) override;
-
-	Sint32 diffuse_index() override
-	{
-		return -1;
-	}
-
-	Sint32 specular_index() override
-	{
-		return -1;
-	}
-
+	Sint32 diffuse_index() override;
+	Sint32 specular_index() override;
 	void light_direction(const NJS_VECTOR& d) override;
 	const NJS_VECTOR& light_direction() override;
 };

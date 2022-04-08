@@ -23,7 +23,6 @@
 #include "Obj_Chaos7.h"
 #include "FixChaoGardenMaterials.h"
 #include "FixCharacterMaterials.h"
-#include "polybuff.h"
 #include "apiconfig.h"
 
 static Trampoline* CharSel_LoadA_t                 = nullptr;
@@ -34,7 +33,6 @@ static Trampoline* LoadLevelFiles_t                = nullptr;
 static Trampoline* SetLevelAndAct_t                = nullptr;
 static Trampoline* GoToNextChaoStage_t             = nullptr;
 static Trampoline* SetTimeOfDay_t                  = nullptr;
-static Trampoline* DrawLandTable_t                 = nullptr;
 static Trampoline* Direct3D_SetTexList_t           = nullptr;
 static Trampoline* SetCurrentStageLights_t         = nullptr;
 static Trampoline* SetCurrentStageLight_EggViper_t = nullptr;
@@ -97,10 +95,10 @@ static void update_material(const D3DMATERIAL9& material)
 		return;
 	}
 
-	D3DMATERIALCOLORSOURCE colorsource;
-	device->GetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, reinterpret_cast<DWORD*>(&colorsource));
+	D3DMATERIALCOLORSOURCE color_source;
+	device->GetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, reinterpret_cast<DWORD*>(&color_source));
 
-	param::DiffuseSource   = colorsource;
+	param::DiffuseSource   = color_source;
 	param::MaterialDiffuse = material.Diffuse;
 }
 
@@ -133,11 +131,11 @@ static void __cdecl CorrectMaterial_r()
 	device->SetMaterial(&material);
 }
 
-inline void fix_default_color(Uint32& color)
+inline void fix_default_color(Uint32& color, bool polybuff = false)
 {
 	// HACK: fixes stupid default material color
 	// TODO: toggle? What if someone actually wants this color?
-	if ((color & 0xFFFFFF) == 0xB2B2B2)
+	if ((color & 0xFFFFFF) == 0xB2B2B2 || (polybuff && !apiconfig::object_mcolor))
 	{
 		color |= 0xFFFFFF;
 	}
@@ -203,8 +201,11 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 		flags = _nj_constant_attr_or_ | (_nj_constant_attr_and_ & flags);
 	}
 
-	fix_default_color(PolyBuffVertexColor.color);
-	fix_default_color(LandTableVertexColor.color);
+	if (!(flags & NJD_FLAG_IGNORE_LIGHT))
+	{
+		fix_default_color(PolyBuffVertexColor.color, true);
+		fix_default_color(LandTableVertexColor.color);
+	}
 
 	globals::palettes.set_palettes(globals::light_type, flags);
 
@@ -334,25 +335,6 @@ static void __cdecl LoadLevelFiles_r()
 	globals::palettes.load_files();
 }
 
-static void __cdecl DrawLandTable_r()
-{
-	if (apiconfig::landtable_specular)
-	{
-		TARGET_DYNAMIC(DrawLandTable)();
-		return;
-	}
-
-	const auto flag = _nj_control_3d_flag_;
-	const auto or   = _nj_constant_attr_or_;
-
-	_nj_control_3d_flag_ |= NJD_CONTROL_3D_CONSTANT_ATTR;
-	_nj_constant_attr_or_ |= NJD_FLAG_IGNORE_SPECULAR;
-
-	TARGET_DYNAMIC(DrawLandTable)();
-
-	_nj_control_3d_flag_ = flag;
-	_nj_constant_attr_or_ = or;
-}
 
 static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
 {
@@ -362,21 +344,21 @@ static Sint32 __fastcall Direct3D_SetTexList_r(NJS_TEXLIST* texlist)
 
 		if (!globals::light_type)
 		{
-			if (texlist == CommonTextures)
+			globals::palettes.set_palettes(0, 0);
+			if (texlist == CommonTextures || texlist == &OBJ_CASINO9_TEXLIST || texlist == &OBJ_CASINO2_TEXLIST)
 			{
-				globals::palettes.set_palettes(0, 0);
 				param::AllowVertexColor = apiconfig::object_vcolor;
 			}
 			else
 			{
 				for (int i = 0; i < 4; i++)
 				{
+					// This array doesn't include Casinopolis object texlists so those are handled separately
 					if (LevelObjTexlists[i] != texlist)
 					{
 						continue;
 					}
 
-					globals::palettes.set_palettes(0, 0);
 					param::AllowVertexColor = apiconfig::object_vcolor;
 					break;
 				}
@@ -478,6 +460,17 @@ static std::string build_mod_path(const char* modpath, const char* path)
 	return result.str();
 }
 
+void TitleScreenHack()
+{
+	SetLevelAndAct(0, 0);
+	NJS_VECTOR dir = { 0.0f, 0.0f, -1.0f };
+	njUnitVector(&dir);
+	globals::palettes.load_palette(globals::get_system_path("PL_TITLE.BIN"));
+	globals::palettes.light_direction(dir);
+	globals::palettes.set_last_level(CurrentLevel, CurrentAct);
+	globals::palettes.set_palettes(0, 0);
+}
+
 extern "C"
 {
 	EXPORT ModInfo SADXModInfo = { ModLoaderVer, nullptr, nullptr, 0, nullptr, 0, nullptr, 0, nullptr, 0 };
@@ -541,7 +534,6 @@ extern "C"
 		SetLevelAndAct_t                = new Trampoline(0x00414570, 0x00414576, SetLevelAndAct_r);
 		GoToNextChaoStage_t             = new Trampoline(0x00715130, 0x00715135, GoToNextChaoStage_r);
 		SetTimeOfDay_t                  = new Trampoline(0x00412C00, 0x00412C05, SetTimeOfDay_r);
-		DrawLandTable_t                 = new Trampoline(0x0043A6A0, 0x0043A6A8, DrawLandTable_r);
 		Direct3D_SetTexList_t           = new Trampoline(0x0077F3D0, 0x0077F3D8, Direct3D_SetTexList_r);
 		SetCurrentStageLights_t         = new Trampoline(0x0040A950, 0x0040A955, SetCurrentStageLights_r);
 		SetCurrentStageLight_EggViper_t = new Trampoline(0x0057E560, 0x0057E567, SetCurrentStageLight_EggViper_r);
@@ -549,11 +541,20 @@ extern "C"
 		// Material callback hijack
 		WriteJump(reinterpret_cast<void*>(0x0040A340), CorrectMaterial_r);
 
-		FixCharacterMaterials();
-		FixChaoGardenMaterials();
+		// Material fixes 
+		GetPrivateProfileStringA("Enhancements", "MaterialFixes", "True", str.data(), str.size(), config_path.c_str());
+		if (!strcmp(str.data(), "True"))
+		{
+			FixCharacterMaterials();
+			FixChaoGardenMaterials();
+		}
+
 		Past_Init();
 		SkyDeck_Init();
 		Chaos7_Init();
+
+		// Title screen hack
+		WriteCall(reinterpret_cast<void*>(0x00510125), TitleScreenHack);
 
 		// Vertex normal correction for certain objects in
 		// Red Mountain and Sky Deck.
@@ -564,7 +565,13 @@ extern "C"
 
 		NormalScaleMultiplier = { 1.0f, 1.0f, 1.0f };
 
-		polybuff::rewrite_init();
+		// Do not force add NJD_FLAG_IGNORE_LIGHT for 
+		// queued models. This prevents the game from 
+		// disabling lighting on transparent models.
+		WriteData<10>(reinterpret_cast<void*>(0x0040889C), 0x90i8);
+
+		// Fix normal scale pointer being filled with garbage
+		WriteData<58>(reinterpret_cast<void*>(0x00412746), 0x90i8);
 	}
 
 #ifdef _DEBUG

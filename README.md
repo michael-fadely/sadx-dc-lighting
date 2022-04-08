@@ -5,13 +5,17 @@
 
 ### Prerequisites
 - A graphics card which supports vertex texture sampling (i.e a graphics card released more recently than the year 2000).
-- Visual C++ Redistributable for Visual Studio 2015 (x86!): https://www.microsoft.com/en-us/download/details.aspx?id=48145
+- Visual C++ Redistributable for Visual Studio 2017 (x86!): https://aka.ms/vs/17/release/vc_redist.x86.exe
+- DirectX 9.0c end-user runtime: https://www.microsoft.com/en-us/download/details.aspx?id=8109
 - The latest* version of the SADX Mod Loader.
-- d3d8to9: https://github.com/crosire/d3d8to9/releases/latest
+- d3d8to9 (included in the Mod Loader as of 2022): https://github.com/crosire/d3d8to9/releases/latest
 
 \**If you have a reasonably new version, it has automatic update checking in the options tab. If not, download here and extract to your game's root directory: http://mm.reimuhakurei.net/sadxmods/SADXModLoader.7z*
 
 ### Installing d3d8to9
+In recent versions of the Mod Loader, d3d8to9 is included and enabled by default. Before using Lantern Engine, make sure "Enable Direct3D 9" is checked in the SADX Mod Manager's Graphics options. 
+
+To install d3d8to9 manually you can follow these steps:
 - Download d3d8.dll from https://github.com/crosire/d3d8to9/releases/latest.
 - Place d3d8.dll in the root of your SADX folder (where sonic.exe is).
 

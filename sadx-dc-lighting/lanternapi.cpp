@@ -37,7 +37,7 @@ void sl_load_unregister(lantern_load_cb callback)
 	globals::palettes.remove_sl_callback(callback);
 }
 
-void material_register(NJS_MATERIAL const* const* materials, size_t length, lantern_material_cb callback)
+void material_register(const NJS_MATERIAL** materials, size_t length, lantern_material_cb callback)
 {
 	if (!length || materials == nullptr || callback == nullptr)
 	{
@@ -46,7 +46,7 @@ void material_register(NJS_MATERIAL const* const* materials, size_t length, lant
 
 	for (size_t i = 0; i < length; i++)
 	{
-		auto material = materials[i];
+		const NJS_MATERIAL* material = materials[i];
 		auto it = apiconfig::material_callbacks.find(material);
 
 		if (it == apiconfig::material_callbacks.end())
@@ -60,7 +60,7 @@ void material_register(NJS_MATERIAL const* const* materials, size_t length, lant
 	}
 }
 
-void material_unregister(NJS_MATERIAL const* const* materials, size_t length, lantern_material_cb callback)
+void material_unregister(const NJS_MATERIAL** materials, size_t length, lantern_material_cb callback)
 {
 	if (!length || materials == nullptr || callback == nullptr)
 	{
@@ -89,11 +89,6 @@ void material_unregister(NJS_MATERIAL const* const* materials, size_t length, la
 void set_shader_flags(uint32_t flags, bool add)
 {
 	d3d::set_flags(flags, add);
-}
-
-void allow_landtable_specular(bool allow)
-{
-	apiconfig::landtable_specular = allow;
 }
 
 void set_diffuse(int32_t n, bool permanent)
@@ -131,6 +126,11 @@ void allow_object_vcolor(bool allow)
 	apiconfig::object_vcolor = allow;
 }
 
+void allow_object_mcolor(bool allow)
+{
+	apiconfig::object_mcolor = allow;
+}
+
 void use_default_diffuse(bool use)
 {
 	param::ForceDefaultDiffuse = use;
@@ -141,15 +141,16 @@ void diffuse_override(bool enable)
 	param::DiffuseOverride = enable;
 }
 
-void diffuse_override_rgb(float r, float g, float b)
+void diffuse_override_rgb(float r, float g, float b, bool permanent)
 {
 	const D3DXVECTOR3 color = { r, g, b };
 	param::DiffuseOverrideColor = color;
+	LanternInstance::diffuse_override_is_temp = !permanent;
 }
 
 void set_diffuse_blend(int32_t src, int32_t dest)
 {
-	if (dest < -1 || dest > 7)
+	if (dest < -1 || dest >= static_cast<int32_t>(LanternInstance::palette_index_count))
 	{
 		return;
 	}
@@ -162,7 +163,7 @@ void set_diffuse_blend(int32_t src, int32_t dest)
 		return;
 	}
 
-	if (src < 0 || src > 7)
+	if (src < 0 || src >= static_cast<int32_t>(LanternInstance::palette_index_count))
 	{
 		return;
 	}
@@ -172,7 +173,7 @@ void set_diffuse_blend(int32_t src, int32_t dest)
 
 void set_specular_blend(int32_t src, int32_t dest)
 {
-	if (dest < -1 || dest > 7)
+	if (dest < -1 || dest >= static_cast<int32_t>(LanternInstance::palette_index_count))
 	{
 		return;
 	}
@@ -185,7 +186,7 @@ void set_specular_blend(int32_t src, int32_t dest)
 		return;
 	}
 
-	if (src < 0 || src > 7)
+	if (src < 0 || src >= static_cast<int32_t>(LanternInstance::palette_index_count))
 	{
 		return;
 	}
@@ -195,7 +196,7 @@ void set_specular_blend(int32_t src, int32_t dest)
 
 int32_t get_diffuse_blend(int32_t src)
 {
-	if (src < 0 || src > 7)
+	if (src < 0 || src >= static_cast<int32_t>(LanternInstance::palette_index_count))
 	{
 		return -1;
 	}
@@ -205,7 +206,7 @@ int32_t get_diffuse_blend(int32_t src)
 
 int32_t get_specular_blend(int32_t src)
 {
-	if (src < 0 || src > 7)
+	if (src < 0 || src >= static_cast<int32_t>(LanternInstance::palette_index_count))
 	{
 		return -1;
 	}
@@ -271,4 +272,19 @@ void set_light_direction(const NJS_VECTOR* v)
 		apiconfig::override_light_dir = true;
 		apiconfig::light_dir_override = *v;
 	}
+}
+
+void palette_from_rgb(int index, Uint8 r, Uint8 g, Uint8 b, bool specular, bool apply)
+{
+	globals::palettes.palette_from_rgb(index, r, g, b, specular, apply);
+}
+
+void palette_from_array(int index, const NJS_ARGB* colors, bool specular, bool apply)
+{
+	globals::palettes.palette_from_array(index, colors, specular, apply);
+}
+
+void palette_from_mix(int index, int index_source, Uint8 r, Uint8 g, Uint8 b, bool specular, bool apply)
+{
+	globals::palettes.palette_from_mix(index, index_source, r, g, b, specular, apply);
 }

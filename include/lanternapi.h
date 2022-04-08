@@ -25,7 +25,7 @@ extern "C"
 
 	typedef enum
 	{
-		ShaderFlags_None,
+		ShaderFlags_None = 0,
 
 		/** \brief The shader should expect a diffuse texture. */
 		ShaderFlags_Texture = 1 << 0,
@@ -57,8 +57,7 @@ extern "C"
 		ShaderFlags_Mask = 0x7F,
 
 		/**
-		 * \brief The number of shader flags.
-		 * Can be considered the maximum number of shader permutations.
+		 * \brief The maximum number of shader permutations.
 		 */
 		ShaderFlags_Count
 	} ShaderFlags;
@@ -136,7 +135,7 @@ extern "C"
 	 * \sa lantern_material_cb
 	 * \sa material_unregister
 	 */
-	API void material_register(NJS_MATERIAL const* const* materials, size_t length, lantern_material_cb callback);
+	API void material_register(const NJS_MATERIAL** materials, size_t length, lantern_material_cb callback);
 
 	/**
 	 * \brief Unregisters a previously registered material callback.
@@ -147,7 +146,7 @@ extern "C"
 	 * \sa lantern_material_cb
 	 * \sa material_register
 	 */
-	API void material_unregister(NJS_MATERIAL const* const* materials, size_t length, lantern_material_cb callback);
+	API void material_unregister(const NJS_MATERIAL** materials, size_t length, lantern_material_cb callback);
 
 	/**
 	 * \brief Permanently add or remove material flags to be used during the next draw call.
@@ -159,14 +158,14 @@ extern "C"
 	API void set_shader_flags(uint32_t flags, bool add);
 
 	/**
-	 * \brief Enables or disables specular lighting for landtables (stage geometry).
-	 */
-	API void allow_landtable_specular(bool allow);
-
-	/**
-	 * \brief Enables or disables vertex colors for "objects" (characters, enemies, etc)
+	 * \brief Enables or disables vertex colors for "objects" (characters, enemies, etc).
 	 */
 	API void allow_object_vcolor(bool allow);
+	
+	/**
+	 * \brief Enables or disables material colors for non-level items.
+	 */
+	API void allow_object_mcolor(bool allow);
 
 	/**
 	 * \brief Forces shader input diffuse color to white.
@@ -201,11 +200,11 @@ extern "C"
 	 */
 	API void diffuse_override(bool enable);
 	/**
-	 * \brief Sets the shader input diffuse override color.
-	 * This replaces the input material and/or vertex color unconditionally.
+	 * \brief Temporarily (optionally permanently) sets the shader input diffuse override color.
+	 * This replaces the input material and/or vertex color.
 	 * \sa diffuse_override
 	 */
-	API void diffuse_override_rgb(float r, float g, float b);
+	API void diffuse_override_rgb(float r, float g, float b, bool permanent);
 
 	/**
 	 * \brief Gets the currently set diffuse index.
@@ -224,11 +223,11 @@ extern "C"
 	 * index to a destination diffuse index.
 	 *
 	 * \param src
-	 * Source index in the range -1 to 7.
+	 * Source index in the range -1 to 7 (inclusive).
 	 * -1 applies to all source indices.
 	 *
 	 * \param dest
-	 * Destination index in the range -1 to 7.
+	 * Destination index in the range -1 to 7 (inclusive).
 	 * -1 disables blending for the specified source index.
 	 */
 	API void set_diffuse_blend(int32_t src, int32_t dest);
@@ -238,11 +237,11 @@ extern "C"
 	 * index to a destination specular index.
 	 *
 	 * \param src
-	 * Source index in the range -1 to 7.
+	 * Source index in the range -1 to 7 (inclusive).
 	 * -1 applies to all source indices.
 	 *
 	 * \param dest
-	 * Destination index in the range -1 to 7.
+	 * Destination index in the range -1 to 7 (inclusive).
 	 * -1 disables blending for the specified source index.
 	 */
 	API void set_specular_blend(int32_t src, int32_t dest);
@@ -258,10 +257,10 @@ extern "C"
 	 * \brief Returns the current destination blend index
 	 * for the specified source diffuse index.
 	 *
-	 * \param src Source index in the range 0 to 7.
+	 * \param src Source index in the range 0 to 7 (inclusive).
 	 * Values outside this range will always return -1.
 	 *
-	 * \return A value in the range 0 to 7, or -1 if not set.
+	 * \return A value in the range 0 to 7 (inclusive), or -1 if not set.
 	 */
 	API int32_t get_diffuse_blend(int32_t src);
 
@@ -269,23 +268,23 @@ extern "C"
 	 * \brief Returns the current destination blend index
 	 * for the specified source specular index.
 	 *
-	 * \param src Source index in the range 0 to 7.
+	 * \param src Source index in the range 0 to 7 (inclusive).
 	 * Values outside this range will always return -1.
 	 *
-	 * \return A value in the range 0 to 7, or -1 if not set.
+	 * \return A value in the range 0 to 7 (inclusive), or -1 if not set.
 	 */
 	API int32_t get_specular_blend(int32_t src);
 
 	/**
 	 * \brief Set diffuse index blending factor.
-	 * \param factor A blending factor in the range 0.0f to 1.0f.
+	 * \param factor A blending factor in the range 0.0f to 1.0f (inclusive).
 	 * Behavior of values outside this range is undefined.
 	 */
 	API void set_diffuse_blend_factor(float factor);
 
 	/**
 	 * \brief Set specular index blending factor.
-	 * \param factor A blending factor in the range 0.0f to 1.0f.
+	 * \param factor A blending factor in the range 0.0f to 1.0f (inclusive).
 	 * Behavior of values outside this range is undefined.
 	 */
 	API void set_specular_blend_factor(float factor);
@@ -302,7 +301,7 @@ extern "C"
 
 	/**
 	 * \brief Set diffuse and specular index blending factor simultaneously.
-	 * \param factor A blending factor in the range 0.0f to 1.0f.
+	 * \param factor A blending factor in the range 0.0f to 1.0f (inclusive).
 	 * Behavior of values outside this range is undefined.
 	 * 
 	 * \sa set_diffuse_blend_factor
@@ -315,7 +314,7 @@ extern "C"
 	 * Note that this is separate from the one used by the
 	 * fixed-function pipeline.
 	 * 
-	 * \param threshold A threshold in the range 0.0f to 1.0f. The default value is (\c 16.0f / \c 255.0f).
+	 * \param threshold A threshold in the range 0.0f to 1.0f (inclusive). The default value is (\c 16.0f / \c 255.0f).
 	 * Behavior of values outside this range is undefined.
 	 * \param permanent If \c true, the value will persist after the next draw call.
 	 * If \c false, the value will reset to the last permanent value.
@@ -323,7 +322,8 @@ extern "C"
 	API void set_alpha_reject(float threshold, bool permanent);
 
 	/**
-	 * \brief Gets the shader alpha rejection threshold. The default value is (\c 16.0f / \c 255.0f).
+	 * \brief Gets the shader alpha rejection threshold in the range 0.0f to 1.0f  (inclusive).
+	 * The default value is (\c 16.0f / \c 255.0f).
 	 * Note that this is separate from the one used by the
 	 * fixed-function pipeline.
 	 * 
@@ -337,8 +337,43 @@ extern "C"
 	 */
 	API void set_light_direction(const NJS_VECTOR* v);
 
+	/**
+	 * \brief Fills a specified palette with a single color.
+	 * \param index Palette ID.
+	 * \param r Red (0-255).
+	 * \param g Green (0-255).
+	 * \param b Blue (0-255).
+	 * \param specular If \c true, replace the specular palette. If \c false, replace the diffuse palette.
+	 * \param apply Apply changes by regenerating the palette atlas.
+	 */
+	API void palette_from_rgb(int index, Uint8 r, Uint8 g, Uint8 b, bool specular, bool apply);
+
+	/**
+	 * \brief Fills a specified palette with colors from an array.
+	 * \param index Palette ID.
+	 * \param colors Array of 256 NJS_ARGB colors.
+	 * \param specular If \c true, replace the specular palette. If \c false, replace the diffuse palette.
+	 * \param apply Apply changes by regenerating the palette atlas.
+	 */
+	API void palette_from_array(int index, const NJS_ARGB* colors, bool specular, bool apply);
+
+	/**
+	 * \brief Creates a palette by mixing colors from an existing palette with a specified color.
+	 * \param index Palette ID to create.
+	 * \param index_source Source palette ID.
+	 * \param r Red component to mix (0-255).
+	 * \param g Green component to mix (0-255).
+	 * \param b Blue component to mix (0-255).
+	 * \param specular If \c true, replace the specular palette. If \c false, replace the diffuse palette.
+	 * \param apply Apply changes by regenerating the palette atlas.
+	 */
+	API void palette_from_mix(int index, int index_source, Uint8 r, Uint8 g, Uint8 b, bool specular, bool apply);
+
 #ifdef __cplusplus
 }
 #endif
+
+/* Make sure not to pollute the preprocessor.Somebody else might want to use "API". */
+#undef API
 
 #endif /* _LANTERNAPI_H */
