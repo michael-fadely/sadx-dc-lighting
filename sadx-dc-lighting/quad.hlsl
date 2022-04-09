@@ -1,5 +1,6 @@
 Texture2D tex : register(t1);
 
+// FIXME: copy/pasted
 #define SAMPLER_DEFAULT     \
 	MinFilter = Point;      \
 	MagFilter = Point;      \
