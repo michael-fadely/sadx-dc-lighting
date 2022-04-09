@@ -187,18 +187,18 @@ namespace local
 	static Trampoline* Direct3D_SetProjectionMatrix_t     = nullptr;
 	static Trampoline* Direct3D_SetViewportAndTransform_t = nullptr;
 	static Trampoline* Direct3D_SetWorldTransform_t       = nullptr;
-	static Trampoline* CreateDirect3DDevice_t       = nullptr;
-	static Trampoline* PolyBuff_DrawTriangleStrip_t = nullptr;
-	static Trampoline* PolyBuff_DrawTriangleList_t  = nullptr;
-	static Trampoline* RunObjectIndex_t             = nullptr;
-	static Trampoline* RunObjectChildren_t          = nullptr;
-	static Trampoline* DrawLandTableObject_t        = nullptr;
-	static Trampoline* DisplayObjectIndex_t         = nullptr;
-	static Trampoline* DisplayObjectChildren_t              = nullptr;
-	static Trampoline* ProcessModelNode_t           = nullptr;
-	static Trampoline* ProcessModelNode_B_t         = nullptr;
-	static Trampoline* ProcessModelNode_C_t         = nullptr;
-	static Trampoline* ProcessModelNode_D_t         = nullptr;
+	static Trampoline* CreateDirect3DDevice_t             = nullptr;
+	static Trampoline* PolyBuff_DrawTriangleStrip_t       = nullptr;
+	static Trampoline* PolyBuff_DrawTriangleList_t        = nullptr;
+	static Trampoline* RunObjectIndex_t                   = nullptr;
+	static Trampoline* RunObjectChildren_t                = nullptr;
+	static Trampoline* DrawLandTableObject_t              = nullptr;
+	static Trampoline* DisplayObjectIndex_t               = nullptr;
+	static Trampoline* DisplayObjectChildren_t            = nullptr;
+	static Trampoline* ProcessModelNode_t                 = nullptr;
+	static Trampoline* ProcessModelNode_B_t               = nullptr;
+	static Trampoline* ProcessModelNode_C_t               = nullptr;
+	static Trampoline* ProcessModelNode_D_t               = nullptr;
 
 	static HRESULT __stdcall SetTransform_r(IDirect3DDevice9*, D3DTRANSFORMSTATETYPE State, CONST D3DMATRIX* pMatrix);
 
