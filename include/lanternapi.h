@@ -161,11 +161,6 @@ extern "C"
 	 * \brief Enables or disables vertex colors for "objects" (characters, enemies, etc).
 	 */
 	API void allow_object_vcolor(bool allow);
-	
-	/**
-	 * \brief Enables or disables material colors for non-level items.
-	 */
-	API void allow_object_mcolor(bool allow);
 
 	/**
 	 * \brief Forces shader input diffuse color to white.

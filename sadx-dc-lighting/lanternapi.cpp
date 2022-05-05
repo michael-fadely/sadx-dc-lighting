@@ -126,11 +126,6 @@ void allow_object_vcolor(bool allow)
 	apiconfig::object_vcolor = allow;
 }
 
-void allow_object_mcolor(bool allow)
-{
-	apiconfig::object_mcolor = allow;
-}
-
 void use_default_diffuse(bool use)
 {
 	param::ForceDefaultDiffuse = use;
