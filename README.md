@@ -5,7 +5,8 @@
 
 ### Prerequisites
 - A graphics card which supports vertex texture sampling (i.e a graphics card released more recently than the year 2000).
-- Visual C++ Redistributable for Visual Studio 2015 (x86!): https://www.microsoft.com/en-us/download/details.aspx?id=48145
+- Visual C++ Redistributable for Visual Studio 2017 (x86!): https://aka.ms/vs/17/release/vc_redist.x86.exe
+- DirectX 9.0c end-user runtime: https://www.microsoft.com/en-us/download/details.aspx?id=8109
 - The latest* version of the SADX Mod Loader.
 - d3d8to9 (included in the Mod Loader as of 2022): https://github.com/crosire/d3d8to9/releases/latest
 
