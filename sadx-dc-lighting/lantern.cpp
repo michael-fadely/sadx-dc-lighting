@@ -686,7 +686,7 @@ void LanternInstance::set_palettes(Sint32 type, Uint32 flags)
 	// SADX light types don't fully match SA1 light types so this remaps them
 	// SADX types 0 and 6 are SA1 type 0: stage and object lighting
 	// SADX types 2 and 4 are SA1 type 2: character and cutscene objects
-	// SADX type 8 is SA1 type 4: boss lighting (custom light type for mods)
+	// SADX type 5 is SA1 type 4: boss lighting (custom light type for mods)
 
 	Sint32 diffuse  = -1;
 	Sint32 specular = -1;
@@ -710,7 +710,7 @@ void LanternInstance::set_palettes(Sint32 type, Uint32 flags)
 			specular = ignore_specular ? 2 : 3;
 			break;
 
-		case 8:
+		case 5:
 			diffuse  = 4;
 			specular = ignore_specular ? 4 : 5;
 			break;
