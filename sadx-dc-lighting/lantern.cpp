@@ -682,17 +682,11 @@ void LanternInstance::set_palettes(Sint32 type, Uint32 flags)
 		return;
 	}
 #endif
-
-	// [0] 1-2 level geometry
-	// [1] 3-4 objects (springs etc.)
-	// [2] 5-6 player models & misc objects
-	// [3] 7-8 Tails' shoes and jump ball (sometimes? probably level-specific)
-
-	// type:
-	// 0: stage
-	// 2: character
-	// 4: shiny thing (super sonic, gamma)
-	// 6: enemy???
+	
+	// SADX light types don't fully match SA1 light types so this remaps them
+	// SADX types 0 and 6 are SA1 type 0: stage and object lighting
+	// SADX types 2 and 4 are SA1 type 2: character and cutscene objects
+	// SADX type 5 is SA1 type 4: boss lighting (custom light type for mods)
 
 	Sint32 diffuse  = -1;
 	Sint32 specular = -1;
@@ -714,6 +708,11 @@ void LanternInstance::set_palettes(Sint32 type, Uint32 flags)
 		case 4:
 			diffuse  = 2;
 			specular = ignore_specular ? 2 : 3;
+			break;
+
+		case 5:
+			diffuse  = 4;
+			specular = ignore_specular ? 4 : 5;
 			break;
 
 		default:
