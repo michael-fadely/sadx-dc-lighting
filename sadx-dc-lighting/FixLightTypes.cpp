@@ -48,4 +48,6 @@ void FixLightTypes()
 	WriteCall(reinterpret_cast<void*>(0x00558E6B), SetTexlist_ForceBossLightType);
 	// Perfect Chaos
 	WriteData<1>(reinterpret_cast<char*>(0x0056220C), 0x04u); // Force boss light type
+	// Super Sonic
+	WriteData<1>(reinterpret_cast<char*>(0x00494935), 0x02u); // Force character light type
 }
