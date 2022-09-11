@@ -171,7 +171,7 @@ static void __fastcall Direct3D_ParseMaterial_r(NJS_MATERIAL* material)
 
 	Uint32 flags = material->attrflags;
 
-	if (material->specular.argb.a == 0)
+	if (material->specular.argb.a == 0 || _nj_constant_attr_or_ & NJD_FLAG_IGNORE_SPECULAR)
 	{
 		flags |= NJD_FLAG_IGNORE_SPECULAR;
 	}
