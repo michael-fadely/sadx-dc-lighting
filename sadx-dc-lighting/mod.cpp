@@ -23,6 +23,7 @@
 #include "Obj_Chaos7.h"
 #include "FixChaoGardenMaterials.h"
 #include "FixCharacterMaterials.h"
+#include "FixLightTypes.h"
 #include "apiconfig.h"
 
 static Trampoline* CharSel_LoadA_t                 = nullptr;
@@ -542,7 +543,8 @@ extern "C"
 		WriteJump(reinterpret_cast<void*>(0x0040A340), CorrectMaterial_r);
 
 		// Material fixes 
-		GetPrivateProfileStringA("Enhancements", "MaterialFixes", "True", str.data(), str.size(), config_path.c_str());
+		FixLightTypes();
+		GetPrivateProfileStringA("Enhancements", "MaterialFixes", "True", str.data(), str.size(), config_path.c_str());		
 		if (!strcmp(str.data(), "True"))
 		{
 			FixCharacterMaterials();

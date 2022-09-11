@@ -172,6 +172,7 @@ xcopy /C /Y /D "$(SolutionDir)minhook\bin\MinHook.x86.dll" "$(OutDir)"</Command>
     <ClInclude Include="datapointers.h" />
     <ClInclude Include="ecgarden.h" />
     <ClInclude Include="FileSystem.h" />
+    <ClInclude Include="FixLightTypes.h" />
     <ClInclude Include="ShaderParameter.h" />
     <ClInclude Include="FixChaoGardenMaterials.h" />
     <ClInclude Include="FixCharacterMaterials.h" />
@@ -190,6 +191,7 @@ xcopy /C /Y /D "$(SolutionDir)minhook\bin\MinHook.x86.dll" "$(OutDir)"</Command>
     <ClCompile Include="apiconfig.cpp" />
     <ClCompile Include="d3d.cpp" />
     <ClCompile Include="FileSystem.cpp" />
+    <ClCompile Include="FixLightTypes.cpp" />
     <ClCompile Include="ShaderParameter.cpp" />
     <ClCompile Include="FixChaoGardenMaterials.cpp" />
     <ClCompile Include="FixCharacterMaterials.cpp" />

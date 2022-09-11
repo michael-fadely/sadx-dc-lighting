@@ -683,16 +683,16 @@ void LanternInstance::set_palettes(Sint32 type, Uint32 flags)
 	}
 #endif
 
-	// [0] 1-2 level geometry
-	// [1] 3-4 objects (springs etc.)
-	// [2] 5-6 player models & misc objects
-	// [3] 7-8 Tails' shoes and jump ball (sometimes? probably level-specific)
+	// SA1 light types
+	// 0: Default (diffuse 0 specular 0/1)
+	// 2: Most NPCs and cutscene objects (diffuse 2 specular 2/3)
+	// 4: Chaos 2, Chaos 6, Perfect Chaos (diffuse 4 specular 4/5)
 
-	// type:
-	// 0: stage
-	// 2: character
-	// 4: shiny thing (super sonic, gamma)
-	// 6: enemy???
+	// SADX light types:
+	// 0: Default
+	// 2: Most NPCs and cutscene objects
+	// 4: Super Sonic, Gamma, Gamma NPC (Egg Carrier inside), Question Mark (because of Gamma's)
+	// 6: Kiki, Boa - Boa, Rhinotank, Sweep, Spinner, Egg Keeper, Zero glove attack (gameplay, cutscenes), Perfect Chaos, Egg Hornet, Egg Walker, Egg Viper (cutscene only), Zero boss, E - 101, E - 101R
 
 	Sint32 diffuse  = -1;
 	Sint32 specular = -1;
@@ -711,9 +711,13 @@ void LanternInstance::set_palettes(Sint32 type, Uint32 flags)
 			break;
 
 		case 2:
-		case 4:
 			diffuse  = 2;
 			specular = ignore_specular ? 2 : 3;
+			break;
+
+		case 4:
+			diffuse = 4;
+			specular = ignore_specular ? 4 : 5;
 			break;
 
 		default:

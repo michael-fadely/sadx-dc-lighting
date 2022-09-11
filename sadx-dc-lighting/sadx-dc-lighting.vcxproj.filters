@@ -93,6 +93,9 @@
     <ClInclude Include="apiconfig.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="FixLightTypes.h">
+      <Filter>Header Files\Material Fixes</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -142,6 +145,9 @@
     </ClCompile>
     <ClCompile Include="apiconfig.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FixLightTypes.cpp">
+      <Filter>Source Files\Material Fixes</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
