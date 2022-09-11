@@ -30,6 +30,16 @@ void FixLightTypes()
 	WriteCall(reinterpret_cast<void*>(0x006F5D6A), SetTexlist_ForceCharacterLightType);
 	WriteCall(reinterpret_cast<void*>(0x006F5DDE), SetTexlist_ForceCharacterLightType);
 	WriteCall(reinterpret_cast<void*>(0x006F5E45), SetTexlist_ForceCharacterLightType);
+	// Chaos 2 event
+	WriteCall(reinterpret_cast<void*>(0x006F5538), SetTexlist_ForceCharacterLightType);
+	WriteCall(reinterpret_cast<void*>(0x006F557A), SetTexlist_ForceCharacterLightType);
+	WriteCall(reinterpret_cast<void*>(0x006F55EE), SetTexlist_ForceCharacterLightType);
+	WriteCall(reinterpret_cast<void*>(0x006F56A0), SetTexlist_ForceCharacterLightType);
+	WriteCall(reinterpret_cast<void*>(0x006F575B), SetTexlist_ForceCharacterLightType);
+	// Chaos 4 event
+	WriteCall(reinterpret_cast<void*>(0x006F26AC), SetTexlist_ForceCharacterLightType);
+	WriteCall(reinterpret_cast<void*>(0x006F272C), SetTexlist_ForceCharacterLightType);
+	WriteCall(reinterpret_cast<void*>(0x006F27A3), SetTexlist_ForceCharacterLightType);
 	// Tornado
 	WriteData<1>(reinterpret_cast<char*>(0x0062751B), 0i8); // Force Tornado light type
 	WriteData<1>(reinterpret_cast<char*>(0x0062AC1F), 0i8); // Force Tornado light type (transformation cutscene)
