@@ -433,13 +433,14 @@ bool LanternInstance::load_palette(const std::string& path)
 		file.read(reinterpret_cast<char*>(&pair.diffuse), sizeof(NJS_COLOR));
 		file.read(reinterpret_cast<char*>(&pair.specular), sizeof(NJS_COLOR));
 		color_data.push_back(pair);
+		file.peek();
 	} while (!file.eof());
 
 	file.close();
 
 	if (color_data.size() > palette_pairs_.size())
 	{
-		PrintDebug("[lantern] WARNING: Palette size exceeds standard maximum.\n");
+		PrintDebug("[lantern] WARNING: Palette size %d exceeds standard maximum.\n", color_data.size());
 	}
 
 	palette_pairs_ = {};
