@@ -50,4 +50,6 @@ void FixLightTypes()
 	WriteData<1>(reinterpret_cast<char*>(0x0056220C), 0x04u); // Force boss light type
 	// Super Sonic
 	WriteData<1>(reinterpret_cast<char*>(0x00494935), 0x02u); // Force character light type
+	// Birdie
+	WriteData<1>(reinterpret_cast<char*>(0x004C6335), 0i8); // Force default light type
 }
