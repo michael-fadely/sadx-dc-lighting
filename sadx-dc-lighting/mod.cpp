@@ -37,6 +37,9 @@ static Trampoline* SetTimeOfDay_t                  = nullptr;
 static Trampoline* Direct3D_SetTexList_t           = nullptr;
 static Trampoline* SetCurrentStageLights_t         = nullptr;
 static Trampoline* SetCurrentStageLight_EggViper_t = nullptr;
+static Trampoline* lig_convHalfBrightPalette_t     = nullptr;
+static Trampoline* lig_fillOffsetPalette_t         = nullptr;
+static Trampoline* lig_supplementPalette_t         = nullptr;
 
 DataPointer(NJS_VECTOR, NormalScaleMultiplier, 0x03B121F8);
 
@@ -262,6 +265,24 @@ static void __cdecl SetLevelAndAct_r(Uint8 level, Uint8 act)
 {
 	TARGET_DYNAMIC(SetLevelAndAct)(level, act);
 	globals::palettes.load_files();
+}
+
+static void __cdecl lig_convHalfBrightPalette_r(int no, float rate)
+{
+	TARGET_DYNAMIC(lig_convHalfBrightPalette)(no, rate);
+	globals::palettes.generate_atlas();
+}
+
+static void __cdecl lig_fillOffsetPalette_r(int no, int spe, int num)
+{
+	TARGET_DYNAMIC(lig_fillOffsetPalette)(no, spe, num);
+	globals::palettes.generate_atlas();
+}
+
+static void __cdecl lig_supplementPalette_r(int no, int src1, int src2, float fmix1)
+{
+	TARGET_DYNAMIC(lig_supplementPalette)(no, src1, src2, fmix1);
+	globals::palettes.generate_atlas();
 }
 
 static void __cdecl GoToNextChaoStage_r()
@@ -538,6 +559,9 @@ extern "C"
 		Direct3D_SetTexList_t           = new Trampoline(0x0077F3D0, 0x0077F3D8, Direct3D_SetTexList_r);
 		SetCurrentStageLights_t         = new Trampoline(0x0040A950, 0x0040A955, SetCurrentStageLights_r);
 		SetCurrentStageLight_EggViper_t = new Trampoline(0x0057E560, 0x0057E567, SetCurrentStageLight_EggViper_r);
+		lig_convHalfBrightPalette_t     = new Trampoline(0x004123C0, 0x004123C7, lig_convHalfBrightPalette_r);
+		lig_fillOffsetPalette_t         = new Trampoline(0x00412180, 0x00412188, lig_fillOffsetPalette_r);
+		lig_supplementPalette_t         = new Trampoline(0x00412280, 0x00412287, lig_supplementPalette_r);
 
 		// Material callback hijack
 		WriteJump(reinterpret_cast<void*>(0x0040A340), CorrectMaterial_r);

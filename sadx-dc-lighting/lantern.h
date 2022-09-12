@@ -106,7 +106,6 @@ public:
 private:
 	// TODO: handle externally
 	ShaderParameter<Texture>* atlas_;
-	std::array<ColorPair, palette_index_count * palette_index_length> palette_pairs_ {};
 	std::array<SourceLight, source_light_count> source_lights_ {};
 	NJS_VECTOR sl_direction_ {};
 
@@ -189,6 +188,7 @@ public:
 	bool run_pl_callbacks(Sint32 level, Sint32 act, Sint8 time);
 	bool run_sl_callbacks(Sint32 level, Sint32 act, Sint8 time);
 	bool load_files();
+	void generate_atlas();
 
 	// TODO: Expose to API when explicit multi-palette management is implemented.
 	// TODO: Rewrite and reformat documentation below.
