@@ -6,13 +6,7 @@
 
 #include "d3d8types.hpp"
 #include <SADXModLoader.h>
-#include "../include/lanternapi.h"
 #include "FixCharacterMaterials.h"
-
-static HMODULE CHRMODELS        = GetModuleHandle(L"CHRMODELS_orig");
-static HMODULE ADV00MODELS      = GetModuleHandle(L"ADV00MODELS");
-static HMODULE ADV03MODELS      = GetModuleHandle(L"ADV03MODELS");
-static HMODULE BOSSCHAOS0MODELS = GetModuleHandle(L"BOSSCHAOS0MODELS");
 
 DataPointer(NJS_OBJECT, object_c7_kihon_chaos7_chaos7, 0x0139757C);
 DataPointer(NJS_OBJECT, object_ev_s_t2c_body_s_t2c_body, 0x031793C0);
@@ -101,6 +95,11 @@ DataPointer(NJS_OBJECT, object_tr2_big_s_tru2_body_s_tru2_body, 0x010E8A78);
 DataPointer(NJS_OBJECT, object_tr2_big_s_tru2_body_s_tru2_banr, 0x010E6724);
 DataPointer(NJS_OBJECT, object_tr2_big_s_tru2_body_s_tru2_wina, 0x010E604C);
 DataPointer(NJS_OBJECT, object_tr2_big_s_tru2_body_s_tru2_mark, 0x010E55EC);
+
+DataPointer(NJS_OBJECT, object_e101old_kihon0_e101old_e_reye, 0x014D857C);
+DataPointer(NJS_OBJECT, object_e101old_kihon0_e101old_e_leye, 0x014D887C);
+DataPointer(NJS_OBJECT, object_e101old_kihon0_e101old_e_right, 0x014D6504);
+DataPointer(NJS_OBJECT, object_e101old_kihon0_e101old_e_head, 0x014D943C);
 
 #ifdef _DEBUG
 static std::vector<NJS_MATERIAL*> materials;
@@ -231,14 +230,20 @@ static void actions(const std::string& id, int length, const T (&ids)[N])
 void ObjectRemoveSpecular(NJS_OBJECT* obj, bool recursive, bool hierarchy = false)
 {
 	if (!obj)
-		return;
-	if (obj->basicdxmodel)
 	{
-		for (int k = 0; k < obj->basicdxmodel->nbMat; ++k)
+		return;
+	}
+
+	auto model = obj->basicdxmodel;
+
+	if (model != nullptr && model->nbMat > 0)
+	{
+		for (int k = 0; k < model->nbMat; ++k)
 		{
-			obj->basicdxmodel->mats[k].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
+			model->mats[k].attrflags |= NJD_FLAG_IGNORE_SPECULAR;
 		}
 	}
+
 	if (recursive)
 	{
 		if (obj->child)
@@ -251,18 +256,21 @@ void ObjectRemoveSpecular(NJS_OBJECT* obj, bool recursive, bool hierarchy = fals
 void ObjectForceSpecular(NJS_OBJECT* obj, bool recursive, bool hierarchy = false)
 {
 	if (!obj)
-		return;
-	if (obj->basicdxmodel)
 	{
-		for (int k = 0; k < obj->basicdxmodel->nbMat; ++k)
+		return;
+	}
+
+	auto model = obj->getbasicdxmodel();
+
+	if (model != nullptr && model->nbMat > 0)
+	{
+		for (int k = 0; k < model->nbMat; k++)
 		{
-			obj->basicdxmodel->mats[k].specular.color = 0xFFFFFFFF;
-			if (obj->basicdxmodel->mats[k].attrflags & NJD_FLAG_IGNORE_SPECULAR)
-			{
-				obj->basicdxmodel->mats[k].attrflags &= ~NJD_FLAG_IGNORE_SPECULAR;
-			}
+			model->mats[k].specular.color = 0xFFFFFFFF;
+			model->mats[k].attrflags &= ~NJD_FLAG_IGNORE_SPECULAR;
 		}
 	}
+
 	if (recursive)
 	{
 		if (obj->child)
@@ -307,10 +315,10 @@ void FixCharacterMaterials()
 	ObjectForceSpecular(AMY_OBJECTS[4]->child, false); // Amy headband
 	ObjectForceSpecular(AMY_OBJECTS[32]->child, false); // Amy headband (talking head)
 	// Big
-	ObjectSetIgnoreLight(BIG_OBJECTS[22]->getnode(4), 0); // Eyes
-	ObjectSetIgnoreLight(BIG_OBJECTS[22]->getnode(5), 0); // Eyes
-	ObjectSetIgnoreLight(BIG_OBJECTS[22]->getnode(6), 0); // Eyes
-	ObjectSetIgnoreLight(BIG_OBJECTS[22]->getnode(7), 0); // Eyes
+	ObjectSetIgnoreLight(BIG_OBJECTS[0]->getnode(64), 0); // Eyes
+	ObjectSetIgnoreLight(BIG_OBJECTS[0]->getnode(66), 0); // Eyes
+	ObjectSetIgnoreLight(BIG_OBJECTS[0]->getnode(63), 0); // Eyes
+	ObjectSetIgnoreLight(BIG_OBJECTS[0]->getnode(65), 0); // Eyes
 	// Big talking head
 	ObjectSetIgnoreLight(BIG_OBJECTS[1]->getnode(2), 0); // Eyes
 	ObjectSetIgnoreLight(BIG_OBJECTS[1]->getnode(3), 0); // Eyes
@@ -325,7 +333,13 @@ void FixCharacterMaterials()
 	ObjectSetIgnoreLight(E102_OBJECTS[0]->getnode(55), 2); // Left eye
 	ObjectSetIgnoreLight(E102_OBJECTS[0]->getnode(54), 7); // Head back (blue light)
 	ObjectSetIgnoreLight(E102_OBJECTS[0]->getnode(12), 3); // Right foot
-	ObjectSetIgnoreLight(E102_OBJECTS[0]->getnode(24), 2); // Left foot	
+	ObjectSetIgnoreLight(E102_OBJECTS[0]->getnode(24), 2); // Left foot
+	// E-101 Beta (boss model)
+	ObjectSetIgnoreLight(&object_e101old_kihon0_e101old_e_reye, 1); // Right eye
+	ObjectSetIgnoreLight(&object_e101old_kihon0_e101old_e_reye, 2); // Nose
+	ObjectSetIgnoreLight(&object_e101old_kihon0_e101old_e_leye, 1); // Left eye
+	ObjectSetIgnoreLight(&object_e101old_kihon0_e101old_e_right, 2); // Chest
+	ObjectSetIgnoreLight(&object_e101old_kihon0_e101old_e_head, 7); // Head back light
 	// Perfect Chaos
 	ObjectForceSpecular(&object_c7_kihon_chaos7_chaos7, true);
 	// Eggman
