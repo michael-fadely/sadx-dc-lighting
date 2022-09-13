@@ -15,7 +15,7 @@
 #include "datapointers.h"
 #include "lantern.h"
 
-DataArray(ColorPair[256], LSPAL, 0x3B12210, 10);
+DataArray(ColorPair[256], LSPAL, 0x3B12210, 8);
 
 bool SourceLight_t::operator==(const SourceLight_t& rhs) const
 {
