@@ -99,6 +99,11 @@ public:
 	static constexpr size_t palette_index_length = 256;
 
 	/**
+	 * \brief The maximum number of color pairs in a PL file.
+	 */
+	static constexpr size_t palette_pairs_max = palette_index_count * palette_index_length;
+
+	/**
 	 * \brief The maximum number of source lights.
 	 */
 	static constexpr size_t source_light_count = 16;

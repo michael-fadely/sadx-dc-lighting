@@ -438,16 +438,15 @@ bool LanternInstance::load_palette(const std::string& path)
 
 	file.close();
 
-	unsigned int maxlength = palette_index_count * palette_index_length;
-	if (color_data.size() > maxlength)
+	if (color_data.size() > palette_pairs_max)
 	{
-		PrintDebug("[lantern] WARNING: Palette size %d exceeds standard maximum of %d.\n", color_data.size(), maxlength);
+		PrintDebug("[lantern] WARNING: Palette size %u exceeds standard maximum of %u.\n", color_data.size(), palette_pairs_max);
 	}
 
-	memset(LSPAL.data(), 0, sizeof(ColorPair) * maxlength);
+	memset(LSPAL.data(), 0, sizeof(ColorPair) * palette_pairs_max);
 	memcpy(LSPAL.data(),
 		color_data.data(),
-		std::min(sizeof(ColorPair) * color_data.size(), sizeof(ColorPair) * maxlength));
+		std::min(sizeof(ColorPair) * color_data.size(), sizeof(ColorPair) * palette_pairs_max));
 	generate_atlas();
 	return true;
 }
