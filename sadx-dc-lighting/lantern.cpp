@@ -15,7 +15,12 @@
 #include "datapointers.h"
 #include "lantern.h"
 
-DataArray(ColorPair[256], LSPAL, 0x3B12210, 8);
+// The game's palette data array which contains 8+2 palette pairs.
+// The extra pairs were used on DC for backups via lig_cpyPalette.
+// The PC version only uses one extra pair to store stage palettes.
+// It is used in Gamma's briefing cutscene when the lights turn off.
+// The extra pairs are never cleared on DC and in this mod.
+DataArray(ColorPair[256], LSPAL, 0x3B12210, 10);
 
 bool SourceLight_t::operator==(const SourceLight_t& rhs) const
 {
