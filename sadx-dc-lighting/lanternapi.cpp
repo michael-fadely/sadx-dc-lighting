@@ -283,3 +283,8 @@ void palette_from_mix(int index, int index_source, Uint8 r, Uint8 g, Uint8 b, bo
 {
 	globals::palettes.palette_from_mix(index, index_source, r, g, b, specular, apply);
 }
+
+void generate_atlas()
+{
+	globals::palettes.generate_atlas();
+}

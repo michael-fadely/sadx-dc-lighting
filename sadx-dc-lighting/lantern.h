@@ -186,6 +186,7 @@ public:
 	void palette_from_rgb(int index, Uint8 r, Uint8 g, Uint8 b, bool specular, bool apply);
 	void palette_from_array(int index, const NJS_ARGB* colors, bool specular, bool apply);
 	void palette_from_mix(int index, int index_source, Uint8 r, Uint8 g, Uint8 b, bool specular, bool apply);
+	void generate_atlas();
 	void add_pl_callback(lantern_load_cb callback);
 	void remove_pl_callback(lantern_load_cb callback);
 	void add_sl_callback(lantern_load_cb callback);
@@ -193,7 +194,6 @@ public:
 	bool run_pl_callbacks(Sint32 level, Sint32 act, Sint8 time);
 	bool run_sl_callbacks(Sint32 level, Sint32 act, Sint8 time);
 	bool load_files();
-	void generate_atlas();
 
 	// TODO: Expose to API when explicit multi-palette management is implemented.
 	// TODO: Rewrite and reformat documentation below.
