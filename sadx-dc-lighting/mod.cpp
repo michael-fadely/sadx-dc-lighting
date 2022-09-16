@@ -403,6 +403,12 @@ static void __cdecl NormalScale_r(float x, float y, float z)
 	}
 }
 
+static void __cdecl lig_cpyPalette_r(int dstNo, int srcNo)
+{
+	lig_cpyPalette(dstNo, srcNo);
+	globals::palettes.generate_atlas();
+}
+
 static void set_light_direction()
 {
 	if (globals::palettes.size())
@@ -581,6 +587,9 @@ extern "C"
 
 		// Title screen hack
 		WriteCall(reinterpret_cast<void*>(0x00510125), TitleScreenHack);
+
+		// Update the palette atlas after turning the lights back on in Gamma's cutscene
+		WriteCall(reinterpret_cast<void*>(0x006F455B), lig_cpyPalette_r);
 
 		// Vertex normal correction for certain objects in
 		// Red Mountain and Sky Deck.
