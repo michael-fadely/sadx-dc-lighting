@@ -99,6 +99,11 @@ public:
 	static constexpr size_t palette_index_length = 256;
 
 	/**
+	 * \brief The maximum number of color pairs in a PL file.
+	 */
+	static constexpr size_t palette_pairs_max = palette_index_count * palette_index_length;
+
+	/**
 	 * \brief The maximum number of source lights.
 	 */
 	static constexpr size_t source_light_count = 16;
@@ -106,7 +111,6 @@ public:
 private:
 	// TODO: handle externally
 	ShaderParameter<Texture>* atlas_;
-	std::array<ColorPair, palette_index_count * palette_index_length> palette_pairs_ {};
 	std::array<SourceLight, source_light_count> source_lights_ {};
 	NJS_VECTOR sl_direction_ {};
 
@@ -182,6 +186,7 @@ public:
 	void palette_from_rgb(int index, Uint8 r, Uint8 g, Uint8 b, bool specular, bool apply);
 	void palette_from_array(int index, const NJS_ARGB* colors, bool specular, bool apply);
 	void palette_from_mix(int index, int index_source, Uint8 r, Uint8 g, Uint8 b, bool specular, bool apply);
+	void generate_atlas();
 	void add_pl_callback(lantern_load_cb callback);
 	void remove_pl_callback(lantern_load_cb callback);
 	void add_sl_callback(lantern_load_cb callback);

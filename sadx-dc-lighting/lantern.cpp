@@ -15,6 +15,13 @@
 #include "datapointers.h"
 #include "lantern.h"
 
+// The game's palette data array which contains 8+2 palette pairs.
+// The extra pairs were used on DC for backups via lig_cpyPalette.
+// The PC version only uses one extra pair to store stage palettes.
+// It is used in Gamma's briefing cutscene when the lights turn off.
+// The extra pairs are never cleared on DC and in this mod.
+DataArray(ColorPair[256], LSPAL, 0x3B12210, 10);
+
 bool SourceLight_t::operator==(const SourceLight_t& rhs) const
 {
 	return !memcmp(this, &rhs, sizeof(SourceLight_t));
@@ -308,7 +315,6 @@ LanternInstance::LanternInstance(ShaderParameter<Texture>* atlas)
 
 LanternInstance::LanternInstance(LanternInstance&& other) noexcept
 	: atlas_(std::exchange(other.atlas_, nullptr)),
-	  palette_pairs_(other.palette_pairs_),
 	  source_lights_(other.source_lights_),
 	  sl_direction_(other.sl_direction_),
 	  diffuse_index_(std::exchange(other.diffuse_index_, -1)),
@@ -324,7 +330,6 @@ LanternInstance& LanternInstance::operator=(LanternInstance&& rhs) noexcept
 	if (&rhs != this)
 	{
 		atlas_          = std::exchange(rhs.atlas_, nullptr);
-		palette_pairs_  = rhs.palette_pairs_;
 		source_lights_  = rhs.source_lights_;
 		sl_direction_   = rhs.sl_direction_;
 		diffuse_index_  = std::exchange(rhs.diffuse_index_, -1);
@@ -438,38 +443,36 @@ bool LanternInstance::load_palette(const std::string& path)
 
 	file.close();
 
-	if (color_data.size() > palette_pairs_.size())
+	if (color_data.size() > palette_pairs_max)
 	{
-		PrintDebug("[lantern] WARNING: Palette size %d exceeds standard maximum.\n", color_data.size());
+		PrintDebug("[lantern] WARNING: Palette size %u exceeds standard maximum of %u.\n", color_data.size(), palette_pairs_max);
 	}
 
-	palette_pairs_ = {};
-	memcpy(palette_pairs_.data(),
-	       color_data.data(),
-	       std::min(sizeof(ColorPair) * color_data.size(), sizeof(ColorPair) * palette_pairs_.size()));
+	memset(LSPAL.data(), 0, sizeof(ColorPair) * palette_pairs_max);
+	memcpy(LSPAL.data(),
+		color_data.data(),
+		std::min(sizeof(ColorPair) * color_data.size(), sizeof(ColorPair) * palette_pairs_max));
 	generate_atlas();
 	return true;
 }
 
 void LanternInstance::palette_from_rgb(int index, Uint8 r, Uint8 g, Uint8 b, bool specular, bool apply)
 {
-	const auto pair_index = index * palette_index_length;
-
 	for (size_t x = 0; x < palette_index_length; x++)
 	{
 		if (specular)
 		{
-			palette_pairs_[pair_index + x].specular.argb.a = 255;
-			palette_pairs_[pair_index + x].specular.argb.r = r;
-			palette_pairs_[pair_index + x].specular.argb.g = g;
-			palette_pairs_[pair_index + x].specular.argb.b = b;
+			LSPAL[index][x].specular.argb.a = 255;
+			LSPAL[index][x].specular.argb.r = r;
+			LSPAL[index][x].specular.argb.g = g;
+			LSPAL[index][x].specular.argb.b = b;
 		}
 		else
 		{
-			palette_pairs_[pair_index + x].diffuse.argb.a = 255;
-			palette_pairs_[pair_index + x].diffuse.argb.r = r;
-			palette_pairs_[pair_index + x].diffuse.argb.g = g;
-			palette_pairs_[pair_index + x].diffuse.argb.b = b;
+			LSPAL[index][x].diffuse.argb.a = 255;
+			LSPAL[index][x].diffuse.argb.r = r;
+			LSPAL[index][x].diffuse.argb.g = g;
+			LSPAL[index][x].diffuse.argb.b = b;
 		}
 	}
 
@@ -481,23 +484,21 @@ void LanternInstance::palette_from_rgb(int index, Uint8 r, Uint8 g, Uint8 b, boo
 
 void LanternInstance::palette_from_array(int index, const NJS_ARGB* colors, bool specular, bool apply)
 {
-	const auto pair_index = index * palette_index_length;
-
 	for (size_t x = 0; x < palette_index_length; x++)
 	{
 		if (specular)
 		{
-			palette_pairs_[pair_index + x].specular.argb.a = static_cast<Uint8>(colors[x].a);
-			palette_pairs_[pair_index + x].specular.argb.r = static_cast<Uint8>(colors[x].r);
-			palette_pairs_[pair_index + x].specular.argb.g = static_cast<Uint8>(colors[x].g);
-			palette_pairs_[pair_index + x].specular.argb.b = static_cast<Uint8>(colors[x].b);
+			LSPAL[index][x].specular.argb.a = static_cast<Uint8>(colors[x].a);
+			LSPAL[index][x].specular.argb.r = static_cast<Uint8>(colors[x].r);
+			LSPAL[index][x].specular.argb.g = static_cast<Uint8>(colors[x].g);
+			LSPAL[index][x].specular.argb.b = static_cast<Uint8>(colors[x].b);
 		}
 		else
 		{
-			palette_pairs_[pair_index + x].diffuse.argb.a = static_cast<Uint8>(colors[x].a);
-			palette_pairs_[pair_index + x].diffuse.argb.r = static_cast<Uint8>(colors[x].r);
-			palette_pairs_[pair_index + x].diffuse.argb.g = static_cast<Uint8>(colors[x].g);
-			palette_pairs_[pair_index + x].diffuse.argb.b = static_cast<Uint8>(colors[x].b);
+			LSPAL[index][x].diffuse.argb.a = static_cast<Uint8>(colors[x].a);
+			LSPAL[index][x].diffuse.argb.r = static_cast<Uint8>(colors[x].r);
+			LSPAL[index][x].diffuse.argb.g = static_cast<Uint8>(colors[x].g);
+			LSPAL[index][x].diffuse.argb.b = static_cast<Uint8>(colors[x].b);
 		}
 	}
 
@@ -509,28 +510,25 @@ void LanternInstance::palette_from_array(int index, const NJS_ARGB* colors, bool
 
 void LanternInstance::palette_from_mix(int index, int index_source, Uint8 r, Uint8 g, Uint8 b, bool specular, bool apply)
 {
-	const auto pair_index_dst = index * palette_index_length;
-	const auto pair_index_src = index_source * palette_index_length;
-
 	for (size_t x = 0; x < palette_index_length; x++)
 	{
 		if (specular)
 		{
-			NJS_BGRA& color = palette_pairs_[pair_index_dst + x].specular.argb;
+			NJS_BGRA& color = LSPAL[index][x].specular.argb;
 
 			color.a = 255;
-			color.r = static_cast<Uint8>(std::min<Uint32>(255, palette_pairs_[pair_index_src + x].specular.argb.r + r));
-			color.g = static_cast<Uint8>(std::min<Uint32>(255, palette_pairs_[pair_index_src + x].specular.argb.g + g));
-			color.b = static_cast<Uint8>(std::min<Uint32>(255, palette_pairs_[pair_index_src + x].specular.argb.b + b));
+			color.r = static_cast<Uint8>(std::min<Uint32>(255, LSPAL[index_source][x].specular.argb.r + r));
+			color.g = static_cast<Uint8>(std::min<Uint32>(255, LSPAL[index_source][x].specular.argb.g + g));
+			color.b = static_cast<Uint8>(std::min<Uint32>(255, LSPAL[index_source][x].specular.argb.b + b));
 		}
 		else
 		{
-			NJS_BGRA& color = palette_pairs_[pair_index_dst + x].diffuse.argb;
+			NJS_BGRA& color = LSPAL[index][x].diffuse.argb;
 
 			color.a = 255;
-			color.r = static_cast<Uint8>(std::min<Uint32>(255, palette_pairs_[pair_index_src + x].diffuse.argb.r + r));
-			color.g = static_cast<Uint8>(std::min<Uint32>(255, palette_pairs_[pair_index_src + x].diffuse.argb.g + g));
-			color.b = static_cast<Uint8>(std::min<Uint32>(255, palette_pairs_[pair_index_src + x].diffuse.argb.b + b));
+			color.r = static_cast<Uint8>(std::min<Uint32>(255, LSPAL[index_source][x].diffuse.argb.r + r));
+			color.g = static_cast<Uint8>(std::min<Uint32>(255, LSPAL[index_source][x].diffuse.argb.g + g));
+			color.b = static_cast<Uint8>(std::min<Uint32>(255, LSPAL[index_source][x].diffuse.argb.b + b));
 		}
 	}
 
@@ -595,7 +593,7 @@ void LanternInstance::generate_atlas()
 
 			for (size_t x = 0; x < palette_index_length; x++)
 			{
-				const auto& color = palette_pairs_[index + x];
+				const auto& color = LSPAL[i][x];
 
 				auto& diffuse  = pixels[y + x];
 				auto& specular = pixels[palette_index_length + y + x];
@@ -610,19 +608,18 @@ void LanternInstance::generate_atlas()
 
 			for (size_t x = 0; x < palette_index_length; x++)
 			{
-				const auto& color = palette_pairs_[index + x];
 
 				auto& diffuse  = pixels[y + x];
 				auto& specular = pixels[palette_index_length + y + x];
 
-				const auto& diffuse_argb = color.diffuse.argb;
+				const auto& diffuse_argb = LSPAL[i][x].diffuse.argb;
 
 				diffuse.r = static_cast<float>(diffuse_argb.r) / 255.0f;
 				diffuse.g = static_cast<float>(diffuse_argb.g) / 255.0f;
 				diffuse.b = static_cast<float>(diffuse_argb.b) / 255.0f;
 				diffuse.a = static_cast<float>(diffuse_argb.a) / 255.0f;
 
-				const auto& specular_argb = color.specular.argb;
+				const auto& specular_argb = LSPAL[i][x].specular.argb;
 
 				specular.r = static_cast<float>(specular_argb.r) / 255.0f;
 				specular.g = static_cast<float>(specular_argb.g) / 255.0f;
@@ -1210,6 +1207,12 @@ void LanternCollection::palette_from_mix(int index, int index_source, Uint8 r, U
 {
 	LanternInstance& i = instances_[0];
 	i.palette_from_mix(index, index_source, r, g, b, specular, apply);
+}
+
+void LanternCollection::generate_atlas()
+{
+	LanternInstance& i = instances_[0];
+	i.generate_atlas();
 }
 
 void LanternCollection::remove_pl_callback(lantern_load_cb callback)
