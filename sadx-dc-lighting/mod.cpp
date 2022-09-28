@@ -488,6 +488,11 @@ static std::string build_mod_path(const char* modpath, const char* path)
 	return result.str();
 }
 
+void OTeleport_Delete_r(int no, unsigned int spe, int num)
+{
+	globals::palettes.load_palette(CurrentLevel, CurrentAct);
+}
+
 void TitleScreenHack()
 {
 	SetLevelAndAct(0, 0);
@@ -607,6 +612,11 @@ extern "C"
 
 		// Fix normal scale pointer being filled with garbage
 		WriteData<58>(reinterpret_cast<void*>(0x00412746), 0x90i8);
+
+		// Reset Casino palettes when the teleporter object is deleted
+		WriteCall(reinterpret_cast<void*>(0x005D0CEE), OTeleport_Delete_r);
+		// Don't overwrite Casino palettes after going through the teleporter
+		WriteData<5>(reinterpret_cast<void*>(0x005D12BF), 0x90i8);
 	}
 
 #ifdef _DEBUG
