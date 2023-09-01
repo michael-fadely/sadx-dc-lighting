@@ -282,7 +282,17 @@ void ObjectForceSpecular(NJS_OBJECT* obj, bool recursive, bool hierarchy = false
 
 void ObjectSetIgnoreLight(NJS_OBJECT* obj, int matid)
 {
-	obj->basicdxmodel->mats[matid].attrflags |= NJD_FLAG_IGNORE_LIGHT;
+	if (!obj)
+	{
+		return;
+	}
+
+	auto model = obj->basicdxmodel;
+
+	if (model != nullptr && matid < model->nbMat - 1)
+	{
+		model->mats[matid].attrflags |= NJD_FLAG_IGNORE_LIGHT;
+	}
 }
 
 void FixCharacterMaterials()
