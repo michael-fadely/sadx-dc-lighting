@@ -289,7 +289,7 @@ void ObjectSetIgnoreLight(NJS_OBJECT* obj, int matid)
 
 	auto model = obj->basicdxmodel;
 
-	if (model != nullptr && matid < model->nbMat - 1)
+	if (model != nullptr && matid < model->nbMat)
 	{
 		model->mats[matid].attrflags |= NJD_FLAG_IGNORE_LIGHT;
 	}
