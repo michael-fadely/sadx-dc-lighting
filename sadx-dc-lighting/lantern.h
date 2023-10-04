@@ -62,28 +62,9 @@ struct ColorPair
 
 static_assert(sizeof(SourceLight) == 0x60, "SourceLight size mismatch");
 
-class ILantern
-{
-public:
-	virtual ~ILantern() = default;
-
-	virtual bool load_palette(Sint32 level, Sint32 act) = 0;
-	virtual bool load_palette(const std::string& path) = 0;
-	virtual bool load_source(Sint32 level, Sint32 act) = 0;
-	virtual bool load_source(const std::string& path) = 0;
-	virtual void set_last_level(Sint32 level, Sint32 act) = 0;
-	virtual void set_palettes(Sint32 type, Uint32 flags) = 0;
-	virtual void diffuse_index(Sint32 value) = 0;
-	virtual void specular_index(Sint32 value) = 0;
-	virtual Sint32 diffuse_index() = 0;
-	virtual Sint32 specular_index() = 0;
-	virtual void light_direction(const NJS_VECTOR& d) = 0;
-	virtual const NJS_VECTOR& light_direction() = 0;
-};
-
 class LanternCollection;
 
-class LanternInstance : ILantern
+class LanternInstance
 {
 	friend class LanternCollection;
 
@@ -133,7 +114,7 @@ public:
 	LanternInstance& operator=(LanternInstance&) = delete;
 	LanternInstance& operator=(LanternInstance&&) noexcept;
 
-	~LanternInstance() override;
+	~LanternInstance();
 
 	static bool diffuse_override;
 	static bool diffuse_override_is_temp;
@@ -148,25 +129,25 @@ public:
 
 	static std::string palette_id(Sint32 level, Sint32 act);
 
-	bool load_palette(Sint32 level, Sint32 act) override;
-	bool load_palette(const std::string& path) override;
+	bool load_palette(Sint32 level, Sint32 act);
+	bool load_palette(const std::string& path);
 	void palette_from_rgb(int index, Uint8 r, Uint8 g, Uint8 b, bool specular, bool apply);
 	void palette_from_array(int index, const NJS_ARGB* colors, bool specular, bool apply);
 	void palette_from_mix(int index, int index_source, Uint8 r, Uint8 g, Uint8 b, bool specular, bool apply);
 	void generate_atlas();
-	bool load_source(Sint32 level, Sint32 act) override;
-	bool load_source(const std::string& path) override;
-	void set_last_level(Sint32 level, Sint32 act) override;
-	void set_palettes(Sint32 type, Uint32 flags) override;
-	void diffuse_index(Sint32 value) override;
-	void specular_index(Sint32 value) override;
-	Sint32 diffuse_index() override;
-	Sint32 specular_index() override;
-	void light_direction(const NJS_VECTOR& d) override;
-	const NJS_VECTOR& light_direction() override;
+	bool load_source(Sint32 level, Sint32 act);
+	bool load_source(const std::string& path);
+	void set_last_level(Sint32 level, Sint32 act);
+	void set_palettes(Sint32 type, Uint32 flags);
+	void diffuse_index(Sint32 value);
+	void specular_index(Sint32 value);
+	Sint32 diffuse_index() const;
+	Sint32 specular_index() const;
+	void light_direction(const NJS_VECTOR& d);
+	const NJS_VECTOR& light_direction() const;
 };
 
-class LanternCollection : ILantern
+class LanternCollection
 {
 	std::deque<LanternInstance> instances_;
 	std::deque<lantern_load_cb> pl_callbacks_;
@@ -217,16 +198,14 @@ public:
 
 	LanternInstance& operator[](size_t i);
 
-	bool load_palette(Sint32 level, Sint32 act) override;
-	bool load_palette(const std::string& path) override;
-	bool load_source(Sint32 level, Sint32 act) override;
-	bool load_source(const std::string& path) override;
-	void set_last_level(Sint32 level, Sint32 act) override;
-	void set_palettes(Sint32 type, Uint32 flags) override;
-	void diffuse_index(Sint32 value) override;
-	void specular_index(Sint32 value) override;
-	Sint32 diffuse_index() override;
-	Sint32 specular_index() override;
-	void light_direction(const NJS_VECTOR& d) override;
-	const NJS_VECTOR& light_direction() override;
+	bool load_palette(Sint32 level, Sint32 act);
+	bool load_palette(const std::string& path);
+	bool load_source(Sint32 level, Sint32 act);
+	bool load_source(const std::string& path);
+	void set_last_level(Sint32 level, Sint32 act);
+	void set_palettes(Sint32 type, Uint32 flags);
+	void diffuse_index(Sint32 value);
+	void specular_index(Sint32 value);
+	void light_direction(const NJS_VECTOR& d);
+	const NJS_VECTOR& light_direction() const;
 };

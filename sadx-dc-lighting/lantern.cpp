@@ -745,12 +745,12 @@ void LanternInstance::specular_index(Sint32 value)
 	specular_index_ = value;
 }
 
-Sint32 LanternInstance::diffuse_index()
+Sint32 LanternInstance::diffuse_index() const
 {
 	return diffuse_index_;
 }
 
-Sint32 LanternInstance::specular_index()
+Sint32 LanternInstance::specular_index() const
 {
 	return specular_index_;
 }
@@ -760,7 +760,7 @@ void LanternInstance::light_direction(const NJS_VECTOR& d)
 	sl_direction_ = d;
 }
 
-const NJS_VECTOR& LanternInstance::light_direction()
+const NJS_VECTOR& LanternInstance::light_direction() const
 {
 	return sl_direction_;
 }
@@ -1028,16 +1028,6 @@ void LanternCollection::specular_index(Sint32 value)
 	}
 }
 
-Sint32 LanternCollection::diffuse_index()
-{
-	return -1;
-}
-
-Sint32 LanternCollection::specular_index()
-{
-	return -1;
-}
-
 void LanternCollection::light_direction(const NJS_VECTOR& d)
 {
 	for (auto& i : instances_)
@@ -1046,7 +1036,7 @@ void LanternCollection::light_direction(const NJS_VECTOR& d)
 	}
 }
 
-const NJS_VECTOR& LanternCollection::light_direction()
+const NJS_VECTOR& LanternCollection::light_direction() const
 {
 	return instances_[0].light_direction();
 }
