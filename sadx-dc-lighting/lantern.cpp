@@ -319,9 +319,12 @@ LanternInstance::LanternInstance(LanternInstance&& other) noexcept
 	  sl_direction_(other.sl_direction_),
 	  diffuse_index_(std::exchange(other.diffuse_index_, -1)),
 	  specular_index_(std::exchange(other.specular_index_, -1)),
-	  last_time_(std::exchange(other.last_time_, -1)),
-	  last_act_(std::exchange(other.last_act_, -1)),
-	  last_level_(std::exchange(other.last_level_, -1))
+	  last_pl_time_(std::exchange(other.last_pl_time_, -1)),
+	  last_sl_time_(std::exchange(other.last_sl_time_, -1)),
+	  last_pl_act_(std::exchange(other.last_pl_act_, -1)),
+	  last_sl_act_(std::exchange(other.last_sl_act_, -1)),
+	  last_pl_level_(std::exchange(other.last_pl_level_, -1)),
+	  last_sl_level_(std::exchange(other.last_sl_level_, -1))
 {
 }
 
@@ -334,9 +337,12 @@ LanternInstance& LanternInstance::operator=(LanternInstance&& rhs) noexcept
 		sl_direction_   = rhs.sl_direction_;
 		diffuse_index_  = std::exchange(rhs.diffuse_index_, -1);
 		specular_index_ = std::exchange(rhs.specular_index_, -1);
-		last_time_      = std::exchange(rhs.last_time_, -1);
-		last_act_       = std::exchange(rhs.last_act_, -1);
-		last_level_     = std::exchange(rhs.last_level_, -1);
+		last_pl_time_   = std::exchange(rhs.last_pl_time_, -1);
+		last_sl_time_   = std::exchange(rhs.last_sl_time_, -1);
+		last_pl_act_    = std::exchange(rhs.last_pl_act_, -1);
+		last_sl_act_    = std::exchange(rhs.last_sl_act_, -1);
+		last_pl_level_  = std::exchange(rhs.last_pl_level_, -1);
+		last_sl_level_  = std::exchange(rhs.last_sl_level_, -1);
 	}
 
 	return *this;
@@ -352,8 +358,10 @@ LanternInstance::~LanternInstance()
 
 void LanternInstance::set_last_level(Sint32 level, Sint32 act)
 {
-	last_level_ = level;
-	last_act_   = act;
+	last_pl_level_ = level;
+	last_sl_level_ = level;
+	last_pl_act_   = act;
+	last_sl_act_   = act;
 }
 
 /// <summary>
@@ -852,9 +860,9 @@ bool LanternCollection::run_pl_callbacks(Sint32 level, Sint32 act, Sint8 time)
 
 		for (auto& instance : instances_)
 		{
-			if (level == instance.last_level_ &&
-			    act == instance.last_act_ &&
-			    time == instance.last_time_)
+			if (level == instance.last_pl_level_ &&
+			    act == instance.last_pl_act_ &&
+			    time == instance.last_pl_time_)
 			{
 				result = true;
 				break;
@@ -865,9 +873,9 @@ bool LanternCollection::run_pl_callbacks(Sint32 level, Sint32 act, Sint8 time)
 				return false;
 			}
 
-			instance.last_time_  = time;
-			instance.last_level_ = level;
-			instance.last_act_   = act;
+			instance.last_pl_time_  = time;
+			instance.last_pl_level_ = level;
+			instance.last_pl_act_   = act;
 
 			result = true;
 		}
@@ -898,9 +906,9 @@ bool LanternCollection::run_sl_callbacks(Sint32 level, Sint32 act, Sint8 time)
 
 		for (auto& instance : instances_)
 		{
-			if (level == instance.last_level_ &&
-			    act == instance.last_act_ &&
-			    time == instance.last_time_)
+			if (level == instance.last_sl_level_ &&
+			    act == instance.last_sl_act_ &&
+			    time == instance.last_sl_time_)
 			{
 				result = true;
 				break;
@@ -911,9 +919,9 @@ bool LanternCollection::run_sl_callbacks(Sint32 level, Sint32 act, Sint8 time)
 				return false;
 			}
 
-			instance.last_time_  = time;
-			instance.last_level_ = level;
-			instance.last_act_   = act;
+			instance.last_sl_time_  = time;
+			instance.last_sl_level_ = level;
+			instance.last_sl_act_   = act;
 
 			result = true;
 		}
@@ -969,30 +977,43 @@ bool LanternCollection::load_files()
 			}
 
 			if (!pl_handled && !sl_handled &&
-			    level == instance.last_level_ &&
-			    act == instance.last_act_ &&
-			    time == instance.last_time_)
+			    level == instance.last_pl_level_ &&
+			    level == instance.last_sl_level_ &&
+			    act == instance.last_pl_act_ &&
+			    act == instance.last_sl_act_ &&
+			    time == instance.last_pl_time_ &&
+			    time == instance.last_sl_time_)
 			{
 				break;
 			}
 
-			if (!pl_handled && !instance.load_palette(CurrentLevel, i))
+			if (!pl_handled)
 			{
-				// Palette loading is critical for lighting, so
-				// continue immediately on failure.
-				continue;
+				if (instance.load_palette(CurrentLevel, i))
+				{
+					instance.last_pl_time_ = time;
+					instance.last_pl_level_ = level;
+					instance.last_pl_act_ = act;
+				}
+				else
+				{
+					// Palette loading is critical for lighting, so
+					// continue immediately on failure.
+					continue;
+				}
 			}
 
 			if (!sl_handled)
 			{
 				// Source light loading on the other hand is not
 				// a requirement, so failure is fine.
-				instance.load_source(CurrentLevel, i);
+				if (instance.load_source(CurrentLevel, i))
+				{
+					instance.last_sl_time_  = time;
+					instance.last_sl_level_ = level;
+					instance.last_sl_act_   = act;
+				}
 			}
-
-			instance.last_time_  = time;
-			instance.last_level_ = level;
-			instance.last_act_   = act;
 
 			LanternInstance::use_palette_ = false;
 			d3d::do_effect = false;

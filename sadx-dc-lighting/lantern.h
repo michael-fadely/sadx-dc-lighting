@@ -98,9 +98,12 @@ private:
 	Sint32 diffuse_index_ = -1;
 	Sint32 specular_index_ = -1;
 
-	Sint8  last_time_ = -1;
-	Sint32 last_act_ = -1;
-	Sint32 last_level_ = -1;
+	Sint8  last_pl_time_ = -1;
+	Sint8  last_sl_time_ = -1;
+	Sint32 last_pl_act_ = -1;
+	Sint32 last_sl_act_ = -1;
+	Sint32 last_pl_level_ = -1;
+	Sint32 last_sl_level_ = -1;
 
 	static bool use_palette_;
 	static float diffuse_blend_factor_;
