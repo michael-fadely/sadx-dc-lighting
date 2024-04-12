@@ -21,6 +21,11 @@ void SetTexlist_ForceCharacterLightType(NJS_TEXLIST* tl)
 	___dsSetPalette(2);
 }
 
+void SetPalette_ForceCharacterLightType(int p)
+{
+	___dsSetPalette(2);
+}
+
 void FixLightTypes()
 {
 	// Chaos 0 event
@@ -49,7 +54,7 @@ void FixLightTypes()
 	WriteData<1>(reinterpret_cast<char*>(0x00480078), 0x02u); // Force character light type
 	WriteData<1>(reinterpret_cast<char*>(0x00480080), 0i8); // Force default light type for Jet Booster
 	// Egg Carrier NPCs
-	WriteData<1>(reinterpret_cast<char*>(0x0051AB66), 0x02u); // Force character light type (EC00)
+	WriteCall(reinterpret_cast<void*>(0x0051AB75), SetPalette_ForceCharacterLightType);
 	WriteData<1>(reinterpret_cast<char*>(0x005253F4), 0x02u); // Force character light type (EC30)
 	// Question Mark
 	WriteCall(reinterpret_cast<void*>(0x0051261E), SetTexlist_ForceDefaultLightType);
