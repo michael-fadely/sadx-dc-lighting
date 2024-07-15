@@ -1,7 +1,20 @@
-# sadx-dc-lighting
+# Lantern Engine
 [![Build status](https://ci.appveyor.com/api/projects/status/0xab7rqxy33nv835?svg=true)](https://ci.appveyor.com/project/SonicFreak94/sadx-dc-lighting)
 
 *sadx-dc-lighting* (Lantern Engine) is a mod for Sonic Adventure DX PC which implements the palette-based "Lantern" lighting engine from Sonic Adventure on the Dreamcast.
+
+## What does it look like?
+
+Here are some comparison shots using Dreamcast stages.
+
+| Vanilla | Lantern Engine |
+| - | - |
+| ![Red Mountain Act 2 with Dreamcast stage/textures (Lantern Engine disabled)](https://i.imgur.com/5SOaKWt.png) | ![Red Mountain Act 2 with Dreamcast stage/textures (Lantern Engine enabled)](https://i.imgur.com/b3d5djD.png) |
+| ![Final Egg Act 1 (Lantern Engine disabled)](https://i.imgur.com/UZbb85Y.png) | ![Final Egg Act 1 (Lantern Engine enabled)](https://i.imgur.com/PkCDwtO.png) |
+
+[More comparison screenshots](https://imgur.com/a/J7fZx) - [Dreamcast comparisons screenshots](https://imgur.com/a/Fedr2) - [Video comparison](https://youtu.be/7hcG_I9YvxA)
+
+## How do I use it?
 
 ### Prerequisites
 - A graphics card which supports vertex texture sampling (i.e a graphics card released more recently than the year 2000).
