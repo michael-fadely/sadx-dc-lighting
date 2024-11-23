@@ -327,10 +327,17 @@ extern "C"
 	API float get_alpha_reject(void);
 
 	/**
-	 * \brief Temporarily sets the light direction to be used by the shader.
+	 * \brief Temporarily sets the light direction to be used by the shader for the next-drawn material.
+	 * This function should only be called from within a material callback.
 	 * \param v Pointer to a vector representing the light's direction.
 	 */
 	API void set_light_direction(const NJS_VECTOR* v);
+
+	API void set_light_direction_temp(const NJS_VECTOR* v); /* WIP */
+	API void set_light_direction_perm(const NJS_VECTOR* v); /* WIP */
+
+	API void unset_light_direction_temp(); /* WIP */
+	API void unset_light_direction_perm(); /* WIP */
 
 	/**
 	 * \brief Fills a specified palette with a single color.

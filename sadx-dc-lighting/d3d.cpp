@@ -728,9 +728,10 @@ namespace local
 
 	static void set_light_parameters()
 	{
-		if (apiconfig::override_light_dir)
+		if (apiconfig::light_dir_override_flags != OverrideFlags_None)
 		{
-			param::LightDirection = *reinterpret_cast<const D3DXVECTOR3*>(&apiconfig::light_dir_override);
+			const auto light_dir_override = apiconfig::get_light_direction_override();
+			param::LightDirection = *reinterpret_cast<const D3DXVECTOR3*>(&light_dir_override);
 			return;
 		}
 
@@ -739,6 +740,7 @@ namespace local
 
 		const auto dir = -*reinterpret_cast<const D3DXVECTOR3*>(&light.Direction);
 		param::LightDirection = dir;
+		last_light_dir = dir;
 	}
 
 	static void begin()
@@ -1229,10 +1231,10 @@ namespace d3d
 			LanternInstance::specular_override = false;
 		}
 
-		if (apiconfig::override_light_dir)
+		if (apiconfig::light_dir_override_flags & OverrideFlags_Temporary)
 		{
 			param::LightDirection = local::last_light_dir;
-			apiconfig::override_light_dir = false;
+			apiconfig::light_dir_override_flags ^= OverrideFlags_Temporary;
 		}
 
 		if (apiconfig::alpha_ref_is_temp)
