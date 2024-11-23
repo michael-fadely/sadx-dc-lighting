@@ -262,11 +262,33 @@ float get_alpha_reject()
 
 void set_light_direction(const NJS_VECTOR* v)
 {
+	set_light_direction_temp(v);
+}
+
+void set_light_direction_temp(const NJS_VECTOR* v)
+{
 	if (v != nullptr)
 	{
-		apiconfig::override_light_dir = true;
-		apiconfig::light_dir_override = *v;
+		apiconfig::set_light_direction_override(OverrideFlags_Temporary, *v);
 	}
+}
+
+void set_light_direction_perm(const NJS_VECTOR* v)
+{
+	if (v != nullptr)
+	{
+		apiconfig::set_light_direction_override(OverrideFlags_Permanent, *v);
+	}
+}
+
+void unset_light_direction_temp()
+{
+	apiconfig::light_dir_override_flags &= ~OverrideFlags_Temporary;
+}
+
+void unset_light_direction_perm()
+{
+	apiconfig::light_dir_override_flags &= ~OverrideFlags_Permanent;
 }
 
 void palette_from_rgb(int index, Uint8 r, Uint8 g, Uint8 b, bool specular, bool apply)
