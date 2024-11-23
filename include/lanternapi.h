@@ -364,7 +364,7 @@ extern "C"
 	 */
 	API void palette_from_mix(int index, int index_source, Uint8 r, Uint8 g, Uint8 b, bool specular, bool apply);
 
-	 /**
+	/**
 	 * \brief Rebuilds the palette atlas. Required for changes to be visible when palette data is modified directly.
 	 */
 	API void generate_atlas();
