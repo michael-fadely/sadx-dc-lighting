@@ -519,9 +519,8 @@ extern "C"
 		if (handle == nullptr)
 		{
 			MessageBoxA(WindowHandle,
-			            "SADX Lantern Engine will not function without d3d8to9 saved to your Sonic Adventure DX folder. "
-			            "Download d3d8.dll from from https://github.com/crosire/d3d8to9",
-			            "Lantern Engine Error: Missing d3d8.dll", MB_OK | MB_ICONERROR);
+			            "SADX Lantern Engine will not function without Direct3D 9. Enable d3d8to9 in Mod Manager settings and try again.",
+			            "Lantern Engine Error: Direct3D 9 not enabled", MB_OK | MB_ICONERROR);
 
 			return;
 		}
