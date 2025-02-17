@@ -39,14 +39,13 @@ To install the mod manually, follow these steps:
 - Open the archive and extract the `sadx-dc-lighting` folder itself into your SADX mods folder. The mods folder should be in your game's root directory.
 - Enable Lantern Engine in the Mod Manager's Mods tab.
 
-### Troubleshooting
+## Troubleshooting
 
-
-#### Error message "SADX Lantern Engine will not function without Direct3D 9" on startup
+### Error message "SADX Lantern Engine will not function without Direct3D 9" on startup
 
 Open the Mod Manager, go to the Game Config/Graphics tab and make sure Render Backend is set to DirectX 9.
 
-#### Shader compilation errors on startup: "unexpected KW_SAMPLER_STATE" and others
+### Shader compilation errors on startup: "unexpected KW_SAMPLER_STATE" and others
 
 If you are on Windows, install the DirectX 9.0c End-User Runtimes:
 
