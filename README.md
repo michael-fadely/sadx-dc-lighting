@@ -17,22 +17,47 @@ Here are some comparison shots using Dreamcast stages.
 ## How do I use it?
 
 ### Prerequisites
-- A graphics card which supports vertex texture sampling (i.e a graphics card released more recently than the year 2000).
-- Visual C++ Redistributable for Visual Studio 2017 (x86!): https://aka.ms/vs/17/release/vc_redist.x86.exe
-- DirectX 9.0c end-user runtime: https://www.microsoft.com/en-us/download/details.aspx?id=8109
-- The latest* version of the SADX Mod Loader.
-- d3d8to9 (included in the Mod Loader as of 2022): https://github.com/crosire/d3d8to9/releases/latest
-
-\**If you have a reasonably new version, it has automatic update checking in the options tab. If not, download here and extract to your game's root directory: http://mm.reimuhakurei.net/sadxmods/SADXModLoader.7z*
-
-### Installing d3d8to9
-In recent versions of the Mod Loader, d3d8to9 is included and enabled by default. Before using Lantern Engine, make sure "Enable Direct3D 9" is checked in the SADX Mod Manager's Graphics options. 
-
-To install d3d8to9 manually you can follow these steps:
-- Download d3d8.dll from https://github.com/crosire/d3d8to9/releases/latest.
-- Place d3d8.dll in the root of your SADX folder (where sonic.exe is).
+- A graphics card which supports vertex texture sampling (i.e a graphics card released more recently than the year 2000)
+- [Visual C++ Redistributable for Visual Studio 2015-2022 (x86!)](https://aka.ms/vs/17/release/vc_redist.x86.exe)
+- [DirectX 9.0c End-User Runtimes](https://www.microsoft.com/en-us/download/details.aspx?id=8109)
+- [SADX Mod Loader](https://github.com/X-Hax/sadx-mod-loader)
+- [d3d8to9](https://github.com/crosire/d3d8to9) (included in the Mod Loader - no need to install)
 
 ### Installing sadx-dc-lighting
+
+To be able to run the mod, make sure Render Backend is set to DirectX 9 in the Mod Manager's Game Config/Graphics tab.
+
+#### Installation through the Mod Manager
+
+If you have 1-click install support enabled for the Mod Manager (usually enabled automatically), you can copy the highlighted text below, paste it in your browser's address bar and press Enter.
+
+`sadxmm:https://github.com/michael-fadely/sadx-dc-lighting/releases/latest/download/sadx-dc-lighting.7z,author:SonicFreak94,name:Lantern%20Engine,folder:sadx-dc-lighting`
+
+#### Manual installation
+To install the mod manually, follow these steps:
 - Download the archive from https://github.com/SonicFreak94/sadx-dc-lighting/releases/latest.
-- Open the archive and extract the sadx-dc-lighting folder itself into your SADX mods folder. The mods folder should be in your game's root directory.
-- Enable Lantern Engine from the SADX Mod Manager.
+- Open the archive and extract the `sadx-dc-lighting` folder itself into your SADX mods folder. The mods folder should be in your game's root directory.
+- Enable Lantern Engine in the Mod Manager's Mods tab.
+
+### Troubleshooting
+
+
+#### Error message "SADX Lantern Engine will not function without Direct3D 9" on startup
+
+Open the Mod Manager, go to the Game Config/Graphics tab and make sure Render Backend is set to DirectX 9.
+
+#### Shader compilation errors on startup: "unexpected KW_SAMPLER_STATE" and others
+
+If you are on Windows, install the DirectX 9.0c End-User Runtimes:
+
+[Web version](https://www.microsoft.com/en-us/download/details.aspx?id=35)
+
+[Full version for manual installation](https://www.microsoft.com/en-us/download/details.aspx?id=8109)
+
+If you are on Linux and running the game through Wine/Proton, the following tips could help:
+
+- Run the game through Steam/Proton instead of Wine.
+- Install the DirectX 9.0c End-User Runtimes manually to the same prefix as the game via Protontricks or Winetricks.
+- Install the shader compiler manually using the following terminal command: `winetricks d3dx9 d3dcompiler_43 d3dcompiler_47`
+- Extract `d3dcompiler_43.dll` and `d3dcompiler_47.dll` from the DirectX 9.0c End-User Runtimes redistributable, copy them to the game folder and add them as native library overrides in winecfg.
+- Delete the folder `~/.local/share/Steam/steamapps/compatdata/71250` and reinstall the game.
