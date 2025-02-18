@@ -2,11 +2,11 @@
 <ConfigSchema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://www.sonicretro.org">
   <Groups>
     <Group name="Enhancements">
-      <Property name="RangeFog" type="bool" defaultvalue="False">
-        <HelpText>Enables enhanced range-based fog.</HelpText>
+      <Property name="RangeFog" display="Range Fog" type="bool" defaultvalue="False">
+        <HelpText>Enables enhanced range-based fog that uses more accurate fog calculations.</HelpText>
       </Property>
-      <Property name="MaterialFixes" type="bool" defaultvalue="True">
-        <HelpText>Enables material hacks to improve lighting consistency with vanilla DX models.</HelpText>
+      <Property name="MaterialFixes" display="Material Fixes" type="bool" defaultvalue="True">
+        <HelpText>Adjusts materials on some vanilla models to make their lighting consistent with their Dreamcast counterparts.</HelpText>
       </Property>
     </Group>
   </Groups>
