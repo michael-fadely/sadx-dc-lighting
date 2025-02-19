@@ -519,7 +519,7 @@ extern "C"
 		if (handle == nullptr)
 		{
 			MessageBoxA(WindowHandle,
-			            "SADX Lantern Engine will not function without Direct3D 9. Enable d3d8to9 in Mod Manager settings and try again.",
+			            "SADX Lantern Engine will not function without Direct3D 9. Set Render Backend to DirectX 9 in Mod Manager settings and try again.",
 			            "Lantern Engine Error: Direct3D 9 not enabled", MB_OK | MB_ICONERROR);
 
 			return;
