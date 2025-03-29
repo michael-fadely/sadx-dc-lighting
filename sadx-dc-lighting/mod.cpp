@@ -519,17 +519,17 @@ extern "C"
 		if (handle == nullptr)
 		{
 			MessageBoxA(WindowHandle,
-			            "SADX Lantern Engine will not function without Direct3D 9. Set Render Backend to DirectX 9 in Mod Manager settings and try again.",
+			            "The Lantern Engine mod will not function without Direct3D 9. Set Render Backend to DirectX 9 in Mod Manager settings and try again.",
 			            "Lantern Engine Error: Direct3D 9 not enabled", MB_OK | MB_ICONERROR);
-
+			Exit();
 			return;
 		}
 
 		if (helperFunctions.Version < 5)
 		{
-			MessageBoxA(WindowHandle, "Mod loader out of date. SADX Lantern Engine requires API version 5 or newer.",
-			            "Lantern Engine Error: Mod loader out of date", MB_OK | MB_ICONERROR);
-
+			MessageBoxA(WindowHandle, "SADX Mod Loader is out of date. Update the Mod Loader and try again.",
+			            "Lantern Engine Error: Mod Loader out of date", MB_OK | MB_ICONERROR);
+			Exit();
 			return;
 		}
 
